@@ -166,6 +166,12 @@ button { font-family:inherit; cursor:pointer; }
 .filelabel { display:inline-flex; align-items:center; cursor:pointer; }
 hr { border:none; border-top:2px dashed #cdd; margin:14px 0; }
 
+/* cross-page link button */
+.worldlink { position:fixed; top:10px; right:10px; z-index:30; text-decoration:none;
+  background:#fff; border:3px solid #0002; border-bottom-width:5px; border-radius:12px;
+  padding:8px 12px; font-weight:bold; color:#20303a; font-family:"Trebuchet MS",sans-serif; }
+.worldlink:active { transform:translateY(2px); }
+
 /* confetti */
 #fx { position:fixed; inset:0; pointer-events:none; overflow:hidden; }
 .confetti {

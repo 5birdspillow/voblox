@@ -198,12 +198,33 @@
     ]
   };
 
+  // Registry of lessons. Only lessons with a `words` array are "available" / playable.
+  // To add a lesson: define it like LESSON5 and add it here, e.g. "6": LESSON6.
   var LESSONS = { "5": LESSON5 };
+
+  function flat() {
+    var out = [], seen = {};
+    Object.keys(LESSONS).forEach(function (k) {
+      (LESSONS[k].words || []).forEach(function (w) { if (!seen[w.word]) { seen[w.word] = k; out.push(w); } });
+    });
+    return out;
+  }
 
   var Content = {
     LESSONS: LESSONS,
     getLesson: function (n) { return LESSONS[String(n)]; },
-    listLessons: function () { return Object.keys(LESSONS).map(function (k) { return LESSONS[k]; }); }
+    listLessons: function () { return Object.keys(LESSONS).map(function (k) { return LESSONS[k]; }); },
+    availableLessons: function () {
+      return Object.keys(LESSONS).map(function (k) { return LESSONS[k]; })
+        .filter(function (L) { return L.words && L.words.length; })
+        .sort(function (a, b) { return a.lesson - b.lesson; });
+    },
+    allWords: flat,
+    lessonOf: function (word) {
+      var r = null;
+      Object.keys(LESSONS).forEach(function (k) { if ((LESSONS[k].words || []).some(function (w) { return w.word === word; })) r = LESSONS[k].lesson; });
+      return r;
+    }
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = Content;
