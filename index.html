@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#5cab3e">
+  <title>Voblox — Word World</title>
+
+  <!-- install-as-app (iPhone/iPad full screen) -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Voblox">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🟩</text></svg>">
+
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="world.css">
+</head>
+<body class="world">
+  <canvas id="c"></canvas>
+
+  <div id="errbar"></div>
+
+  <!-- heads-up display -->
+  <div id="whud">
+    <div class="hud-left">
+      <span class="chip" id="rankchip">♟ Pawn</span>
+      <span class="chip" id="gemchip">💎 0</span>
+      <span class="chip combo" id="combochip" style="display:none">🔥 x2</span>
+    </div>
+    <div class="meter" id="meter">
+      <div class="meter-fill" id="meterfill"></div>
+      <div class="meter-tick" style="left:80%"></div>
+      <div class="meter-tick a" style="left:90%"></div>
+      <div class="meter-label" id="meterlabel">0%</div>
+    </div>
+    <div class="hud-right">
+      <a class="iconbtn" href="study.html" title="Study mode">📚</a>
+      <button class="iconbtn" id="menubtn" title="Menu">☰</button>
+    </div>
+  </div>
+
+  <!-- floating "open this chest" prompt -->
+  <div id="prompt" class="prompt-float" style="display:none"></div>
+
+  <!-- touch interact button (mobile) -->
+  <button id="actbtn" class="actbtn" style="display:none">OPEN ✦</button>
+
+  <!-- overlay for quizzes, menus, word list, chess -->
+  <div id="overlay" class="overlay" style="display:none"><div id="overlaybox" class="overlaybox"></div></div>
+
+  <!-- loading hint -->
+  <div id="loading" class="loading">Loading your world… 🟩</div>
+
+  <script src="vendor/three.min.js"></script>
+  <script src="src/content.js"></script>
+  <script src="src/engine.js"></script>
+  <script src="src/questions.js"></script>
+  <script src="src/store.js"></script>
+  <script src="src/world.js"></script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+/* Voblox 3D world — layout over the canvas */
+html, body.world { margin:0; height:100%; overflow:hidden; background:#9fd6ff; touch-action:none;
+  -webkit-user-select:none; user-select:none; }
+#c { position:fixed; inset:0; width:100vw; height:100vh; display:block; }
+
+.loading { position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+  font-family:"Trebuchet MS",sans-serif; font-size:24px; color:#0a3a52; font-weight:bold; }
+
+/* HUD */
+#whud { position:fixed; top:0; left:0; right:0; display:flex; gap:8px; align-items:center;
+  padding:calc(env(safe-area-inset-top) + 8px) 10px 8px; font-family:"Trebuchet MS",sans-serif; }
+#whud .hud-left { display:flex; gap:6px; }
+#whud .chip { background:#ffffffdd; border:3px solid #0002; border-bottom-width:4px; border-radius:11px;
+  padding:5px 9px; font-weight:bold; font-size:14px; }
+#whud .chip.combo { background:#fff3cf; border-color:#e6b800; }
+#whud .meter { position:relative; flex:1; height:26px; background:#00000026; border:3px solid #0003;
+  border-radius:13px; overflow:hidden; min-width:90px; }
+#whud .meter-fill { height:100%; width:0; background:linear-gradient(90deg,#76d275,#43c34a); transition:width .5s; }
+#whud .meter-tick { position:absolute; top:0; bottom:0; width:3px; background:#1c63b8; }
+#whud .meter-tick.a { background:#c026d3; }
+#whud .meter-label { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:bold; color:#0a2a12; text-shadow:0 1px 0 #fff8; }
+.hud-right { display:flex; gap:6px; }
+.iconbtn { width:42px; height:42px; display:flex; align-items:center; justify-content:center;
+  font-size:20px; text-decoration:none; background:#ffffffdd; border:3px solid #0002; border-bottom-width:4px;
+  border-radius:11px; color:#222; cursor:pointer; }
+.iconbtn:active { transform:translateY(2px); }
+
+/* floating prompt */
+.prompt-float { position:fixed; left:50%; top:64%; transform:translateX(-50%); z-index:5;
+  background:#000a; color:#fff; padding:8px 14px; border-radius:12px; font-family:"Trebuchet MS",sans-serif;
+  font-weight:bold; font-size:16px; pointer-events:none; }
+.prompt-float b { color:#ffe14d; }
+
+/* mobile interact button */
+.actbtn { position:fixed; right:calc(env(safe-area-inset-right) + 18px); bottom:calc(env(safe-area-inset-bottom) + 26px);
+  z-index:6; background:linear-gradient(#ffd86b,#ffae2e); color:#5a3d00; border:4px solid #c98a00;
+  border-bottom-width:7px; border-radius:18px; padding:16px 22px; font-weight:900; font-size:18px;
+  font-family:"Trebuchet MS",sans-serif; box-shadow:0 4px 0 #0003; }
+.actbtn:active { transform:translateY(3px); border-bottom-width:4px; }
+
+/* virtual joystick */
+#joy { position:fixed; z-index:6; width:120px; height:120px; border-radius:50%; background:#ffffff33;
+  border:3px solid #ffffff66; display:none; pointer-events:none; }
+#joynub { position:absolute; width:54px; height:54px; left:33px; top:33px; border-radius:50%;
+  background:#ffffffcc; border:3px solid #0002; }
+
+/* overlay (quizzes / menu) reuses the .card/.choice styles from styles.css */
+.overlay { position:fixed; inset:0; z-index:20; background:#0006; backdrop-filter:blur(2px);
+  display:flex; align-items:center; justify-content:center; padding:14px;
+  font-family:"Trebuchet MS","Segoe UI",sans-serif; color:#20303a; }
+.overlaybox { width:100%; max-width:620px; max-height:92vh; overflow:auto; }
+.overlaybox .card { background:#fff; border:4px solid #0002; border-bottom-width:7px; border-radius:18px;
+  padding:18px; box-shadow:0 8px 0 #0003; }
+.gatehead { display:flex; justify-content:space-between; align-items:center; color:#fff; font-weight:bold;
+  margin-bottom:8px; }
+.gatehead .x { background:#ffffffcc; border:3px solid #0003; border-radius:10px; padding:5px 10px; font-weight:bold; cursor:pointer; }
+
+/* menu list */
+.menucard h2 { margin:2px 0 12px; }
+.menubtn { display:flex; align-items:center; gap:10px; width:100%; text-align:left; text-decoration:none;
+  background:#f4f8ff; border:3px solid #0002; border-bottom-width:6px; border-radius:14px; padding:13px 15px;
+  font-size:18px; font-weight:600; color:#20303a; margin-bottom:10px; cursor:pointer; }
+.menubtn:active { transform:translateY(2px); }
+.menubtn.locked { opacity:.55; }
+
+/* chess board */
+.chess { display:grid; grid-template-columns:repeat(8,1fr); width:min(86vw,420px); aspect-ratio:1/1;
+  margin:10px auto; border:5px solid #5a3a1a; border-radius:8px; overflow:hidden; }
+.sq { display:flex; align-items:center; justify-content:center; font-size:min(8vw,38px); cursor:pointer;
+  line-height:1; user-select:none; }
+.sq.light { background:#f0d9b5; } .sq.dark { background:#b58863; }
+.sq.sel { box-shadow:inset 0 0 0 4px #2f7be0; }
+.sq.hint { box-shadow:inset 0 0 0 4px #43c34a88; }
+.chess-msg { text-align:center; font-weight:bold; font-size:18px; min-height:24px; }
+
+/* desktop hint footer */
+.help { color:#0a3a52; font-size:13px; }
+@media (hover:hover) and (pointer:fine) { .actbtn { display:none !important; } }
