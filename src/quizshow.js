@@ -30,7 +30,7 @@
       var card = store.state.cards[w.word];
       var fmt = Engine.pickFormat(card, w, null, ALLOWED);
       var q = VQ.gen(card, words, { format: fmt, senseIdx: Math.floor(Math.random() * w.senses.length) });
-      render(q); if (q.audio) speak(q.audio);
+      render(q); VQ.readQ(q);
     }
     function render(q) {
       var hearts = ""; for (var i = 0; i < 3; i++) hearts += (i < lives ? "❤️" : "🖤");
@@ -38,10 +38,10 @@
       var ans = q.choices.map(function (c, i) { return '<button class="ans" data-i="' + i + '"><span class="let">' + letters[i] + "</span>" + VQ.esc(c.label) + "</button>"; }).join("");
       wrap.innerHTML = '<div class="qs-head"><div class="host">🎤 Quiz Show <span class="muted2">— Q' + (level + 1) + " for " + LADDER[level].toLocaleString() + "</span></div><div class=\"lives\">" + hearts + "</div></div>" +
         '<div class="qs-main">' + ladderHTML() +
-        '<div class="qs-q"><div class="prompt card">' + q.promptHTML + '</div><div class="answers">' + ans + "</div>" +
+        '<div class="qs-q"><div class="prompt card">' + q.promptHTML + ' <button class="replay" type="button" title="Read again">🔊</button></div><div class="answers">' + ans + "</div>" +
         '<div class="qs-tools"><button id="fifty" class="lifeline"' + (fifty ? "" : " disabled") + ">50:50</button><button id=\"quit\" class=\"lifeline\">Leave</button></div></div></div>";
       document.getElementById("quit").onclick = leave;
-      var replay = wrap.querySelector(".replay"); if (replay) replay.onclick = function () { if (q.audio) speak(q.audio); };
+      var replay = wrap.querySelector(".replay"); if (replay) replay.onclick = function () { VQ.readQ(q); };
       var btns = wrap.querySelectorAll(".ans");
       Array.prototype.forEach.call(btns, function (b) { b.onclick = function () { answer(q, parseInt(b.dataset.i, 10), btns); }; });
       document.getElementById("fifty").onclick = function () { if (!fifty) return; fifty = false; this.disabled = true; var wrong = []; q.choices.forEach(function (c, i) { if (!c.correct) wrong.push(i); }); VQ.shuffle(wrong).slice(0, 2).forEach(function (i) { btns[i].disabled = true; btns[i].classList.add("gone"); }); };

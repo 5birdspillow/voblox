@@ -60,14 +60,14 @@
       var q = VQ.gen(card, words, { format: fmt, senseIdx: si });
       var body;
       if (q.kind === "mc") {
-        body = '<div class="qcard card"><div class="prompt">' + q.promptHTML + '</div><div class="choices">' +
+        body = '<div class="qcard card"><div class="prompt">' + q.promptHTML + ' <button class="replay" type="button" title="Read again">🔊</button></div><div class="choices">' +
           q.choices.map(function (c, i) { return '<button class="choice" data-i="' + i + '"><span class="num">' + (i + 1) + '</span>' + VQ.esc(c.label) + '</button>'; }).join("") +
           '</div></div>';
       } else {
-        body = '<div class="qcard card"><div class="prompt">' + q.promptHTML + '</div><div class="typebox"><input id="answer" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="type the word…"><button id="submit" class="submit">Strike! ⏎</button><div id="hint" class="hint"></div></div></div>';
+        body = '<div class="qcard card"><div class="prompt">' + q.promptHTML + ' <button class="replay" type="button" title="Read again">🔊</button></div><div class="typebox"><input id="answer" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="type the word…"><button id="submit" class="submit">Strike! ⏎</button><div id="hint" class="hint"></div></div></div>';
       }
       wrap.innerHTML = scene(body); wireQuit();
-      var replay = wrap.querySelector(".replay"); if (replay) replay.onclick = function () { if (q.audio) speak(q.audio); };
+      var replay = wrap.querySelector(".replay"); if (replay) replay.onclick = function () { VQ.readQ(q); };
       if (q.kind === "mc") {
         Array.prototype.forEach.call(wrap.querySelectorAll(".choice"), function (b) { b.onclick = function () { answerMC(q, parseInt(b.dataset.i, 10)); }; });
         keyFn = function (e) { var n = parseInt(e.key, 10); if (n >= 1 && n <= q.choices.length) answerMC(q, n - 1); };
@@ -76,7 +76,7 @@
         document.getElementById("submit").onclick = function () { submitText(q); };
         keyFn = function (e) { if (e.key === "Enter") submitText(q); };
       }
-      if (q.audio) speak(q.audio);
+      VQ.readQ(q);
     }
 
     function answerMC(q, i) {

@@ -292,15 +292,15 @@
     var fmt = Engine.pickFormat(card, data, chest.lastFormat, CHEST_FORMATS); chest.lastFormat = fmt;
     var si = chest.sense % data.senses.length; chest.sense = (chest.sense + 1) % data.senses.length;
     var q = VQ.gen(card, WORDS, { format: fmt, senseIdx: si });
-    renderGate(chest, q); if (q.audio) speak(q.audio);
+    renderGate(chest, q); VQ.readQ(q);
   }
   function renderGate(chest, q) {
     var body = q.kind === "mc"
       ? '<div class="choices">' + q.choices.map(function (ch, i) { return '<button class="choice" data-i="' + i + '"><span class="num">' + (i + 1) + '</span>' + VQ.esc(ch.label) + '</button>'; }).join("") + '</div>'
       : '<div class="typebox"><input id="answer" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="type here…"><button id="submit" class="submit">Enter ⏎</button><div id="hint" class="hint"></div></div>';
-    openOverlay('<div class="gatehead">✦ Vocab Gate: ' + VQ.esc(chest.word) + ' <span class="x" id="gx">✕</span></div><div class="card qcard"><div class="prompt">' + q.promptHTML + '</div>' + body + '</div>', null);
+    openOverlay('<div class="gatehead">✦ Vocab Gate: ' + VQ.esc(chest.word) + ' <span class="x" id="gx">✕</span></div><div class="card qcard"><div class="prompt">' + q.promptHTML + ' <button class="replay" type="button" title="Read again">🔊</button></div>' + body + '</div>', null);
     document.getElementById("gx").onclick = function () { closeOverlay(); };
-    var replay = obox.querySelector(".replay"); if (replay) replay.onclick = function () { if (q.audio) speak(q.audio); };
+    var replay = obox.querySelector(".replay"); if (replay) replay.onclick = function () { VQ.readQ(q); };
     if (q.kind === "mc") {
       Array.prototype.forEach.call(obox.querySelectorAll(".choice"), function (b) { b.onclick = function () { pickMC(chest, q, parseInt(b.dataset.i, 10)); }; });
       overlayKey = function (e) { var n = parseInt(e.key, 10); if (n >= 1 && n <= q.choices.length) pickMC(chest, q, n - 1); };

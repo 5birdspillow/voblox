@@ -9,8 +9,8 @@
     var six = VQ.shuffle(words).slice(0, Math.min(6, words.length));
     var cards = [];
     six.forEach(function (w, i) {
-      cards.push({ id: i, kind: "w", word: w.word, html: w.emoji + " <b>" + VQ.esc(w.word) + "</b>" });
-      cards.push({ id: i, kind: "d", word: w.word, html: VQ.esc(w.senses[0].def) });
+      cards.push({ id: i, kind: "w", word: w.word, html: w.emoji + " <b>" + VQ.esc(w.word) + "</b>", say: w.word });
+      cards.push({ id: i, kind: "d", word: w.word, html: VQ.esc(w.senses[0].def), say: w.senses[0].def });
     });
     cards = VQ.shuffle(cards);
     var flipped = [], matched = {}, moves = 0, busy = false;
@@ -29,7 +29,7 @@
     }
     function flip(i) {
       if (busy || matched[i] || flipped.indexOf(i) >= 0) return;
-      flipped.push(i); render();
+      flipped.push(i); render(); VQ.speak(cards[i].say);
       if (flipped.length === 2) {
         moves++; busy = true;
         var a = cards[flipped[0]], b = cards[flipped[1]];

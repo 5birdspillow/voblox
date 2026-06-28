@@ -10,7 +10,7 @@
     var wrap = document.createElement("div"); wrap.className = "gamewrap run";
     wrap.innerHTML = '<canvas id="rcv"></canvas>' +
       '<div class="ghud"><div class="clue" id="rclue"></div>' +
-      '<div class="grow"><span id="rlives"></span><span id="rscore"></span><button class="bossquit" id="quit">Leave</button></div></div>' +
+      '<div class="grow"><span id="rlives"></span><span id="rscore"></span><button class="replay" id="rspeak" type="button" title="Read again">🔊</button><button class="bossquit" id="quit">Leave</button></div></div>' +
       '<div class="gmsg" id="rmsg"></div><div class="runhint">⬆️⬇️ or tap a lane</div>';
     document.body.appendChild(wrap);
     var cv = wrap.querySelector("#rcv"), ctx = cv.getContext("2d");
@@ -18,8 +18,9 @@
     window.addEventListener("resize", resize);
     document.getElementById("quit").onclick = leave;
 
-    var lives = 3, score = 0, lane = 1, playerY = 0, speed = 230, running = true, raf = 0, gate = null, cooldown = 0.8, run = 0;
+    var lives = 3, score = 0, lane = 1, playerY = 0, speed = 230, running = true, raf = 0, gate = null, cooldown = 0.8, run = 0, lastSpoken = "";
     var msgEl = document.getElementById("rmsg");
+    document.getElementById("rspeak").onclick = function () { VQ.speak(lastSpoken); };
     function laneY(l) { return H * 0.30 + l * (H * 0.46 / (LANES - 1)); }
     function newGate() {
       var pool = VQ.shuffle(words), tw = pool[0];
@@ -27,6 +28,7 @@
       var options = VQ.shuffle([tw.word, pool[1].word, pool[2].word]);
       gate = { x: W * 0.94, word: tw.word, def: sense.def, pos: sense.pos, options: options, correctLane: options.indexOf(tw.word), resolved: false };
       document.getElementById("rclue").innerHTML = '🏃 Run through: <b>“' + VQ.esc(sense.def) + '”</b> <span class="posclue">(' + sense.pos + ")</span>";
+      lastSpoken = "Run through the gate that means. " + sense.def; VQ.speak(lastSpoken);
     }
     function setLane(l) { lane = Math.max(0, Math.min(LANES - 1, l)); }
     function onKey(e) { var k = (e.key || "").toLowerCase(); if (k === "arrowup" || k === "w") setLane(lane - 1); else if (k === "arrowdown" || k === "s") setLane(lane + 1); }

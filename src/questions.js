@@ -102,7 +102,7 @@
       q.choices = wordChoices();
     } else if (fmt === F.AUDIO_PICK) {
       q.kind = "mc"; q.audio = d.word;
-      q.promptHTML = "🔊 Which word did you hear? <button class=\"replay\" type=\"button\">🔊 again</button>";
+      q.promptHTML = "🔊 Which word did you hear?";
       q.choices = wordChoices();
     } else if (fmt === F.SYNONYM) {
       q.kind = "mc";
@@ -122,7 +122,7 @@
       q.promptHTML = "Type the word that means:<br><span class=\"quote\">" + meaningClue(sense) + "</span>";
     } else if (fmt === F.AUDIO_SPELL) {
       q.kind = "text"; q.hintAllowed = true; q.audio = d.word;
-      q.promptHTML = "🔊 Spell the word you hear. <button class=\"replay\" type=\"button\">🔊 again</button>";
+      q.promptHTML = "🔊 Spell the word you hear.";
     } else {
       q.kind = "mc";
       q.promptHTML = "Which of these is a meaning of <b class=\"target\">" + esc(d.word) + "</b>?";
@@ -159,10 +159,44 @@
       (opts.mnem && d.mnemonic ? '<div class="rmnem">💡 ' + esc(d.mnemonic) + '</div>' : "");
   }
 
+  // ---- text-to-speech (read questions aloud for early readers) ----
+  function stripHtml(h) {
+    return String(h)
+      .replace(/<br\s*\/?>/gi, ". ")
+      .replace(/<[^>]+>/g, "")
+      .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&nbsp;/g, " ")
+      .replace(/[“”]/g, '"').replace(/_{2,}/g, " blank ")
+      .replace(/\s+/g, " ").trim();
+  }
+  // Plain-text version of a question to read aloud (prompt + choices for MC;
+  // for "hear it" formats, just the word so the listening test still works).
+  function spoken(q) {
+    var F = (global.VobloxEngine && global.VobloxEngine.FORMATS) || {};
+    if (q.format === F.AUDIO_PICK || q.format === F.AUDIO_SPELL) return q.audio || "";
+    var t = stripHtml(q.promptHTML);
+    if (q.kind === "mc" && q.choices && q.choices.length) {
+      var opts = q.choices.map(function (c, i) { return String.fromCharCode(65 + i) + ", " + c.label; }).join(". ");
+      t += ". Is it: " + opts + "?";
+    }
+    return t;
+  }
+  function speak(text) {
+    try {
+      if (!text || !("speechSynthesis" in global)) return;
+      var u = new SpeechSynthesisUtterance(text); u.rate = 0.92;
+      var voices = speechSynthesis.getVoices() || [];
+      var v = voices.filter(function (x) { return /en[-_]?US/i.test(x.lang); })[0] || voices.filter(function (x) { return /^en/i.test(x.lang); })[0];
+      if (v) u.voice = v;
+      speechSynthesis.cancel(); speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+  function readQ(q) { speak(spoken(q)); }
+
   var VQ = {
     pick: pick, shuffle: shuffle, sample: sample, uniq: uniq, norm: norm, esc: esc,
     boldWord: boldWord, lev: lev, meaningClue: meaningClue, makeCloze: makeCloze,
-    clozeFor: clozeFor, wordData: wordData, gen: gen, checkText: checkText, entryHTML: entryHTML
+    clozeFor: clozeFor, wordData: wordData, gen: gen, checkText: checkText, entryHTML: entryHTML,
+    speak: speak, spoken: spoken, readQ: readQ
   };
   if (typeof module !== "undefined" && module.exports) module.exports = VQ;
   global.VobloxQuestions = VQ;

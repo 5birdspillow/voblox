@@ -12,7 +12,7 @@
     var wrap = document.createElement("div"); wrap.className = "gamewrap hunt";
     wrap.innerHTML = '<canvas id="gcv"></canvas>' +
       '<div class="ghud"><div class="clue" id="clue"></div>' +
-      '<div class="grow"><span id="ammo"></span><span id="score"></span><button class="bossquit" id="quit">Leave</button></div></div>' +
+      '<div class="grow"><span id="ammo"></span><span id="score"></span><button class="replay" id="hspeak" type="button" title="Read again">🔊</button><button class="bossquit" id="quit">Leave</button></div></div>' +
       '<div class="gmsg" id="gmsg"></div>';
     document.body.appendChild(wrap);
     var cv = wrap.querySelector("#gcv"), ctx = cv.getContext("2d");
@@ -20,8 +20,9 @@
     window.addEventListener("resize", resize);
     document.getElementById("quit").onclick = leave;
 
-    var ammo = 12, score = 0, target = null, animals = [], pointer = { x: -100, y: -100 }, running = true, raf = 0, flashT = -9999;
+    var ammo = 12, score = 0, target = null, animals = [], pointer = { x: -100, y: -100 }, running = true, raf = 0, flashT = -9999, lastSpoken = "";
     var msgEl = document.getElementById("gmsg");
+    document.getElementById("hspeak").onclick = function () { VQ.speak(lastSpoken); };
 
     function newRound() {
       var pool = VQ.shuffle(words), tw = pool[0];
@@ -37,6 +38,7 @@
           y: H * 0.55 + i * (H * 0.30 / Math.max(1, n - 1)), vx: dir * (55 + Math.random() * 55), size: size, alive: true };
       });
       document.getElementById("clue").innerHTML = '🎯 Shoot the one that means:<br><b>“' + VQ.esc(target.def) + '”</b> <span class="posclue">(' + target.pos + ")</span>";
+      lastSpoken = "Shoot the animal that means. " + target.def; VQ.speak(lastSpoken);
       updateHud();
     }
     function updateHud() { document.getElementById("ammo").textContent = "🔫 " + ammo; document.getElementById("score").textContent = "🍖 " + score; }

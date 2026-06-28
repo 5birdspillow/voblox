@@ -49,6 +49,6 @@
 .ghud .clue b { color: #ffe14d; } .ghud .clue .posclue { color: #cfe; }
 .ghud .grow { display: flex; justify-content: center; gap: 10px; align-items: center; margin-top: 8px; }
 .ghud .grow span { background: #fff; border: 3px solid #0002; border-bottom-width: 4px; border-radius: 11px; padding: 5px 10px; font-weight: bold; color: #20303a; }
-.ghud .grow .bossquit { pointer-events: auto; }
+.ghud .grow button { pointer-events: auto; }
 .gmsg { position: absolute; top: 38%; left: 0; right: 0; text-align: center; font-size: 30px; font-weight: 900; color: #fff; text-shadow: 0 2px 8px #000; opacity: 0; transition: opacity .2s; pointer-events: none; padding: 0 12px; }
 .runhint { position: absolute; bottom: calc(env(safe-area-inset-bottom) + 12px); left: 0; right: 0; text-align: center; color: #ffffffcc; font-weight: bold; text-shadow: 0 1px 3px #000; pointer-events: none; }
