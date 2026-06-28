@@ -103,13 +103,18 @@
   // Choose a question format for this card, respecting the box tier and the data
   // available on the word (e.g. skip ANTONYM if the word has no antonyms). Tries
   // not to repeat the exact format shown last time.
-  function pickFormat(card, wordData, lastFormat) {
-    const tier = TIERS[Math.min(card.box, MAX_BOX)] || TIERS[0];
-    let options = tier.filter((f) => hasDataFor(f, wordData));
-    if (!options.length) {
-      // Fall back to any format the word supports.
-      options = Object.values(FORMATS).filter((f) => hasDataFor(f, wordData));
+  // `allowed` (optional) restricts to a fixed set of formats — used by contexts
+  // where the target word is already known (e.g. chest gates), so we only ask
+  // meaning-testing questions and skip ones whose answer is the word itself.
+  function pickFormat(card, wordData, lastFormat, allowed) {
+    let options;
+    if (allowed && allowed.length) {
+      options = allowed.filter((f) => hasDataFor(f, wordData));
+    } else {
+      const tier = TIERS[Math.min(card.box, MAX_BOX)] || TIERS[0];
+      options = tier.filter((f) => hasDataFor(f, wordData));
     }
+    if (!options.length) options = Object.values(FORMATS).filter((f) => hasDataFor(f, wordData));
     const fresh = options.filter((f) => f !== lastFormat);
     const pool = fresh.length ? fresh : options;
     return pick(pool);

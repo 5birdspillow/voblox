@@ -1,0 +1,41 @@
+/* Voblox mini-games (Quiz Show, Memory Match, …) — shared full-screen overlay */
+.gamewrap { position: fixed; inset: 0; z-index: 50; overflow: auto; color: #fff;
+  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+  padding: calc(env(safe-area-inset-top) + 12px) 14px calc(env(safe-area-inset-bottom) + 16px); }
+.muted2 { font-size: 14px; opacity: .8; font-weight: normal; }
+
+/* Quiz Show */
+.quizshow { background: radial-gradient(120% 90% at 50% 0%, #1b3a6b, #0c1730 70%); }
+.qs-head { display: flex; justify-content: space-between; align-items: center; max-width: 780px; margin: 0 auto 10px; }
+.host { font-weight: 900; font-size: 22px; } .lives { font-size: 22px; }
+.qs-main { display: flex; gap: 14px; max-width: 780px; margin: 0 auto; align-items: flex-start; }
+.ladder { flex: 0 0 132px; display: flex; flex-direction: column; gap: 3px; font-size: 12px; }
+.rung { background: #ffffff14; border-radius: 7px; padding: 5px 7px; font-weight: bold; }
+.rung.cur { background: #ffce3a; color: #3a2a00; } .rung.done { background: #2f9e4455; }
+.qs-q { flex: 1; }
+.qs-q .prompt { color: #20303a; font-size: 20px; }
+.answers { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.ans { display: flex; align-items: center; gap: 8px; text-align: left; background: #11254a; color: #fff;
+  border: 3px solid #5a78b0; border-bottom-width: 6px; border-radius: 14px; padding: 12px; font-size: 17px; font-weight: 600; }
+.ans .let { background: #ffce3a; color: #3a2a00; width: 26px; height: 26px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-weight: 900; flex: 0 0 26px; }
+.ans:active { transform: translateY(2px); }
+.ans.right { background: #1c7a2e; border-color: #7fce8a; } .ans.wrong { background: #a02020; border-color: #ff8a8a; } .ans.gone { opacity: .22; }
+.qs-tools { display: flex; gap: 10px; margin-top: 12px; }
+.lifeline { background: #ffffff22; color: #fff; border: 2px solid #ffffff55; border-radius: 10px; padding: 8px 14px; font-weight: bold; cursor: pointer; }
+.lifeline:disabled { opacity: .4; }
+@media (max-width: 560px) { .qs-main { flex-direction: column; } .ladder { flex-direction: row; flex-wrap: wrap; flex: none; } .answers { grid-template-columns: 1fr; } }
+
+/* Memory Match */
+.memory { background: radial-gradient(120% 90% at 50% 0%, #3a2a5e, #160f2b 70%); }
+.mem-head { text-align: center; font-weight: bold; font-size: 18px; max-width: 780px; margin: 0 auto 12px; }
+.mem-head .moves { display: block; font-size: 14px; opacity: .85; }
+.mgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; max-width: 760px; margin: 0 auto; }
+.mcard { aspect-ratio: 3/4; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+  text-align: center; padding: 8px; cursor: pointer; font-size: 14px; font-weight: 600; }
+.mcard.back { background: linear-gradient(#6a5acd, #4a3aad); border: 3px solid #2a1f6b; }
+.mcard.back .qm { font-size: 30px; color: #ffffff88; }
+.mcard.face { background: #fff; color: #20303a; border: 3px solid #c9d4e6; }
+.mcard.face.def { background: #fff7e0; font-size: 12px; }
+.mcard.matched { outline: 3px solid #43c34a; opacity: .85; }
+.mem-msg { text-align: center; font-weight: bold; min-height: 22px; margin-top: 10px; }
+@media (max-width: 560px) { .mgrid { grid-template-columns: repeat(3, 1fr); } .mcard { font-size: 12px; } }

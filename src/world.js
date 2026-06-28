@@ -15,6 +15,9 @@
   store.state.activeLesson = activeLesson;
   var lesson = Content.getLesson(activeLesson);
   var WORDS = lesson.words;
+  // At a chest you already see the word, so only ask meaning-testing questions here
+  // (skip "which word…/spell it/hear it" — those are trivial when the word is known).
+  var CHEST_FORMATS = [Engine.FORMATS.WORD2DEF, Engine.FORMATS.SYNONYM, Engine.FORMATS.ANTONYM];
 
   window.onerror = function (m) { var b = document.getElementById("errbar"); if (b) { b.style.display = "block"; b.textContent = "⚠ " + m; } };
 
@@ -101,7 +104,7 @@
   })();
 
   // ---------- chests ----------
-  var chests = [], chestByWord = {};
+  var chests = [], chestByWord = {}, portals = [];
   function makeChest(word, data, x, z) {
     var g = new THREE.Group();
     var bodyMat = new THREE.MeshLambertMaterial({ color: 0x9c6b3f });
@@ -136,6 +139,30 @@
     obstacles = treeObstacles.concat(chestObstacles).concat([{ x: 0, z: 0, r: 0.9 }]);
   }
 
+  // ---------- mini-game portals ----------
+  function makePortal(game, x, z) {
+    var g = new THREE.Group();
+    var hex = "#" + ("000000" + game.color.toString(16)).slice(-6);
+    var ring = new THREE.Mesh(new THREE.TorusGeometry(0.95, 0.16, 12, 28), new THREE.MeshBasicMaterial({ color: game.color }));
+    ring.position.y = 1.3; g.add(ring); g._ring = ring;
+    var inner = new THREE.Mesh(new THREE.CircleGeometry(0.82, 24), new THREE.MeshBasicMaterial({ color: game.color, transparent: true, opacity: 0.32, side: THREE.DoubleSide }));
+    inner.position.y = 1.3; g.add(inner);
+    var base = box(1.1, 0.3, 0.5, 0x3a3550); base.position.y = 0.15; g.add(base);
+    var spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex(game.emoji + " " + game.name, hex), depthWrite: false }));
+    spr.scale.set(2.7, 0.72, 1); spr.position.set(0, 2.5, 0); g.add(spr);
+    g.position.set(x, 0, z); scene.add(g);
+    return { group: g, game: game };
+  }
+  function buildPortals() {
+    var games = window.VobloxGames || [];
+    portals.forEach(function (p) { scene.remove(p.group); });
+    portals = [];
+    var R = 5.3, N = games.length;
+    // fan the portals across the front half (away from the spawn point) so you can
+    // see them on the island and never spawn on top of one
+    for (var i = 0; i < N; i++) { var a = Math.PI + (i + 1) / (N + 1) * Math.PI; portals.push(makePortal(games[i], Math.cos(a) * R, Math.sin(a) * R)); }
+  }
+
   // ---------- avatar ----------
   var avatar = (function () {
     var g = new THREE.Group(), skin = 0xffcc88, shirt = 0x2f7be0, pants = 0x394063;
@@ -148,10 +175,10 @@
     g.add(ll, rl, torso, la, ra, head); scene.add(g);
     return { group: g, ll: ll, rl: rl, la: la, ra: ra };
   })();
-  var pos = avatar.group.position; pos.set(0, 0, 5.5);
+  var pos = avatar.group.position; pos.set(0, 0, 3.0);
 
   // ---------- camera ----------
-  var camYaw = Math.PI, camPitch = 0.52, camDist = 7.2;
+  var camYaw = 0, camPitch = 0.52, camDist = 7.2;
   function updateCamera() {
     var cp = Math.cos(camPitch);
     camera.position.set(pos.x + camDist * Math.sin(camYaw) * cp, 1.4 + camDist * Math.sin(camPitch), pos.z + camDist * Math.cos(camYaw) * cp);
@@ -207,6 +234,7 @@
     var ndc = new THREE.Vector2((px / window.innerWidth) * 2 - 1, -(py / window.innerHeight) * 2 + 1);
     raycaster.setFromCamera(ndc, camera);
     if (raycaster.intersectObject(totem, true).length && dist2(totem.position) < 18) return startBoss(WORDS, "boss", "Boss: " + lesson.title);
+    for (var pj = 0; pj < portals.length; pj++) if (raycaster.intersectObject(portals[pj].group, true).length && dist2(portals[pj].group.position) < 20) return launchGame(portals[pj].game);
     for (var i = 0; i < chests.length; i++) if (raycaster.intersectObject(chests[i].group, true).length) { if (dist2(chests[i].group.position) < 16) openGate(chests[i]); else flash("Walk closer to that chest!"); return; }
   }
   function dist2(p) { var dx = p.x - pos.x, dz = p.z - pos.z; return dx * dx + dz * dz; }
@@ -233,20 +261,23 @@
     var best = null, bd = 1e9, kind = null;
     for (var i = 0; i < chests.length; i++) { var d = dist2(chests[i].group.position); if (d < bd) { bd = d; best = chests[i]; kind = "chest"; } }
     var dt2 = dist2(totem.position); if (dt2 < bd) { bd = dt2; best = totem; kind = "boss"; }
+    for (var pi = 0; pi < portals.length; pi++) { var pd = dist2(portals[pi].group.position); if (pd < bd) { bd = pd; best = portals[pi]; kind = "game"; } }
     nearest = (bd < 5.6) ? { kind: kind, ref: best } : null;
     var prompt = document.getElementById("prompt"), act = document.getElementById("actbtn");
     if (nearest) {
       prompt.style.display = "block"; act.style.display = "block";
       if (nearest.kind === "boss") { prompt.innerHTML = "⚔️ <b>Fight the Boss</b> — press E"; act.textContent = "FIGHT ⚔️"; }
+      else if (nearest.kind === "game") { prompt.innerHTML = "🎮 <b>Enter " + esc(nearest.ref.game.name) + "</b> — press E"; act.textContent = "ENTER 🎮"; }
       else { prompt.innerHTML = (nearest.ref.ready ? "Review" : "Open") + ": <b>" + nearest.ref.word + "</b> — press E"; act.textContent = (nearest.ref.ready ? "REVIEW ✦" : "OPEN ✦"); }
     } else { prompt.style.display = "none"; act.style.display = "none"; }
   }
-  function tryInteract() { if (!nearest) return; if (nearest.kind === "boss") startBoss(WORDS, "boss", "Boss: " + lesson.title); else openGate(nearest.ref); }
+  function tryInteract() { if (!nearest) return; if (nearest.kind === "boss") startBoss(WORDS, "boss", "Boss: " + lesson.title); else if (nearest.kind === "game") launchGame(nearest.ref.game); else openGate(nearest.ref); }
   function flash(msg) { var p = document.getElementById("prompt"); p.style.display = "block"; p.innerHTML = msg; setTimeout(function () { if (!nearest) p.style.display = "none"; }, 1400); }
 
   function animateChests(dt, t) {
     for (var i = 0; i < chests.length; i++) { var c = chests[i]; c.lidPivot.rotation.x += ((c.ready ? -2.0 : 0) - c.lidPivot.rotation.x) * Math.min(1, dt * 8); c.spr.position.y = 1.75 + Math.sin(t * 2 + i) * 0.06; if (c.ring.visible) c.ring.rotation.z += dt * 1.5; }
     if (totem._crystal) { totem._crystal.rotation.y += dt * 1.4; totem._crystal.position.y = 2.9 + Math.sin(t * 2) * 0.08; }
+    for (var pi = 0; pi < portals.length; pi++) { var pr = portals[pi].group._ring; if (pr) pr.rotation.z += dt * 1.2; }
   }
 
   // ========== OVERLAYS ==========
@@ -258,7 +289,7 @@
   // ---- vocab gate ----
   function openGate(chest) {
     var word = chest.word, card = store.state.cards[word], data = chest.data;
-    var fmt = Engine.pickFormat(card, data, chest.lastFormat); chest.lastFormat = fmt;
+    var fmt = Engine.pickFormat(card, data, chest.lastFormat, CHEST_FORMATS); chest.lastFormat = fmt;
     var si = chest.sense % data.senses.length; chest.sense = (chest.sense + 1) % data.senses.length;
     var q = VQ.gen(card, WORDS, { format: fmt, senseIdx: si });
     renderGate(chest, q); if (q.audio) speak(q.audio);
@@ -292,10 +323,12 @@
   function afterGate() { closeOverlay(); checkVictory(); }
 
   // ---- boss launch ----
+  function gameExit() { overlayOpen = false; keys = {}; chests.forEach(refreshChest); updateHUD(); checkVictory(); }
   function startBoss(words, mode, title) {
     closeOverlay(); overlayOpen = true;
-    window.VobloxBoss.start({ words: words, store: store, mode: mode || "boss", title: title, onExit: function () { overlayOpen = false; keys = {}; chests.forEach(refreshChest); updateHUD(); checkVictory(); } });
+    window.VobloxBoss.start({ words: words, store: store, mode: mode || "boss", title: title, onExit: gameExit });
   }
+  function launchGame(game) { closeOverlay(); overlayOpen = true; game.start({ words: WORDS, store: store, onExit: gameExit }); }
   function startReview() {
     var due = store.dueCards(Content.allWords(), Date.now());
     var set = due.length ? due : WORDS;
@@ -320,6 +353,7 @@
     openOverlay('<div class="card menucard"><h2>☰ Menu — ' + esc(lesson.title) + '</h2>' +
       '<button class="menubtn" id="m_resume">▶ Back to the world</button>' +
       '<button class="menubtn" id="m_boss">⚔️ Boss Battle (beat the lesson!)</button>' +
+      '<button class="menubtn" id="m_games">🎮 Mini-Games (pick a game!)</button>' +
       '<button class="menubtn" id="m_review">🔁 Daily Review (mix of words)</button>' +
       '<button class="menubtn" id="m_lessons">🗺️ Choose Lesson</button>' +
       '<button class="menubtn" id="m_words">📖 Word List (all meanings)</button>' +
@@ -331,6 +365,7 @@
       function (e) { if (e.key === "Escape") closeOverlay(); });
     document.getElementById("m_resume").onclick = closeOverlay;
     document.getElementById("m_boss").onclick = function () { startBoss(WORDS, "boss", "Boss: " + lesson.title); };
+    document.getElementById("m_games").onclick = openGames;
     document.getElementById("m_review").onclick = startReview;
     document.getElementById("m_lessons").onclick = openLessons;
     document.getElementById("m_words").onclick = openWordList;
@@ -357,6 +392,18 @@
     activeLesson = String(n); store.state.activeLesson = activeLesson; store.save();
     lesson = Content.getLesson(activeLesson); WORDS = lesson.words;
     buildChests(WORDS); updateHUD(); closeOverlay();
+  }
+
+  function openGames() {
+    var games = window.VobloxGames || [];
+    var rows = '<button class="menubtn" id="g_boss">⚔️ Boss Battle</button>' +
+      games.map(function (gm) { return '<button class="menubtn" data-g="' + gm.id + '">' + gm.emoji + " " + esc(gm.name) + "</button>"; }).join("");
+    openOverlay('<div class="card menucard"><h2>🎮 Mini-Games <span class="x" id="gx" style="float:right">✕</span></h2>' + rows +
+      '<div class="help">All games use Leo’s ' + esc(lesson.title) + ' words. Each one is also a portal you can walk into in the world!</div></div>',
+      function (e) { if (e.key === "Escape") openMenu(); });
+    document.getElementById("gx").onclick = openMenu;
+    document.getElementById("g_boss").onclick = function () { startBoss(WORDS, "boss", "Boss: " + lesson.title); };
+    Array.prototype.forEach.call(obox.querySelectorAll("[data-g]"), function (b) { b.onclick = function () { var gm = games.filter(function (x) { return x.id === b.dataset.g; })[0]; if (gm) launchGame(gm); }; });
   }
 
   function openWordList() {
@@ -423,11 +470,13 @@
 
   // ---------- boot ----------
   buildChests(WORDS);
+  buildPortals();
   updateHUD();
   document.getElementById("loading").style.display = "none";
-  if (!store.state.lastPlayed && location.hash !== "#play" && location.hash !== "#boss") openHelp();
+  if (!store.state.lastPlayed && !location.hash) openHelp();
   animate();
   if (location.hash === "#boss") startBoss(WORDS, "boss", "Boss: " + lesson.title);
   else if (location.hash === "#review") startReview();
+  else if (location.hash.indexOf("#game=") === 0) { var gid = location.hash.slice(6); var gm = (window.VobloxGames || []).filter(function (x) { return x.id === gid; })[0]; if (gm) launchGame(gm); }
   if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(function () {});
 })();
