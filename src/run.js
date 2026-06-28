@@ -18,7 +18,7 @@
     window.addEventListener("resize", resize);
     document.getElementById("quit").onclick = leave;
 
-    var lives = 3, score = 0, lane = 1, playerY = 0, speed = 230, running = true, raf = 0, gate = null, cooldown = 0.8, run = 0, lastSpoken = "";
+    var lives = 3, score = 0, lane = 1, playerY = 0, speed = 78, running = true, raf = 0, gate = null, cooldown = 0.8, run = 0, lastSpoken = "";
     var msgEl = document.getElementById("rmsg");
     document.getElementById("rspeak").onclick = function () { VQ.speak(lastSpoken); };
     function laneY(l) { return H * 0.30 + l * (H * 0.46 / (LANES - 1)); }
@@ -43,7 +43,7 @@
       gate.resolved = true;
       var ok = lane === gate.correctLane;
       store.record({ word: gate.word, format: "def2word_mc", kind: "mc" }, ok);
-      if (ok) { score++; speed = Math.min(430, speed + 12); flash("✅ +1", "#69f0ae"); }
+      if (ok) { score++; speed = Math.min(150, speed + 5); flash("✅ +1", "#69f0ae"); }
       else { lives--; flash("❌ it was “" + gate.options[gate.correctLane] + "”", "#ff8a8a"); if (lives <= 0) setTimeout(end, 700); }
       updateHud();
     }

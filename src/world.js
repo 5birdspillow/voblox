@@ -159,10 +159,9 @@
     var games = window.VobloxGames || [];
     portals.forEach(function (p) { scene.remove(p.group); });
     portals = [];
-    var R = 8, N = games.length;
-    // fan the portals across the front half (away from the spawn point) so you can
-    // see them on the island and never spawn on top of one
-    for (var i = 0; i < N; i++) { var a = Math.PI + (i + 1) / (N + 1) * Math.PI; portals.push(makePortal(games[i], Math.cos(a) * R, Math.sin(a) * R)); }
+    var R = 9.5, N = games.length;
+    // ring the portals around the island; the spawn sits near the center so none overlap it
+    for (var i = 0; i < N; i++) { var a = (i / Math.max(N, 1)) * Math.PI * 2 + 0.4; portals.push(makePortal(games[i], Math.cos(a) * R, Math.sin(a) * R)); }
   }
 
   // ---------- avatar ----------

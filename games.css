@@ -52,3 +52,20 @@
 .ghud .grow button { pointer-events: auto; }
 .gmsg { position: absolute; top: 38%; left: 0; right: 0; text-align: center; font-size: 30px; font-weight: 900; color: #fff; text-shadow: 0 2px 8px #000; opacity: 0; transition: opacity .2s; pointer-events: none; padding: 0 12px; }
 .runhint { position: absolute; bottom: calc(env(safe-area-inset-bottom) + 12px); left: 0; right: 0; text-align: center; color: #ffffffcc; font-weight: bold; text-shadow: 0 1px 3px #000; pointer-events: none; }
+
+/* Whack-a-Word */
+.whack { background: radial-gradient(120% 90% at 50% 0%, #7ec850, #3c7a2a 75%); padding: 0; display: flex; flex-direction: column; }
+.wk-head { padding: calc(env(safe-area-inset-top) + 10px) 12px 4px; }
+.wk-head .clue { background: #000000aa; color: #fff; border-radius: 12px; padding: 8px 12px; max-width: 700px; margin: 0 auto; text-align: center; font-size: 17px; line-height: 1.3; }
+.wk-head .clue b { color: #ffe14d; } .wk-head .clue .posclue { color: #cfe; }
+.wk-head .grow { display: flex; justify-content: center; gap: 10px; align-items: center; margin-top: 8px; }
+.wk-head .grow span { background: #fff; border: 3px solid #0002; border-bottom-width: 4px; border-radius: 11px; padding: 5px 10px; font-weight: bold; color: #20303a; }
+.wk-head .grow button { pointer-events: auto; }
+.holes { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; align-content: center; max-width: 780px; margin: 0 auto; padding: 14px; width: 100%; }
+.hole { position: relative; aspect-ratio: 1 / 1; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; }
+.hole::before { content: ''; position: absolute; bottom: 0; left: 4%; right: 4%; height: 46%; background: #4a3320; border-radius: 50% 50% 14px 14px / 60% 60% 14px 14px; box-shadow: inset 0 8px 0 #00000033; }
+.mole { position: relative; z-index: 2; transform: translateY(125%); transition: transform .12s ease-out; width: 76%; height: 72%; border-radius: 46% 46% 16px 16px; border: 3px solid #8a5a2b; border-bottom-width: 5px; background: linear-gradient(#cf9357, #a06a32); color: #3a2410; font-weight: 900; font-size: clamp(13px, 3.4vw, 20px); display: flex; align-items: center; justify-content: center; padding: 4px; cursor: pointer; text-align: center; }
+.mole.up { transform: translateY(6%); }
+.mole.hit { background: linear-gradient(#9be870, #5cc24a); transform: translateY(40%) scale(.92); }
+.mole.badhit { background: linear-gradient(#ff8a8a, #ff5a5a); }
+@media (max-width: 560px) { .holes { grid-template-columns: repeat(2, 1fr); gap: 10px; } }

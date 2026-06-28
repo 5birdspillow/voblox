@@ -56,9 +56,10 @@
       if (ammo <= 0) setTimeout(end, 950);
       else setTimeout(function () { if (running) newRound(); }, hit.correct ? 700 : 1150);
     }
+    var lastTouch = -9999;
     cv.addEventListener("mousemove", function (e) { pointer.x = e.clientX; pointer.y = e.clientY; });
-    cv.addEventListener("mousedown", function (e) { pointer.x = e.clientX; pointer.y = e.clientY; shoot(e.clientX, e.clientY); });
-    cv.addEventListener("touchstart", function (e) { var t = e.changedTouches[0]; pointer.x = t.clientX; pointer.y = t.clientY; shoot(t.clientX, t.clientY); }, { passive: true });
+    cv.addEventListener("mousedown", function (e) { if (performance.now() - lastTouch < 800) return; pointer.x = e.clientX; pointer.y = e.clientY; shoot(e.clientX, e.clientY); });
+    cv.addEventListener("touchstart", function (e) { lastTouch = performance.now(); var t = e.changedTouches[0]; pointer.x = t.clientX; pointer.y = t.clientY; shoot(t.clientX, t.clientY); }, { passive: true });
     cv.addEventListener("touchmove", function (e) { var t = e.changedTouches[0]; pointer.x = t.clientX; pointer.y = t.clientY; }, { passive: true });
 
     function roundRect(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
