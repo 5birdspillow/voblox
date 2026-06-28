@@ -30,12 +30,12 @@
 
   var scene = new THREE.Scene();
   scene.background = new THREE.Color(0x9fd6ff);
-  scene.fog = new THREE.Fog(0x9fd6ff, 26, 60);
+  scene.fog = new THREE.Fog(0x9fd6ff, 44, 120);
   var camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
   scene.add(new THREE.HemisphereLight(0xffffff, 0x6f9e57, 1.0));
   var sun = new THREE.DirectionalLight(0xfff3d0, 0.85);
-  sun.position.set(18, 30, 12); sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
-  var scam = sun.shadow.camera; scam.left = -22; scam.right = 22; scam.top = 22; scam.bottom = -22; scam.near = 1; scam.far = 80;
+  sun.position.set(26, 42, 18); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+  var scam = sun.shadow.camera; scam.left = -28; scam.right = 28; scam.top = 28; scam.bottom = -28; scam.near = 1; scam.far = 100;
   scene.add(sun);
 
   // ---------- helpers ----------
@@ -58,7 +58,7 @@
   function box(w, h, d, color) { var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ color: color })); m.castShadow = true; return m; }
 
   // ---------- ground ----------
-  var HALF = 11;
+  var HALF = 16;
   (function buildGround() {
     var n = (HALF * 2 + 1) * (HALF * 2 + 1);
     var mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshLambertMaterial({ color: 0xffffff }), n);
@@ -88,7 +88,9 @@
     var l2 = box(1.1, 0.9, 1.1, 0x57c04a); l2.position.y = 2.8; g.add(l2);
     g.position.set(x, 0, z); scene.add(g); treeObstacles.push({ x: x, z: z, r: 0.6 });
   }
-  [[3.8, 2.6], [-3.8, 3.4], [3.0, -3.9], [-3.2, -2.6], [-6.6, 6.6]].forEach(function (p) { makeTree(p[0], p[1]); });
+  [[3.8, 2.6], [-3.8, 3.4], [3.0, -3.9], [-3.2, -2.6], [-6.6, 6.6],
+   [10.5, 2.5], [-10.5, 3.5], [2.5, 10.5], [-3, -10.5], [11, -10], [-11.5, 9.5],
+   [14, 4], [-14, -3], [5.5, 14], [-5.5, -14], [9, 9], [-9, -9]].forEach(function (p) { makeTree(p[0], p[1]); });
 
   // ---------- boss totem (center) ----------
   var totem = (function () {
@@ -134,7 +136,7 @@
   }
   function buildChests(words) {
     clearChests();
-    var N = words.length, R = 8.2;
+    var N = words.length, R = 13;
     for (var i = 0; i < N; i++) { var a = (i / N) * Math.PI * 2; makeChest(words[i].word, words[i], Math.cos(a) * R, Math.sin(a) * R); }
     obstacles = treeObstacles.concat(chestObstacles).concat([{ x: 0, z: 0, r: 0.9 }]);
   }
@@ -157,7 +159,7 @@
     var games = window.VobloxGames || [];
     portals.forEach(function (p) { scene.remove(p.group); });
     portals = [];
-    var R = 5.3, N = games.length;
+    var R = 8, N = games.length;
     // fan the portals across the front half (away from the spawn point) so you can
     // see them on the island and never spawn on top of one
     for (var i = 0; i < N; i++) { var a = Math.PI + (i + 1) / (N + 1) * Math.PI; portals.push(makePortal(games[i], Math.cos(a) * R, Math.sin(a) * R)); }
@@ -418,31 +420,57 @@
   }
 
   // ---------- chess ----------
-  var PUZZLES = [
-    { board: { a1: "R", g1: "K", g8: "k", f7: "p", g7: "p", h7: "p" }, sol: { from: "a1", to: "a8" }, note: "Trap the king on the back row." },
-    { board: { d1: "Q", g1: "K", h8: "k", g7: "p", h7: "p" }, sol: { from: "d1", to: "d8" }, note: "Bring the queen to the back rank." },
-    { board: { a1: "R", b7: "R", e1: "K", h8: "k" }, sol: { from: "a1", to: "a8" }, note: "Use both rooks like a ladder." }
+  // Each puzzle: moves alternate White(you), Black(auto-reply), White… The last move is mate.
+  var CHESS = [
+    { mate: 1, note: "Checkmate on the back row.", board: { a1: "R", e1: "K", g8: "k", f7: "p", g7: "p", h7: "p" }, moves: [{ from: "a1", to: "a8" }] },
+    { mate: 1, note: "Two rooks make a ladder.", board: { a1: "R", b7: "R", e1: "K", h8: "k" }, moves: [{ from: "a1", to: "a8" }] },
+    { mate: 1, note: "Your king guards the escape squares.", board: { d1: "Q", g6: "K", g8: "k" }, moves: [{ from: "d1", to: "d8" }] },
+    { mate: 1, note: "King and rook box the king in.", board: { a1: "R", f6: "K", f8: "k" }, moves: [{ from: "a1", to: "a8" }] },
+    { mate: 1, note: "Queen to the corner — your king does the rest.", board: { a1: "Q", g6: "K", h8: "k" }, moves: [{ from: "a1", to: "a8" }] },
+    { mate: 2, note: "Check, the king runs to h7, then Qg7 mate (your king guards g7).", board: { f6: "K", b1: "Q", h8: "k" }, moves: [{ from: "b1", to: "b8" }, { from: "h8", to: "h7" }, { from: "b8", to: "g7" }] },
+    { mate: 2, note: "Drive the king to a7, then Qb7 mate (your king guards b7).", board: { c6: "K", g1: "Q", a8: "k" }, moves: [{ from: "g1", to: "g8" }, { from: "a8", to: "a7" }, { from: "g8", to: "b7" }] }
   ];
+  var chessIdx = -1;
   function openChess() {
-    var P = PUZZLES[Math.floor(Math.random() * PUZZLES.length)];
-    var board = {}; Object.keys(P.board).forEach(function (k) { board[k] = P.board[k]; });
-    var sel = null, files = ["a", "b", "c", "d", "e", "f", "g", "h"];
+    chessIdx = (chessIdx + 1) % CHESS.length;
+    var P = CHESS[chessIdx];
+    var files = ["a", "b", "c", "d", "e", "f", "g", "h"];
     var glyph = { R: "♖", K: "♔", Q: "♕", B: "♗", N: "♘", P: "♙", r: "♜", k: "♚", q: "♛", b: "♝", n: "♞", p: "♟" };
-    function render(msg, ok) {
+    var board = {}, moveIndex = 0, sel = null, busy = false;
+    function reset() { board = {}; Object.keys(P.board).forEach(function (k) { board[k] = P.board[k]; }); moveIndex = 0; sel = null; }
+    function applyMove(from, to) { board[to] = board[from]; delete board[from]; }
+    reset();
+    function render(msg, solved) {
       var cells = "";
       for (var rank = 8; rank >= 1; rank--) for (var f = 0; f < 8; f++) {
         var id = files[f] + rank, light = (f + rank) % 2 === 1, pc = board[id] ? glyph[board[id]] : "";
         cells += '<div class="sq ' + (light ? "light" : "dark") + (sel === id ? " sel" : "") + '" data-sq="' + id + '">' + pc + '</div>';
       }
-      openOverlay('<div class="gatehead">♟ Chess — White to move, mate in 1 <span class="x" id="gx">✕</span></div><div class="card"><div class="chess">' + cells + '</div><div class="chess-msg" style="color:' + (ok ? "#2f9e44" : "#c0392b") + '">' + (msg || "Find the checkmate!") + '</div><button class="menubtn" id="hintb">💡 Hint</button></div>', function (e) { if (e.key === "Escape") openMenu(); });
+      openOverlay('<div class="gatehead">♟ Chess — White to move, <b>mate in ' + P.mate + '</b> <span class="x" id="gx">✕</span></div>' +
+        '<div class="card"><div class="chess">' + cells + '</div>' +
+        '<div class="chess-msg" style="color:' + (solved ? "#2f9e44" : "#c0392b") + '">' + (msg || (P.mate > 1 ? "Find the move that forces mate." : "Find the checkmate!")) + '</div>' +
+        '<div class="row"><button class="menubtn" id="hintb">💡 Hint</button>' + (solved ? '<button class="menubtn" id="nextp">➡ Next puzzle</button>' : '<button class="menubtn" id="resetb">↺ Reset</button>') + '<button class="menubtn" id="menub">☰ Menu</button></div>' +
+        '<div class="help">Puzzle ' + (chessIdx + 1) + ' of ' + CHESS.length + '</div></div>',
+        function (e) { if (e.key === "Escape") openMenu(); });
       document.getElementById("gx").onclick = openMenu;
-      document.getElementById("hintb").onclick = function () { var c = obox.querySelector('[data-sq="' + P.sol.from + '"]'); if (c) c.classList.add("hint"); document.querySelector(".chess-msg").textContent = P.note; };
+      document.getElementById("menub").onclick = openMenu;
+      document.getElementById("hintb").onclick = function () { var c = obox.querySelector('[data-sq="' + P.moves[moveIndex].from + '"]'); if (c) c.classList.add("hint"); document.querySelector(".chess-msg").textContent = P.note; };
+      var nb = document.getElementById("nextp"); if (nb) nb.onclick = openChess;
+      var rb = document.getElementById("resetb"); if (rb) rb.onclick = function () { reset(); render(); };
+      if (solved) return;
       Array.prototype.forEach.call(obox.querySelectorAll(".sq"), function (cell) {
         cell.onclick = function () {
+          if (busy) return;
           var sq = cell.dataset.sq;
           if (!sel) { if (board[sq] && board[sq] === board[sq].toUpperCase()) { sel = sq; render(); } return; }
-          if (sel === P.sol.from && sq === P.sol.to) { board[sq] = board[sel]; delete board[sel]; sel = null; render("Checkmate! 🏆 You win!", true); confetti(); }
-          else { sel = null; render("Not checkmate — try again! (" + P.note + ")", false); }
+          var exp = P.moves[moveIndex];
+          if (sel === exp.from && sq === exp.to) {
+            applyMove(sel, sq); sel = null; moveIndex++;
+            if (moveIndex >= P.moves.length) { render("Checkmate! 🏆 You solved it!", true); confetti(); return; }
+            busy = true; render("Black runs away…");
+            var bm = P.moves[moveIndex];
+            setTimeout(function () { applyMove(bm.from, bm.to); moveIndex++; busy = false; render("Now finish the mate!"); }, 750);
+          } else { reset(); render("Not the mate — try again!", false); }
         };
       });
     }
@@ -478,5 +506,6 @@
   if (location.hash === "#boss") startBoss(WORDS, "boss", "Boss: " + lesson.title);
   else if (location.hash === "#review") startReview();
   else if (location.hash.indexOf("#game=") === 0) { var gid = location.hash.slice(6); var gm = (window.VobloxGames || []).filter(function (x) { return x.id === gid; })[0]; if (gm) launchGame(gm); }
+  else if (location.hash === "#chess") openChess();
   if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(function () {});
 })();

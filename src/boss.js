@@ -23,7 +23,9 @@
     var hearts = 3, cleared = {}, lastFmt = {}, senseCur = {}, correct = 0, total = 0;
     var mon = MONSTERS[Math.floor(Math.random() * MONSTERS.length)];
 
-    function isCleared(w) { return mode === "boss" ? Engine.isQuizReady(store.state.cards[w]) : !!cleared[w]; }
+    // a word is "beaten" once it's answered correctly in THIS battle (so every fight
+    // is a fresh gauntlet you can replay, not instantly won if already mastered)
+    function isCleared(w) { return !!cleared[w]; }
     function pending() { return words.filter(function (w) { return !isCleared(w.word); }); }
     var maxHP = Math.max(1, pending().length);
     var queue = VQ.shuffle(pending().map(function (w) { return w.word; }));
@@ -93,7 +95,7 @@
     function resolve(q, ok) {
       total++; keyFn = null;
       var res = store.record(q, ok);
-      if (mode === "review" && ok) cleared[q.word] = true;
+      if (ok) cleared[q.word] = true;
       if (ok) {
         correct++;
         var becameClear = isCleared(q.word);

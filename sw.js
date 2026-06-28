@@ -1,5 +1,5 @@
 /* Voblox service worker — offline cache for the installed app */
-var CACHE = "voblox-v5";
+var CACHE = "voblox-v6";
 var ASSETS = [
   "index.html", "study.html", "dashboard.html",
   "styles.css", "world.css", "boss.css", "games.css", "manifest.webmanifest",
