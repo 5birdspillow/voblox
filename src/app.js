@@ -8,14 +8,20 @@
   var Engine = window.VobloxEngine;
   var Content = window.VOBLOX_CONTENT;
 
-  var LESSON_ID = "5";
+  var SAVE_KEY = "voblox.save.v1";
+
+  // Which lesson to study. Respect the shared active lesson (set by the 3D world,
+  // Craft World, the dashboard, or the picker below); default to the earliest available.
+  var _saved = loadState();
+  var _avail = Content.availableLessons();
+  var LESSON_ID = String((_saved && _saved.activeLesson) || (_avail[0] ? _avail[0].lesson : 5));
+  if (!Content.getLesson(LESSON_ID)) LESSON_ID = String(_avail[0] ? _avail[0].lesson : 5);
   var lesson = Content.getLesson(LESSON_ID);
   var WORDS = lesson.words;
 
-  var SAVE_KEY = "voblox.save.v1";
-
   // ---- State ---------------------------------------------------------------
-  var state = loadState() || freshState();
+  var state = _saved || freshState();
+  if (!state.activeLesson) state.activeLesson = LESSON_ID;
   ensureCards();
 
   var session = null; // practice session
@@ -134,6 +140,27 @@
   function show(html) { el("screen").innerHTML = html; renderHUD(); }
   function setKeys(fn) { keyHandler = fn; }
 
+  // ---- Lesson picker (lets Leo switch which lesson the study game drills) ---
+  function lessonPicker() {
+    var avail = Content.availableLessons();
+    if (avail.length < 2) return "";
+    return '<div class="lessonpick">' + avail.map(function (L) {
+      var on = String(L.lesson) === LESSON_ID;
+      return '<button class="lpick' + (on ? " on" : "") + '" data-l="' + L.lesson + '">' +
+        esc(L.title) + (on ? " ✓" : "") + '</button>';
+    }).join("") + '</div>';
+  }
+  function wireLessonPicker() {
+    Array.prototype.forEach.call(document.querySelectorAll(".lpick"), function (b) {
+      b.onclick = function () {
+        var n = String(b.dataset.l);
+        if (n === LESSON_ID) return;
+        state.activeLesson = n; save();   // shared with the 3D world / Craft World / dashboard
+        window.location.reload();         // clean re-init on the chosen lesson
+      };
+    });
+  }
+
   // ---- HOME ----------------------------------------------------------------
   function goHome() {
     session = null; mock = null;
@@ -143,6 +170,7 @@
     show(
       '<div class="logo">VOBLOX</div>' +
       '<div class="subtitle">' + esc(lesson.title) + ' • ' + WORDS.length + ' words</div>' +
+      lessonPicker() +
       '<div class="card hero">' +
         '<div class="hero-line">You’re predicted to get <b>' + grade + '</b></div>' +
         '<div class="hero-sub">' + ready + ' of ' + WORDS.length + ' words are quiz-ready. ' +
@@ -161,6 +189,7 @@
     el("mock").onclick = startMock;
     el("words").onclick = renderWords;
     el("settings").onclick = renderSettings;
+    wireLessonPicker();
     setKeys(function (e) { if (e.key === "Enter") startPractice(); });
   }
   function btn(id, label, sub) {

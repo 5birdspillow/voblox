@@ -1,7 +1,7 @@
 /*
  * Voblox — word content
  * ----------------------
- * Lesson data, transcribed from Leo's Wordly Wise 3000 Book 4 workbook (Lesson 5).
+ * Lesson data, transcribed from Leo's Wordly Wise 3000 Book 4 workbook (Lessons 5–6).
  * Definitions and example sentences match the book so practice transfers to the quiz.
  *
  * Each word can have multiple `senses` (the quiz tests alternative meanings), plus
@@ -198,9 +198,183 @@
     ]
   };
 
+  var LESSON6 = {
+    lesson: 6,
+    title: "Lesson 6",
+    words: [
+      entry({
+        word: "applaud", emoji: "👏", pron: "ə-PLAWD",
+        senses: [
+          { pos: "verb", def: "to show approval, especially by clapping the hands",
+            example: "The audience applauded until the actors came back on stage to take another bow." }
+        ],
+        forms: [
+          { word: "applause", pos: "noun", def: "the showing of approval or enjoyment by cheering or clapping",
+            example: "The theater lights came on after the applause had died down." }
+        ],
+        synonyms: ["clap", "cheer", "praise"], antonyms: ["boo", "criticize"],
+        mnemonic: "Applaud = clap so 'a-loud' that you show you approve!"
+      }),
+      entry({
+        word: "crafty", emoji: "🦊", pron: "KRAF-tee",
+        senses: [
+          { pos: "adj", def: "skilled at tricking others",
+            example: "Templeton, the crafty rat in Charlotte's Web, adds humor to the book." }
+        ],
+        synonyms: ["sly", "cunning", "sneaky"], antonyms: ["honest", "naive"],
+        mnemonic: "A crafty fox uses sneaky 'craft' to trick you."
+      }),
+      entry({
+        word: "disclose", emoji: "🔓", pron: "dis-KLOHZ",
+        senses: [
+          { pos: "verb", def: "to make known",
+            example: "The principal told us we must disclose the names of those who broke the window." }
+        ],
+        synonyms: ["reveal", "tell", "expose"], antonyms: ["hide", "conceal"],
+        mnemonic: "Disclose is the opposite of 'close' — you open a secret up."
+      }),
+      entry({
+        word: "drab", emoji: "🌫️", pron: "DRAB",
+        senses: [
+          { pos: "adj", def: "dull and without color; not cheerful or colorful",
+            example: "A brown sparrow is a drab little bird compared to a bright red cardinal." }
+        ],
+        synonyms: ["dull", "colorless", "dreary"], antonyms: ["bright", "colorful", "cheerful"],
+        mnemonic: "Drab is dull and blah — no color at all."
+      }),
+      entry({
+        word: "entire", emoji: "🧩", pron: "en-TIRE",
+        senses: [
+          { pos: "adj", def: "having nothing left out; whole; complete",
+            example: "I recited the entire Robert Frost poem from memory." }
+        ],
+        synonyms: ["whole", "complete", "total"], antonyms: ["partial", "incomplete"],
+        mnemonic: "Entire means the en-TIRE thing — every bit of it."
+      }),
+      entry({
+        word: "exclaim", emoji: "🗯️", pron: "eks-KLAYM",
+        senses: [
+          { pos: "verb", def: "to speak suddenly and with strong feeling",
+            example: "'Today was the worst day of my life!' she exclaimed." }
+        ],
+        forms: [
+          { word: "exclamation", pos: "noun", def: "a sharp cry of strong feeling",
+            example: "Grandpa's exclamation of pain sent me rushing to his side." }
+        ],
+        synonyms: ["shout", "cry out", "blurt"], antonyms: ["whisper", "mumble"],
+        mnemonic: "When you exclaim, you make a loud 'claim'!"
+      }),
+      entry({
+        word: "exquisite", emoji: "🏺", pron: "ek-SKWIZ-it",
+        senses: [
+          { pos: "adj", def: "finely done or made; very beautiful",
+            example: "The exquisite wood carvings on the museum door came from the island of Bali." }
+        ],
+        synonyms: ["beautiful", "elegant", "delicate"], antonyms: ["crude", "plain", "ugly"],
+        mnemonic: "Exquisite = extra-special: finely made and beautiful."
+      }),
+      entry({
+        word: "intend", emoji: "🧭", pron: "in-TEND",
+        senses: [
+          { pos: "verb", def: "to plan; to have in mind",
+            example: "I intend to play in our recital on Monday." }
+        ],
+        forms: [
+          { word: "intention", pos: "noun", def: "an aim, plan, or purpose",
+            example: "Theo's intention was to work in a bookstore, but she decided to go to summer camp instead." }
+        ],
+        synonyms: ["plan", "mean", "aim"], antonyms: [],
+        mnemonic: "Intend = it's 'in' your mind as a plan."
+      }),
+      entry({
+        word: "jeer", emoji: "👎", pron: "JEER",
+        senses: [
+          { pos: "verb", def: "to speak or cry out in scorn; to mock",
+            example: "My brother told me to ignore the older boys if they jeered when I sang." },
+          { pos: "noun", def: "something said that is meant to hurt or insult",
+            example: "A football coach soon learns to ignore the jeers of the crowd." }
+        ],
+        synonyms: ["mock", "taunt", "ridicule"], antonyms: ["praise", "cheer", "applaud"],
+        mnemonic: "Jeer rhymes with sneer — a scornful shout."
+      }),
+      entry({
+        word: "peer", emoji: "🔍", pron: "PEER",
+        senses: [
+          { pos: "verb", def: "to look closely; to stare, especially at something hard to see or understand",
+            example: "Ahmed peered at the sign, trying to read what it said." }
+        ],
+        synonyms: ["stare", "gaze", "squint"], antonyms: ["glance"],
+        mnemonic: "Peer = peek hard at something tough to see."
+      }),
+      entry({
+        word: "progress", emoji: "📈", pron: "PRAH-gres / prə-GRES",
+        senses: [
+          { pos: "noun", def: "movement toward a goal",
+            example: "The story showed the small boat's progress across the lake." },
+          { pos: "noun", def: "an improvement",
+            example: "I am finally making some progress learning the new app." },
+          { pos: "verb", def: "to move forward",
+            example: "Work on the new bridge progressed at a faster pace when the weather improved." },
+          { pos: "verb", def: "to advance to a higher stage; to improve",
+            example: "Maria progressed to the tuba so that she could get into the school band." }
+        ],
+        synonyms: ["advance", "improve", "develop"], antonyms: ["regress", "decline"],
+        mnemonic: "To 'pro-gress' is to step forward."
+      }),
+      entry({
+        word: "refine", emoji: "⚗️", pron: "ri-FINE",
+        senses: [
+          { pos: "verb", def: "to make pure by removing all unwanted matter",
+            example: "We take oil from deep inside the earth and refine it into gasoline." }
+        ],
+        forms: [
+          { word: "refined", pos: "adj", def: "in a pure state, with unwanted matter removed",
+            example: "Refined flour has a lot of the wheat germ removed." },
+          { word: "refined", pos: "adj", def: "having good manners and good taste",
+            example: "He was a noisy, rude boy, but as a young man he is gentle and refined." }
+        ],
+        synonyms: ["purify", "polish", "improve"], antonyms: ["pollute"],
+        mnemonic: "Refine makes something re-FINE: pure and polished."
+      }),
+      entry({
+        word: "scoundrel", emoji: "🦹", pron: "SKOWN-drəl",
+        senses: [
+          { pos: "noun", def: "a mean or wicked person",
+            example: "I am glad the police caught the scoundrel who stole my wallet." }
+        ],
+        synonyms: ["villain", "rascal", "rogue"], antonyms: ["hero"],
+        mnemonic: "A scoundrel is a scummy, wicked rascal."
+      }),
+      entry({
+        word: "uneasy", emoji: "😟", pron: "un-EE-zee",
+        senses: [
+          { pos: "adj", def: "not comfortable; worried or nervous",
+            example: "I felt uneasy walking down the dark street until I saw my dad on the corner." }
+        ],
+        synonyms: ["nervous", "anxious", "worried"], antonyms: ["calm", "relaxed", "comfortable"],
+        mnemonic: "Uneasy = un-easy: not at ease, a little worried."
+      }),
+      entry({
+        word: "vain", emoji: "🪞", pron: "VAYN",
+        senses: [
+          { pos: "adj", def: "having too high an opinion of one's looks or achievements",
+            example: "Charlie is so vain he has a full-length mirror in every room." },
+          { pos: "adj", def: "without success or result; useless",
+            example: "The firefighters made a vain attempt to keep the fire from spreading." }
+        ],
+        forms: [
+          { word: "in vain", pos: "adv", def: "without success",
+            example: "All my hand-waving was in vain — the teacher never called on me." }
+        ],
+        synonyms: ["conceited", "useless", "futile"], antonyms: ["modest", "humble", "successful"],
+        mnemonic: "Vain = stuck on your mirror, or all for nothing."
+      })
+    ]
+  };
+
   // Registry of lessons. Only lessons with a `words` array are "available" / playable.
-  // To add a lesson: define it like LESSON5 and add it here, e.g. "6": LESSON6.
-  var LESSONS = { "5": LESSON5 };
+  // To add a lesson: define it like LESSON5/LESSON6 and add it here.
+  var LESSONS = { "5": LESSON5, "6": LESSON6 };
 
   function flat() {
     var out = [], seen = {};
