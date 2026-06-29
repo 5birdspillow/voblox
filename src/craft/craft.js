@@ -15,9 +15,9 @@
   var B = { AIR: 0, GRASS: 1, DIRT: 2, STONE: 3, SAND: 4, WATER: 5, LOG: 6, LEAVES: 7, PLANK: 8, GLASS: 9, COBBLE: 10, BRICK: 11, SANDSTONE: 12, WORD: 13, COAL: 14, IRON: 15, GOLD: 16, SNOW: 17, FURNACE: 18, TORCH: 19 };
   var NAMES = { 1: "Grass", 2: "Dirt", 3: "Stone", 4: "Sand", 6: "Wood", 7: "Leaves", 8: "Planks", 9: "Glass", 10: "Cobble", 11: "Brick", 12: "Sandstone", 14: "Coal", 15: "Iron", 16: "Gold", 17: "Snow", 18: "Furnace", 19: "Torch" };
   // non-placeable items (ids >= 100)
-  var IT = { STICK: 100, WPICK: 101, SPICK: 102, IPICK: 103, SWORD: 104 };
-  var ITNAME = { 100: "Stick", 101: "Wood Pick", 102: "Stone Pick", 103: "Iron Pick", 104: "Sword" };
-  var ITEMOJI = { 100: "🪵", 101: "⛏️", 102: "⛏️", 103: "⛏️", 104: "🗡️" };
+  var IT = { STICK: 100, WPICK: 101, SPICK: 102, IPICK: 103, SWORD: 104, FOOD: 105 };
+  var ITNAME = { 100: "Stick", 101: "Wood Pick", 102: "Stone Pick", 103: "Iron Pick", 104: "Sword", 105: "Food" };
+  var ITEMOJI = { 100: "🪵", 101: "⛏️", 102: "⛏️", 103: "⛏️", 104: "🗡️", 105: "🍖" };
   function transparent(id) { return id === B.AIR || id === B.WATER || id === B.GLASS || id === B.LEAVES; }
   function opaque(id) { return id !== B.AIR && !transparent(id); }
   function solid(id) { return id !== B.AIR && id !== B.WATER; } // collidable
@@ -205,7 +205,7 @@
   }
 
   // ---------- player ----------
-  var player = { pos: new THREE.Vector3(save.px, save.py, save.pz), vel: new THREE.Vector3(), onGround: false, yaw: save.yaw || 0, pitch: save.pitch || 0 };
+  var player = { pos: new THREE.Vector3(save.px, save.py, save.pz), vel: new THREE.Vector3(), onGround: false, yaw: save.yaw || 0, pitch: save.pitch || 0, health: (typeof save.health === "number" ? save.health : 10), hunger: (typeof save.hunger === "number" ? save.hunger : 10), _fellFrom: null };
   var PW = 0.6, PH = 1.8, EYE = 1.62; // width, height, eye height
   function collides(px, py, pz) {
     var x0 = Math.floor(px - PW / 2), x1 = Math.floor(px + PW / 2);
@@ -233,6 +233,8 @@
     moveAxis("z", player.vel.z * dt);
     if (moveAxis("y", player.vel.y * dt)) player.vel.y = 0;
     player.onGround = collides(player.pos.x, player.pos.y - 0.08, player.pos.z); // probe just below feet
+    if (player.onGround) { if (player._fellFrom != null) { var fd = player._fellFrom - player.pos.y; if (fd > 4.5) hurtPlayer(Math.min(6, Math.floor(fd - 4))); player._fellFrom = null; } }
+    else player._fellFrom = (player._fellFrom == null) ? player.pos.y : Math.max(player._fellFrom, player.pos.y);
     // clamp into world vertically
     if (player.pos.y < -8) { player.pos.set(player.pos.x, heightAt(player.pos.x, player.pos.z) + 3, player.pos.z); player.vel.set(0, 0, 0); }
   }
@@ -265,6 +267,7 @@
   }
   function doMine() {
     if (paused) return;
+    var mi = attackTarget(); if (mi != null) { hitMob(mi); return; }
     var h = ray(); if (!h) return;
     if (h.id === B.WORD) { openWordGate(h.x, h.y, h.z); return; }
     var drop = dropFor(h.id, pickTier()); if (drop) addInv(drop, 1);
@@ -340,6 +343,7 @@
     var k = (e.key || "").toLowerCase(); keys[k] = true;
     if (k === " ") { jumpReq = true; e.preventDefault(); }
     if (k === "e") { openCraft(); return; }
+    if (k === "f") { eat(); return; }
     if (k >= "1" && k <= "9") { var i = +k - 1; if (i < hotbar.length) { sel = i; renderHotbar(); } }
   });
   document.addEventListener("keyup", function (e) { keys[(e.key || "").toLowerCase()] = false; });
@@ -365,6 +369,7 @@
     addBtn("bPlace", "▦", function () { doPlace(); });
     addBtn("bJump", "⤒", function () { jumpReq = true; });
     addBtn("bCraft", "📦", function () { openCraft(); });
+    addBtn("bEat", "🍖", function () { eat(); });
     canvas.addEventListener("touchstart", function (e) {
       for (var i = 0; i < e.changedTouches.length; i++) { var t = e.changedTouches[i];
         if (t.clientX < window.innerWidth * 0.5 && joyId === null) { joyId = t.identifier; jox = t.clientX; joy0y = t.clientY; joyEl.style.display = "block"; joyEl.style.left = (t.clientX - 64) + "px"; joyEl.style.top = (t.clientY - 64) + "px"; moveNub(0, 0); }
@@ -442,6 +447,70 @@
   }
   function closeCraft() { COV.style.display = "none"; paused = false; wordKey = null; keys = {}; jumpReq = false; joy.x = 0; joy.y = 0; renderHotbar(); }
 
+  // ---------- survival & creatures ----------
+  var MAXHP = 10, MAXHUNGER = 10, mobs = [], spawnT = 2, hungerT = 0, hpT = 0, dead = false;
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x557744, 1.15)); // lights only affect the (Lambert) mobs; the world is unlit/baked
+  var sun2 = new THREE.DirectionalLight(0xffffff, 0.45); sun2.position.set(12, 22, 6); scene.add(sun2);
+  var survEl = document.createElement("div"); survEl.id = "surv"; document.body.appendChild(survEl);
+  function isNight() { return tod < 0.24 || tod > 0.76; }
+  function groundY(x, z, fromY) { var fx = Math.floor(x), fz = Math.floor(z); for (var y = Math.min(WH - 1, Math.floor(fromY)); y >= 0; y--) if (solid(getBlock(fx, y, fz))) return y + 1; return 1; }
+  function makeMob(type, x, y, z) {
+    var g = new THREE.Group();
+    var col = { pig: 0xe79aa6, cow: 0x6e4a34, sheep: 0xeae6dc, zombie: 0x5a8f4a }[type] || 0xcccccc;
+    var M = new THREE.MeshLambertMaterial({ color: col });
+    function bx(w, h, d, px, py, pz) { var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M); m.position.set(px, py, pz); g.add(m); }
+    if (type === "zombie") { bx(0.6, 1.0, 0.35, 0, 1.05, 0); bx(0.5, 0.5, 0.5, 0, 1.8, 0); bx(0.18, 0.8, 0.18, -0.39, 1.05, 0.22); bx(0.18, 0.8, 0.18, 0.39, 1.05, 0.22); bx(0.2, 0.85, 0.2, -0.17, 0.42, 0); bx(0.2, 0.85, 0.2, 0.17, 0.42, 0); }
+    else { bx(0.75, 0.6, 1.05, 0, 0.6, 0); bx(0.5, 0.5, 0.5, 0, 0.78, 0.62); [[-0.27, 0.38], [0.27, 0.38], [-0.27, -0.38], [0.27, -0.38]].forEach(function (p) { bx(0.18, 0.42, 0.18, p[0], 0.21, p[1]); }); if (type === "pig") bx(0.2, 0.16, 0.1, 0, 0.74, 0.9); }
+    g.position.set(x, y, z); scene.add(g);
+    return { type: type, pos: new THREE.Vector3(x, y, z), vel: 0, dir: Math.random() * 6.28, hp: type === "zombie" ? 6 : 4, group: g, wander: 0, moving: true, atkCd: 0 };
+  }
+  function tryMove(m, dx, dz) { var nx = m.pos.x + dx, nz = m.pos.z + dz, gy = groundY(nx, nz, m.pos.y + 1); if (gy - m.pos.y > 1.3) return; m.pos.x = nx; m.pos.z = nz; }
+  function updateMob(m, dt) {
+    m.vel -= 20 * dt; var ny = m.pos.y + m.vel * dt, gy = groundY(m.pos.x, m.pos.z, m.pos.y + 1);
+    if (ny <= gy) { ny = gy; m.vel = 0; } m.pos.y = ny;
+    if (m.type === "zombie") {
+      var dx = player.pos.x - m.pos.x, dz = player.pos.z - m.pos.z, d = Math.hypot(dx, dz) || 1;
+      m.dir = Math.atan2(dx, dz); tryMove(m, (dx / d) * 1.6 * dt, (dz / d) * 1.6 * dt);
+      m.atkCd -= dt; if (d < 1.2 && m.atkCd <= 0) { hurtPlayer(1); m.atkCd = 1.1; }
+    } else {
+      m.wander -= dt; if (m.wander <= 0) { m.dir = Math.random() * 6.28; m.wander = 1.5 + Math.random() * 2.5; m.moving = Math.random() < 0.7; }
+      if (m.moving) tryMove(m, Math.sin(m.dir) * 1.1 * dt, Math.cos(m.dir) * 1.1 * dt);
+    }
+    m.group.position.copy(m.pos); m.group.rotation.y = m.dir;
+  }
+  function removeMob(i) { var m = mobs[i]; scene.remove(m.group); m.group.traverse(function (o) { if (o.geometry) o.geometry.dispose(); }); mobs.splice(i, 1); }
+  function spawnNear(type, minR, maxR) { var a = Math.random() * 6.28, r = minR + Math.random() * (maxR - minR), x = player.pos.x + Math.cos(a) * r, z = player.pos.z + Math.sin(a) * r, gy = groundY(x, z, WH - 1); if (gy <= 2) return; mobs.push(makeMob(type, x, gy, z)); }
+  function spawnMobs(dt) {
+    spawnT -= dt;
+    if (spawnT <= 0) {
+      spawnT = 3;
+      var an = 0, zo = 0; mobs.forEach(function (m) { if (m.type === "zombie") zo++; else an++; });
+      if (!isNight() && an < 6) spawnNear(["pig", "cow", "sheep"][Math.floor(Math.random() * 3)], 8, 22);
+      if (isNight() && zo < 4) spawnNear("zombie", 9, 17);
+    }
+    for (var i = mobs.length - 1; i >= 0; i--) { var m = mobs[i], dd = Math.hypot(m.pos.x - player.pos.x, m.pos.z - player.pos.z); if (dd > 50 || (m.type === "zombie" && !isNight() && dd > 7)) removeMob(i); }
+  }
+  function attackTarget() {
+    var d = fwd(), best = null, bd = 4;
+    for (var i = 0; i < mobs.length; i++) { var m = mobs[i], ex = m.pos.x - camera.position.x, ey = (m.pos.y + 0.8) - camera.position.y, ez = m.pos.z - camera.position.z, dist = Math.hypot(ex, ey, ez); if (dist > 3.6) continue; var dot = (ex * d.x + ey * d.y + ez * d.z) / (dist || 1); if (dot > 0.82 && dist < bd) { bd = dist; best = i; } }
+    return best;
+  }
+  function hitMob(i) {
+    var m = mobs[i]; m.hp -= (inv[IT.SWORD] ? 4 : 2); m.group.position.y += 0.1;
+    if (m.hp <= 0) { if (m.type !== "zombie") { addInv(IT.FOOD, 1 + Math.floor(Math.random() * 2)); renderHotbar(); } else { store.state.gems += 3; store.save(); } removeMob(i); }
+  }
+  function hurtPlayer(n) { if (dead) return; player.health = Math.max(0, player.health - n); survFlash(); updateSurvHud(); if (player.health <= 0) die(); }
+  function eat() { if (player.hunger >= MAXHUNGER || dead) return; if (takeInv(IT.FOOD, 1)) { player.hunger = Math.min(MAXHUNGER, player.hunger + 3); updateSurvHud(); renderHotbar(); } }
+  function updateSurvival(dt) {
+    if (dead) return;
+    hungerT += dt; if (hungerT > 7) { hungerT = 0; player.hunger = Math.max(0, player.hunger - 1); updateSurvHud(); }
+    hpT += dt; if (hpT > 3) { hpT = 0; if (player.hunger >= 8 && player.health < MAXHP) { player.health++; updateSurvHud(); } else if (player.hunger <= 0 && player.health > 0) { player.health--; updateSurvHud(); if (player.health <= 0) die(); } }
+  }
+  function survFlash() { survEl.classList.add("hurt"); setTimeout(function () { survEl.classList.remove("hurt"); }, 220); }
+  function updateSurvHud() { var f = inv[IT.FOOD] || 0; survEl.innerHTML = "❤️ " + player.health + "/" + MAXHP + " &nbsp; 🍖 " + player.hunger + "/" + MAXHUNGER + (f ? ' &nbsp; <span class="eatable">🍗×' + f + " (F)</span>" : ""); }
+  function die() { dead = true; paused = true; if (document.pointerLockElement) document.exitPointerLock(); COVB.innerHTML = '<div class="card hero" style="text-align:center"><div class="big-emoji">💫</div><div class="hero-line">You fainted!</div><div class="hero-sub">No worries — you keep everything you collected.</div><button id="resp" class="submit big-next">Wake up ⏎</button></div>'; COV.style.display = "flex"; document.getElementById("resp").onclick = respawn; wordKey = function (e) { if (e.key === "Enter") respawn(); }; }
+  function respawn() { dead = false; player.health = MAXHP; player.hunger = Math.max(player.hunger, 5); var gy = groundY(0, 0, WH - 1); player.pos.set(0.5, gy + 1, 0.5); player.vel.set(0, 0, 0); player._fellFrom = null; COV.style.display = "none"; paused = false; wordKey = null; keys = {}; updateSurvHud(); }
+
   // ---------- HUD ----------
   function updateHud() {
     document.getElementById("cgems").textContent = "💎 " + store.state.gems;
@@ -467,7 +536,8 @@
     var dt = Math.min(clock.getDelta(), 0.05);
     updateDayNight(dt);
     updatePlayer(dt); updateCamera(); streamChunks();
-    saveTimer -= dt; if (saveTimer < 0 && saveTimer > -1) { save.px = player.pos.x; save.py = player.pos.y; save.pz = player.pos.z; save.yaw = player.yaw; save.pitch = player.pitch; persist(); saveTimer = -2; }
+    if (!paused) { updateSurvival(dt); for (var mi = 0; mi < mobs.length; mi++) updateMob(mobs[mi], dt); spawnMobs(dt); }
+    saveTimer -= dt; if (saveTimer < 0 && saveTimer > -1) { save.px = player.pos.x; save.py = player.pos.y; save.pz = player.pos.z; save.yaw = player.yaw; save.pitch = player.pitch; save.health = player.health; save.hunger = player.hunger; persist(); saveTimer = -2; }
     renderer.render(scene, camera);
   }
 
@@ -481,12 +551,13 @@
     var h = heightAt(Math.floor(player.pos.x), Math.floor(player.pos.z));
     if (!save.edits || Object.keys(save.edits).length === 0 || save.py < -5) { player.pos.y = h + 2; player.pitch = -0.25; }
   })();
-  renderHotbar(); updateHud();
+  renderHotbar(); updateHud(); updateSurvHud();
   var v = document.getElementById("ver"); if (v) v.textContent = "build " + (window.VOBLOX_VERSION || "dev");
   document.getElementById("loading").style.display = "none";
   setInterval(updateHud, 1500);
   frame();
   if (location.hash === "#word") setTimeout(function () { openWordGate(0, 5, 0); }, 300); // test hook for the word-mining overlay
   if (location.hash === "#craft") setTimeout(function () { inv[B.LOG] = 4; inv[B.PLANK] = 8; inv[IT.STICK] = 4; inv[B.COBBLE] = 10; inv[B.COAL] = 2; inv[B.IRON] = 3; openCraft(); }, 300); // test hook for crafting screen
+  if (location.hash === "#mob") setTimeout(function () { var px = player.pos.x, pz = player.pos.z; mobs.push(makeMob("pig", px - 1.5, groundY(px - 1.5, pz - 4, WH - 1), pz - 4)); mobs.push(makeMob("zombie", px + 1.6, groundY(px + 1.6, pz - 4, WH - 1), pz - 4)); mobs.forEach(function (m) { m.group.position.copy(m.pos); }); }, 400); // test hook: spawn mobs in view
   if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(function () {});
 })();

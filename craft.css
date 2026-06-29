@@ -58,3 +58,12 @@ html, body.craftbody { margin: 0; height: 100%; overflow: hidden; background: #7
 .crecipe.dis { opacity: .45; cursor: default; }
 .crecipe .needs { font-size: 11px; color: #6a7b8a; font-weight: normal; }
 @media (max-width: 520px) { .recipes { grid-template-columns: 1fr; } }
+
+/* survival HUD (health/hunger) */
+#surv { position: fixed; top: calc(env(safe-area-inset-top) + 52px); left: 50%; transform: translateX(-50%);
+  z-index: 5; background: #000000aa; color: #fff; border-radius: 12px; padding: 5px 12px; font-weight: bold;
+  font-size: 15px; font-family: "Trebuchet MS", sans-serif; white-space: nowrap; transition: background .12s; }
+#surv.hurt { background: #c0202099; }
+#surv .eatable { color: #ffe14d; }
+#bEat { right: calc(env(safe-area-inset-right) + 16px); bottom: calc(env(safe-area-inset-bottom) + 234px);
+  width: 60px; height: 60px; font-size: 24px; background: #ffd0a0e0; }
