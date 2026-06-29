@@ -7,7 +7,7 @@
 (function () {
   "use strict";
   var THREE = window.THREE;
-  var StoreAPI = window.VobloxStore, Content = window.VOBLOX_CONTENT;
+  var StoreAPI = window.VobloxStore, Content = window.VOBLOX_CONTENT, VQ = window.VobloxQuestions, Engine = window.VobloxEngine;
   window.onerror = function (m) { var b = document.getElementById("errbar"); if (b) { b.style.display = "block"; b.textContent = "⚠ " + m; } };
 
   // ---------- constants ----------
@@ -107,12 +107,13 @@
         else if (ly > h - 3) id = desert ? B.SANDSTONE : (h < SEA ? B.SAND : B.DIRT);
         else {
           id = B.STONE;
-          if (ly > 1) { var orr = hash(wx, ly, wz); if (orr > 0.986) id = (ly < 8 && orr > 0.996) ? B.GOLD : B.COAL; else if (orr < 0.013) id = B.IRON; }
+          if (ly > 1) { var orr = hash(wx, ly, wz); if (hash(wx, ly + 700, wz) > 0.9975) id = B.WORD; else if (orr > 0.986) id = (ly < 8 && orr > 0.996) ? B.GOLD : B.COAL; else if (orr < 0.013) id = B.IRON; }
         }
         if (ly > 1 && ly < h - 4 && noise3(wx / 13, ly / 9, wz / 13) > 0.78) id = B.AIR; // caves
         blocks[idx(lx, ly, lz)] = id;
       }
       if (h < SEA) for (var wy = h + 1; wy <= SEA; wy++) if (blocks[idx(lx, wy, lz)] === B.AIR) blocks[idx(lx, wy, lz)] = B.WATER;
+      if (surf === B.GRASS && hash(wx, 333, wz) > 0.995) blocks[idx(lx, h, lz)] = B.WORD; // findable word crystal on the surface
       // trees only on grassy land
       if (surf === B.GRASS && lx > 1 && lx < CHUNK - 2 && lz > 1 && lz < CHUNK - 2 && hash(wx, 7, wz) > 0.978) {
         var th = 4 + Math.floor(hash(wx, 8, wz) * 2);
@@ -164,8 +165,8 @@
         var F = FACES[f], nb = getBlock(wx + F.n[0], wy + F.n[1], wz + F.n[2]);
         var drawn = isW ? (nb === B.AIR && F.k === "top") : (!opaque(nb) && !(transparent(id) && nb === id));
         if (!drawn) continue;
-        var col = faceCol(id, F.k), s = isW ? 0.9 : shade(F.k);
-        if (!isW) s *= 0.9 + 0.1 * hash(wx * 2 + 1, wy * 2 + 5, wz * 2 + 9); // subtle per-block variation
+        var col = faceCol(id, F.k), s = isW ? 0.9 : (id === B.WORD ? 1.0 : shade(F.k));
+        if (!isW && id !== B.WORD) s *= 0.9 + 0.1 * hash(wx * 2 + 1, wy * 2 + 5, wz * 2 + 9); // subtle per-block variation
         var P = isW ? wp : sp, C = isW ? wc : sc, order = [0, 1, 2, 0, 2, 3];
         for (var o = 0; o < 6; o++) { var vv = F.v[order[o]]; P.push(wx + vv[0], wy + vv[1], wz + vv[2]); C.push(col[0] * s, col[1] * s, col[2] * s); }
       }
@@ -207,6 +208,7 @@
     return true; // blocked
   }
   function updatePlayer(dt) {
+    if (paused) return;
     var input = readMove();
     var sp = 4.6, s = Math.sin(player.yaw), c = Math.cos(player.yaw);
     // forward = -z when yaw 0; right = +x
@@ -242,8 +244,9 @@
     }
     return null;
   }
-  function doMine() { var h = ray(); if (!h) return; setBlock(h.x, h.y, h.z, B.AIR); }
+  function doMine() { if (paused) return; var h = ray(); if (!h) return; if (h.id === B.WORD) { openWordGate(h.x, h.y, h.z); return; } setBlock(h.x, h.y, h.z, B.AIR); }
   function doPlace() {
+    if (paused) return;
     var h = ray(); if (!h) return;
     var nx = h.px, ny = h.py, nz = h.pz;
     // don't place inside the player
@@ -252,8 +255,53 @@
     setBlock(nx, ny, nz, hotbar[sel]);
   }
 
+  // ---------- word-mining (the learning hook) ----------
+  var COV = document.getElementById("coverlay"), COVB = document.getElementById("coverlaybox"), wordKey = null, lastWordAsked = null, wordSense = {};
+  function openWordGate(bx, by, bz) {
+    paused = true; if (document.pointerLockElement) document.exitPointerLock();
+    var lessonWords = Content.getLesson(store.state.activeLesson || "5").words;
+    var cards = store.cardsFor(lessonWords);
+    var card = Engine.selectDue(cards, Date.now(), lastWordAsked) || cards[0];
+    lastWordAsked = card.word;
+    var data = VQ.wordData(lessonWords, card.word);
+    var si = (wordSense[card.word] || 0) % data.senses.length; wordSense[card.word] = (si + 1) % data.senses.length;
+    var q = VQ.gen(card, lessonWords, { format: Engine.pickFormat(card, data, null), senseIdx: si });
+    renderWordQ(bx, by, bz, q); VQ.readQ(q);
+  }
+  function renderWordQ(bx, by, bz, q) {
+    var body = q.kind === "mc"
+      ? '<div class="choices">' + q.choices.map(function (ch, i) { return '<button class="choice" data-i="' + i + '"><span class="num">' + (i + 1) + '</span>' + VQ.esc(ch.label) + '</button>'; }).join("") + '</div>'
+      : '<div class="typebox"><input id="wans" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="type here…"><button id="wsub" class="submit">Enter ⏎</button><div id="whint" class="hint"></div></div>';
+    COVB.innerHTML = '<div class="gatehead">✨ Word Crystal! <span class="x" id="wx">✕</span></div><div class="card qcard"><div class="prompt">' + q.promptHTML + ' <button class="replay" type="button" title="Read again">🔊</button></div>' + body + '</div>';
+    COV.style.display = "flex";
+    document.getElementById("wx").onclick = closeWordGate;
+    var rep = COVB.querySelector(".replay"); if (rep) rep.onclick = function () { VQ.readQ(q); };
+    if (q.kind === "mc") {
+      Array.prototype.forEach.call(COVB.querySelectorAll(".choice"), function (b) { b.onclick = function () { answerWord(bx, by, bz, q, !!q.choices[+b.dataset.i].correct, b); }; });
+      wordKey = function (e) { var n = parseInt(e.key, 10); if (n >= 1 && n <= q.choices.length) answerWord(bx, by, bz, q, !!q.choices[n - 1].correct); };
+    } else {
+      var inp = document.getElementById("wans"); if (inp && !("ontouchstart" in window)) inp.focus();
+      var sub = function () { var r = VQ.checkText(q, inp.value); if (r === "empty") return; if (r === "near" && !q._r) { q._r = true; document.getElementById("whint").textContent = "So close — check the spelling!"; inp.select(); return; } answerWord(bx, by, bz, q, r === "correct"); };
+      document.getElementById("wsub").onclick = sub;
+      wordKey = function (e) { if (e.key === "Enter") sub(); };
+    }
+  }
+  function answerWord(bx, by, bz, q, correct, btn) {
+    store.record(q, correct);
+    if (q.kind === "mc") Array.prototype.forEach.call(COVB.querySelectorAll(".choice"), function (b, idx) { b.disabled = true; if (q.choices[idx].correct) b.classList.add("right"); else if (b === btn) b.classList.add("wrong"); });
+    var head;
+    if (correct) { setBlock(bx, by, bz, B.AIR); store.state.gems += 15; store.save(); cfetti(); head = '<div class="fb good">✅ Crystal cracked! <span class="gain">+15 💎</span></div>'; }
+    else { head = '<div class="fb bad">❌ The crystal holds — learn the word:</div>'; VQ.speak(q.data.word + ". " + q.data.senses[0].def); }
+    COVB.innerHTML = '<div class="gatehead">✨ Word Crystal <span class="x" id="wx">✕</span></div><div class="card qcard">' + head + '<div class="reveal">' + VQ.entryHTML(q.data, { mnem: true }) + '</div><button id="wnext" class="submit big-next">Continue ⏎</button></div>';
+    document.getElementById("wx").onclick = closeWordGate; document.getElementById("wnext").onclick = closeWordGate;
+    wordKey = function (e) { if (e.key === "Enter") closeWordGate(); };
+    updateHud();
+  }
+  function closeWordGate() { VQ.shush(); COV.style.display = "none"; paused = false; wordKey = null; keys = {}; jumpReq = false; joy.x = 0; joy.y = 0; }
+  function cfetti() { var cols = ["#ffd23f", "#69f0ae", "#40c4ff", "#ff6b6b", "#e040fb"]; for (var i = 0; i < 16; i++) { var s = document.createElement("div"); s.style.cssText = "position:fixed;z-index:60;top:-14px;width:11px;height:11px;border-radius:3px;pointer-events:none;left:" + (8 + Math.random() * 84) + "vw;background:" + cols[i % 5] + ";transition:transform 1.1s ease-in,opacity 1.1s"; document.body.appendChild(s); (function (n) { requestAnimationFrame(function () { n.style.transform = "translateY(110vh) rotate(540deg)"; n.style.opacity = "0.2"; }); setTimeout(function () { n.remove(); }, 1200); })(s); } }
+
   // ---------- input ----------
-  var keys = {}, jumpReq = false, joy = { x: 0, y: 0 };
+  var keys = {}, jumpReq = false, joy = { x: 0, y: 0 }, paused = false;
   function readMove() {
     var x = 0, z = 0;
     if (keys["w"] || keys["arrowup"]) z -= 1; if (keys["s"] || keys["arrowdown"]) z += 1;
@@ -263,14 +311,16 @@
   }
   // keyboard
   document.addEventListener("keydown", function (e) {
+    if (paused) { if (wordKey) wordKey(e); return; }
     var k = (e.key || "").toLowerCase(); keys[k] = true;
     if (k === " ") { jumpReq = true; e.preventDefault(); }
     if (k >= "1" && k <= "9") { var i = +k - 1; if (i < hotbar.length) { sel = i; renderHotbar(); } }
   });
   document.addEventListener("keyup", function (e) { keys[(e.key || "").toLowerCase()] = false; });
   // pointer lock look + mouse mine/place (PC)
-  canvas.addEventListener("click", function () { if (!("ontouchstart" in window) && document.pointerLockElement !== canvas) canvas.requestPointerLock(); });
+  canvas.addEventListener("click", function () { if (paused) return; if (!("ontouchstart" in window) && document.pointerLockElement !== canvas) canvas.requestPointerLock(); });
   document.addEventListener("mousemove", function (e) {
+    if (paused) return;
     if (document.pointerLockElement === canvas) { player.yaw -= (e.movementX || 0) * 0.0024; player.pitch = clamp(player.pitch - (e.movementY || 0) * 0.0024, -1.5, 1.5); }
   });
   document.addEventListener("mousedown", function (e) {
@@ -364,5 +414,6 @@
   document.getElementById("loading").style.display = "none";
   setInterval(updateHud, 1500);
   frame();
+  if (location.hash === "#word") setTimeout(function () { openWordGate(0, 5, 0); }, 300); // test hook for the word-mining overlay
   if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(function () {});
 })();
