@@ -1,0 +1,37 @@
+/* Voblox — Craft World (voxel sandbox) */
+html, body.craftbody { margin: 0; height: 100%; overflow: hidden; background: #7ec8ff; touch-action: none;
+  -webkit-user-select: none; user-select: none; }
+#cw { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+
+#crosshair { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); color: #fff;
+  font-size: 22px; text-shadow: 0 0 4px #000; pointer-events: none; z-index: 3; opacity: .85; }
+
+#chud { position: fixed; top: 0; left: 0; right: 0; display: flex; gap: 8px; align-items: center;
+  padding: calc(env(safe-area-inset-top) + 8px) 10px 0; font-family: "Trebuchet MS", sans-serif; z-index: 5; }
+#chud .iconbtn { text-decoration: none; }
+
+/* hotbar */
+#hotbar { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 10px); transform: translateX(-50%);
+  display: flex; gap: 6px; z-index: 5; }
+.slot { position: relative; width: 48px; height: 48px; border: 3px solid #0006; border-bottom-width: 5px;
+  border-radius: 9px; background: #ffffffcc; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.slot .sw { width: 30px; height: 30px; border-radius: 5px; border: 2px solid #00000033; }
+.slot .nm { position: absolute; bottom: 1px; left: 0; right: 0; text-align: center; font-size: 8px; font-weight: bold;
+  color: #20303a; text-shadow: 0 1px 0 #fff; overflow: hidden; white-space: nowrap; }
+.slot.sel { border-color: #ffce3a; box-shadow: 0 0 0 3px #ffce3a99; }
+
+/* touch controls */
+#touch { position: fixed; inset: 0; z-index: 4; pointer-events: none; }
+#tjoy { position: fixed; width: 128px; height: 128px; border-radius: 50%; background: #ffffff2e;
+  border: 3px solid #ffffff66; display: none; z-index: 6; pointer-events: none; }
+#tnub { position: absolute; width: 56px; height: 56px; left: 33px; top: 33px; border-radius: 50%;
+  background: #ffffffcc; border: 3px solid #00000022; }
+.tbtn { position: fixed; z-index: 6; pointer-events: auto; background: #ffffffd0; border: 3px solid #0003;
+  border-bottom-width: 6px; border-radius: 16px; font-weight: 900; display: flex; align-items: center;
+  justify-content: center; font-family: "Trebuchet MS", sans-serif; -webkit-user-select: none; user-select: none; }
+.tbtn:active { transform: translateY(2px); }
+#bMine { right: calc(env(safe-area-inset-right) + 16px); bottom: calc(env(safe-area-inset-bottom) + 150px); width: 76px; height: 76px; font-size: 30px; background: #ffd0a0e0; }
+#bPlace { right: calc(env(safe-area-inset-right) + 104px); bottom: calc(env(safe-area-inset-bottom) + 96px); width: 70px; height: 70px; font-size: 26px; background: #a0d0ffe0; }
+#bJump { right: calc(env(safe-area-inset-right) + 22px); bottom: calc(env(safe-area-inset-bottom) + 66px); width: 70px; height: 70px; font-size: 26px; background: #c0ffc0e0; }
+/* hide touch buttons on desktop */
+@media (hover: hover) and (pointer: fine) { .tbtn, #tjoy { display: none !important; } }

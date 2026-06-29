@@ -354,6 +354,7 @@
     var unlocked = store.state.chessUnlocked || store.predicted(WORDS) >= 90;
     openOverlay('<div class="card menucard"><h2>☰ Menu — ' + esc(lesson.title) + '</h2>' +
       '<button class="menubtn" id="m_resume">▶ Back to the world</button>' +
+      '<a class="menubtn" href="craft.html" style="background:linear-gradient(#9ad06a,#6fae3e);border-color:#4f7e2a">⛏️ Craft World — NEW! (build &amp; mine)</a>' +
       '<button class="menubtn" id="m_boss">⚔️ Boss Battle (beat the lesson!)</button>' +
       '<button class="menubtn" id="m_games">🎮 Mini-Games (pick a game!)</button>' +
       '<button class="menubtn" id="m_review">🔁 Daily Review (mix of words)</button>' +
