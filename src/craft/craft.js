@@ -11,9 +11,9 @@
   window.onerror = function (m) { var b = document.getElementById("errbar"); if (b) { b.style.display = "block"; b.textContent = "⚠ " + m; } };
 
   // ---------- constants ----------
-  var CHUNK = 16, WH = 48, SEA = 11, RENDER = ("ontouchstart" in window) ? 3 : 4;
-  var B = { AIR: 0, GRASS: 1, DIRT: 2, STONE: 3, SAND: 4, WATER: 5, LOG: 6, LEAVES: 7, PLANK: 8, GLASS: 9, COBBLE: 10, BRICK: 11, SANDSTONE: 12, WORD: 13 };
-  var NAMES = { 1: "Grass", 2: "Dirt", 3: "Stone", 4: "Sand", 6: "Wood", 7: "Leaves", 8: "Planks", 9: "Glass", 10: "Cobble", 11: "Brick", 12: "Sandstone" };
+  var CHUNK = 16, WH = 48, SEA = 8, RENDER = ("ontouchstart" in window) ? 3 : 5;
+  var B = { AIR: 0, GRASS: 1, DIRT: 2, STONE: 3, SAND: 4, WATER: 5, LOG: 6, LEAVES: 7, PLANK: 8, GLASS: 9, COBBLE: 10, BRICK: 11, SANDSTONE: 12, WORD: 13, COAL: 14, IRON: 15, GOLD: 16, SNOW: 17 };
+  var NAMES = { 1: "Grass", 2: "Dirt", 3: "Stone", 4: "Sand", 6: "Wood", 7: "Leaves", 8: "Planks", 9: "Glass", 10: "Cobble", 11: "Brick", 12: "Sandstone", 17: "Snow" };
   function transparent(id) { return id === B.AIR || id === B.WATER || id === B.GLASS || id === B.LEAVES; }
   function opaque(id) { return id !== B.AIR && !transparent(id); }
   function solid(id) { return id !== B.AIR && id !== B.WATER; } // collidable
@@ -24,7 +24,8 @@
     5: { all: [0.20, 0.45, 0.85] }, 6: { top: [0.55, 0.42, 0.25], side: [0.48, 0.35, 0.21] },
     7: { all: [0.26, 0.55, 0.27] }, 8: { all: [0.78, 0.62, 0.40] }, 9: { all: [0.78, 0.88, 0.96] },
     10: { all: [0.43, 0.43, 0.46] }, 11: { all: [0.70, 0.33, 0.28] }, 12: { all: [0.90, 0.84, 0.60] },
-    13: { all: [1.0, 0.84, 0.20] }
+    13: { all: [1.0, 0.84, 0.20] }, 14: { all: [0.22, 0.22, 0.24] }, 15: { all: [0.66, 0.56, 0.46] },
+    16: { all: [0.88, 0.72, 0.26] }, 17: { all: [0.95, 0.97, 1.0] }
   };
   function faceCol(id, kind) { var c = COL[id] || COL[3]; return c[kind] || c.all || c.side || [1, 1, 1]; }
 
@@ -45,7 +46,7 @@
   renderer.setSize(window.innerWidth, window.innerHeight);
   var scene = new THREE.Scene();
   scene.background = new THREE.Color(0x8fd2ff);
-  scene.fog = new THREE.Fog(0x8fd2ff, RENDER * CHUNK * 0.6, RENDER * CHUNK * 1.05);
+  scene.fog = new THREE.Fog(0x8fd2ff, RENDER * CHUNK * 0.85, RENDER * CHUNK * 1.15);
   var camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
   var solidMat = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide });
   var waterMat = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.65, side: THREE.DoubleSide, depthWrite: false });
@@ -72,7 +73,15 @@
   }
   function heightAt(wx, wz) {
     var n = noise2(wx / 26, wz / 26) * 0.6 + noise2(wx / 9, wz / 9) * 0.28 + noise2(wx / 60, wz / 60) * 0.12;
-    return Math.max(2, Math.min(WH - 6, Math.floor(6 + n * 18)));
+    return Math.max(3, Math.min(WH - 6, Math.floor(8 + n * 12)));
+  }
+  function noise3(x, y, z) {
+    var x0 = Math.floor(x), y0 = Math.floor(y), z0 = Math.floor(z), tx = smooth(x - x0), ty = smooth(y - y0), tz = smooth(z - z0);
+    var c000 = hash(x0, y0, z0), c100 = hash(x0 + 1, y0, z0), c010 = hash(x0, y0 + 1, z0), c110 = hash(x0 + 1, y0 + 1, z0);
+    var c001 = hash(x0, y0, z0 + 1), c101 = hash(x0 + 1, y0, z0 + 1), c011 = hash(x0, y0 + 1, z0 + 1), c111 = hash(x0 + 1, y0 + 1, z0 + 1);
+    var a = (c000 * (1 - tx) + c100 * tx) * (1 - ty) + (c010 * (1 - tx) + c110 * tx) * ty;
+    var b = (c001 * (1 - tx) + c101 * tx) * (1 - ty) + (c011 * (1 - tx) + c111 * tx) * ty;
+    return a * (1 - tz) + b * tz;
   }
 
   // ---------- chunk store ----------
@@ -88,15 +97,24 @@
     var blocks = new Uint8Array(CHUNK * CHUNK * WH);
     for (var lx = 0; lx < CHUNK; lx++) for (var lz = 0; lz < CHUNK; lz++) {
       var wx = cx * CHUNK + lx, wz = cz * CHUNK + lz, h = heightAt(wx, wz);
+      var biome = noise2(wx / 70 + 50, wz / 70 + 50);
+      var desert = biome > 0.66 && h < SEA + 6;
+      var snowy = (!desert) && (h > SEA + 9 || biome < 0.16);
+      var surf = (h < SEA) ? B.SAND : desert ? B.SAND : snowy ? B.SNOW : B.GRASS;
       for (var ly = 0; ly <= h; ly++) {
-        var id = B.STONE;
-        if (ly === h) id = (h < SEA) ? B.SAND : B.GRASS;
-        else if (ly > h - 3) id = (h < SEA) ? B.SAND : B.DIRT;
+        var id;
+        if (ly === h) id = surf;
+        else if (ly > h - 3) id = desert ? B.SANDSTONE : (h < SEA ? B.SAND : B.DIRT);
+        else {
+          id = B.STONE;
+          if (ly > 1) { var orr = hash(wx, ly, wz); if (orr > 0.986) id = (ly < 8 && orr > 0.996) ? B.GOLD : B.COAL; else if (orr < 0.013) id = B.IRON; }
+        }
+        if (ly > 1 && ly < h - 4 && noise3(wx / 13, ly / 9, wz / 13) > 0.78) id = B.AIR; // caves
         blocks[idx(lx, ly, lz)] = id;
       }
-      if (h < SEA) for (var wy = h + 1; wy <= SEA; wy++) blocks[idx(lx, wy, lz)] = B.WATER;
-      // trees on grass
-      if (h >= SEA && lx > 1 && lx < CHUNK - 2 && lz > 1 && lz < CHUNK - 2 && hash(wx, 7, wz) > 0.978) {
+      if (h < SEA) for (var wy = h + 1; wy <= SEA; wy++) if (blocks[idx(lx, wy, lz)] === B.AIR) blocks[idx(lx, wy, lz)] = B.WATER;
+      // trees only on grassy land
+      if (surf === B.GRASS && lx > 1 && lx < CHUNK - 2 && lz > 1 && lz < CHUNK - 2 && hash(wx, 7, wz) > 0.978) {
         var th = 4 + Math.floor(hash(wx, 8, wz) * 2);
         for (var t = 1; t <= th; t++) if (h + t < WH) blocks[idx(lx, h + t, lz)] = B.LOG;
         for (var dx = -2; dx <= 2; dx++) for (var dz = -2; dz <= 2; dz++) for (var dy = th - 1; dy <= th + 1; dy++) {
@@ -147,6 +165,7 @@
         var drawn = isW ? (nb === B.AIR && F.k === "top") : (!opaque(nb) && !(transparent(id) && nb === id));
         if (!drawn) continue;
         var col = faceCol(id, F.k), s = isW ? 0.9 : shade(F.k);
+        if (!isW) s *= 0.9 + 0.1 * hash(wx * 2 + 1, wy * 2 + 5, wz * 2 + 9); // subtle per-block variation
         var P = isW ? wp : sp, C = isW ? wc : sc, order = [0, 1, 2, 0, 2, 3];
         for (var o = 0; o < 6; o++) { var vv = F.v[order[o]]; P.push(wx + vv[0], wy + vv[1], wz + vv[2]); C.push(col[0] * s, col[1] * s, col[2] * s); }
       }
@@ -198,8 +217,8 @@
     if (jumpReq && player.onGround) { player.vel.y = 8.2; player.onGround = false; } jumpReq = false;
     moveAxis("x", player.vel.x * dt);
     moveAxis("z", player.vel.z * dt);
-    var blockedY = moveAxis("y", player.vel.y * dt);
-    if (blockedY) { if (player.vel.y < 0) player.onGround = true; player.vel.y = 0; } else player.onGround = false;
+    if (moveAxis("y", player.vel.y * dt)) player.vel.y = 0;
+    player.onGround = collides(player.pos.x, player.pos.y - 0.08, player.pos.z); // probe just below feet
     // clamp into world vertically
     if (player.pos.y < -8) { player.pos.set(player.pos.x, heightAt(player.pos.x, player.pos.z) + 3, player.pos.z); player.vel.set(0, 0, 0); }
   }
@@ -210,20 +229,16 @@
   }
 
   // ---------- raycast (voxel DDA) ----------
+  function fwd() { return { x: -Math.sin(player.yaw) * Math.cos(player.pitch), y: Math.sin(player.pitch), z: -Math.cos(player.yaw) * Math.cos(player.pitch) }; }
   function ray() {
-    var dir = new THREE.Vector3(-Math.sin(player.yaw) * Math.cos(player.pitch), Math.sin(player.pitch), -Math.cos(player.yaw) * Math.cos(player.pitch));
-    var ox = camera.position.x, oy = camera.position.y, oz = camera.position.z;
-    var x = Math.floor(ox), y = Math.floor(oy), z = Math.floor(oz);
-    var sx = dir.x > 0 ? 1 : -1, sy = dir.y > 0 ? 1 : -1, sz = dir.z > 0 ? 1 : -1;
-    var tdx = Math.abs(1 / (dir.x || 1e-9)), tdy = Math.abs(1 / (dir.y || 1e-9)), tdz = Math.abs(1 / (dir.z || 1e-9));
-    var mx = ((dir.x > 0 ? (x + 1 - ox) : (ox - x)) * tdx), my = ((dir.y > 0 ? (y + 1 - oy) : (oy - y)) * tdy), mz = ((dir.z > 0 ? (z + 1 - oz) : (oz - z)) * tdz);
-    var px = x, py = y, pz = z;
-    for (var i = 0; i < 80; i++) {
+    var d = fwd(), ox = camera.position.x, oy = camera.position.y, oz = camera.position.z;
+    var pcx = null, pcy = null, pcz = null; // last empty cell (for placement)
+    for (var t = 0; t <= 5.5; t += 0.06) {
+      var x = Math.floor(ox + d.x * t), y = Math.floor(oy + d.y * t), z = Math.floor(oz + d.z * t);
+      if (pcx === x && pcy === y && pcz === z) continue;
       var bid = getBlock(x, y, z);
-      if (bid !== B.AIR && bid !== B.WATER) return { x: x, y: y, z: z, px: px, py: py, pz: pz, id: bid };
-      px = x; py = y; pz = z;
-      if (mx < my && mx < mz) { x += sx; mx += tdx; } else if (my < mz) { y += sy; my += tdy; } else { z += sz; mz += tdz; }
-      if (Math.abs(x - px) + Math.abs(y - py) + Math.abs(z - pz) > 7 && (Math.hypot(x - Math.floor(ox), y - Math.floor(oy), z - Math.floor(oz)) > 6)) break;
+      if (bid !== B.AIR && bid !== B.WATER) return { x: x, y: y, z: z, px: (pcx === null ? x : pcx), py: (pcy === null ? y : pcy), pz: (pcz === null ? z : pcz), id: bid };
+      pcx = x; pcy = y; pcz = z;
     }
     return null;
   }
@@ -315,10 +330,20 @@
   // ---------- loop ----------
   function resize() { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); }
   window.addEventListener("resize", resize);
+  var DAYSKY = new THREE.Color(0x8fd2ff), NIGHTSKY = new THREE.Color(0x0a1330), tod = 0.32;
+  function updateDayNight(dt) {
+    tod = (tod + dt / 240) % 1;
+    var light = 0.5 - 0.5 * Math.cos(tod * Math.PI * 2);
+    var b = 0.26 + 0.74 * light;
+    solidMat.color.setRGB(b, b, b); waterMat.color.setRGB(b * 0.85, b * 0.92, b);
+    var sky = NIGHTSKY.clone().lerp(DAYSKY, light);
+    scene.background.copy(sky); scene.fog.color.copy(sky);
+  }
   var clock = new THREE.Clock();
   function frame() {
     requestAnimationFrame(frame);
     var dt = Math.min(clock.getDelta(), 0.05);
+    updateDayNight(dt);
     updatePlayer(dt); updateCamera(); streamChunks();
     saveTimer -= dt; if (saveTimer < 0 && saveTimer > -1) { save.px = player.pos.x; save.py = player.pos.y; save.pz = player.pos.z; save.yaw = player.yaw; save.pitch = player.pitch; persist(); saveTimer = -2; }
     renderer.render(scene, camera);
@@ -332,7 +357,7 @@
   (function spawn() {
     streamChunks(); // generate around spawn
     var h = heightAt(Math.floor(player.pos.x), Math.floor(player.pos.z));
-    if (!save.edits || Object.keys(save.edits).length === 0 || save.py < -5) { player.pos.y = h + 2; }
+    if (!save.edits || Object.keys(save.edits).length === 0 || save.py < -5) { player.pos.y = h + 2; player.pitch = -0.25; }
   })();
   renderHotbar(); updateHud();
   var v = document.getElementById("ver"); if (v) v.textContent = "build " + (window.VOBLOX_VERSION || "dev");
