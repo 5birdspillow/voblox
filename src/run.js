@@ -11,7 +11,7 @@
     wrap.innerHTML = '<canvas id="rcv"></canvas>' +
       '<div class="ghud"><div class="clue" id="rclue"></div>' +
       '<div class="grow"><span id="rlives"></span><span id="rscore"></span><button class="replay" id="rspeak" type="button" title="Read again">🔊</button><button class="bossquit" id="quit">Leave</button></div></div>' +
-      '<div class="gmsg" id="rmsg"></div><div class="runhint">⬆️⬇️ or tap a lane</div>';
+      '<div class="gmsg" id="rmsg"></div><div class="runhint">⬆️⬇️ choose a lane &nbsp;•&nbsp; ➡️ or tap to lock it in</div>';
     document.body.appendChild(wrap);
     var cv = wrap.querySelector("#rcv"), ctx = cv.getContext("2d");
     var W, H; function resize() { W = cv.width = wrap.clientWidth; H = cv.height = wrap.clientHeight; } resize();
@@ -31,22 +31,28 @@
       lastSpoken = "Run through the gate that means. " + sense.def; VQ.speak(lastSpoken);
     }
     function setLane(l) { lane = Math.max(0, Math.min(LANES - 1, l)); }
-    function onKey(e) { var k = (e.key || "").toLowerCase(); if (k === "arrowup" || k === "w") setLane(lane - 1); else if (k === "arrowdown" || k === "s") setLane(lane + 1); }
+    function onKey(e) { var k = (e.key || "").toLowerCase(); if (k === "arrowup" || k === "w") setLane(lane - 1); else if (k === "arrowdown" || k === "s") setLane(lane + 1); else if (k === "arrowright" || k === "d" || k === "enter" || k === " ") { e.preventDefault(); commit(); } }
     document.addEventListener("keydown", onKey);
     function pickLaneByY(y) { var best = 0, bd = 1e9; for (var l = 0; l < LANES; l++) { var d = Math.abs(y - laneY(l)); if (d < bd) { bd = d; best = l; } } setLane(best); }
-    cv.addEventListener("mousedown", function (e) { pickLaneByY(e.clientY); });
-    cv.addEventListener("touchstart", function (e) { pickLaneByY(e.changedTouches[0].clientY); }, { passive: true });
+    var lastTap = -9999;
+    function tapAt(y) { pickLaneByY(y); commit(); } // tap a lane = choose that word and run through now
+    cv.addEventListener("mousedown", function (e) { if (performance.now() - lastTap < 800) return; tapAt(e.clientY); });
+    cv.addEventListener("touchstart", function (e) { lastTap = performance.now(); tapAt(e.changedTouches[0].clientY); }, { passive: true });
     function flash(m, col) { msgEl.textContent = m; msgEl.style.color = col || "#fff"; msgEl.style.opacity = "1"; setTimeout(function () { msgEl.style.opacity = "0"; }, 850); }
     function updateHud() { var h = ""; for (var i = 0; i < 3; i++) h += (i < lives ? "❤️" : "🖤"); document.getElementById("rlives").textContent = h; document.getElementById("rscore").textContent = "🏁 " + score; }
 
     function resolveGate() {
+      if (!gate || gate.resolved) return;
       gate.resolved = true;
       var ok = lane === gate.correctLane;
       store.record({ word: gate.word, format: "def2word_mc", kind: "mc" }, ok);
       if (ok) { score++; speed = Math.min(150, speed + 5); flash("✅ +1", "#69f0ae"); }
-      else { lives--; flash("❌ it was “" + gate.options[gate.correctLane] + "”", "#ff8a8a"); if (lives <= 0) setTimeout(end, 700); }
+      else { lives--; flash("❌ it was “" + gate.options[gate.correctLane] + "”", "#ff8a8a"); }
       updateHud();
+      gate = null;
+      if (lives <= 0) setTimeout(end, 800); else cooldown = 0.4; // bring the next gate quickly
     }
+    function commit() { if (gate && !gate.resolved) resolveGate(); } // lock in the current lane now
 
     function roundRect(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
     function draw() {
@@ -79,7 +85,7 @@
       run += speed * dt;
       playerY += (laneY(lane) - playerY) * Math.min(1, dt * 12);
       if (!gate) { cooldown -= dt; if (cooldown <= 0) newGate(); }
-      else { gate.x -= speed * dt; if (!gate.resolved && gate.x <= W * 0.22) resolveGate(); if (gate.x < -120) { gate = null; cooldown = 0.7; } }
+      else { gate.x -= speed * dt; if (!gate.resolved && gate.x <= W * 0.22) resolveGate(); if (gate && gate.x < -120) { gate = null; cooldown = 0.7; } }
       draw();
     }
 

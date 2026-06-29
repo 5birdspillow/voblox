@@ -7,7 +7,7 @@
   "use strict";
   var THREE = window.THREE;
   var Content = window.VOBLOX_CONTENT, Engine = window.VobloxEngine, VQ = window.VobloxQuestions;
-  var VOBLOX_VERSION = "v10";
+  var VOBLOX_VERSION = window.VOBLOX_VERSION || "dev";
 
   var store = new window.VobloxStore.Store(Content.allWords());
   var available = Content.availableLessons();
@@ -500,7 +500,7 @@
   buildChests(WORDS);
   buildPortals();
   updateHUD();
-  var verEl = document.getElementById("ver"); if (verEl) verEl.textContent = "Voblox " + VOBLOX_VERSION;
+  var verEl = document.getElementById("ver"); if (verEl) verEl.textContent = "build " + VOBLOX_VERSION;
   document.getElementById("loading").style.display = "none";
   if (!store.state.lastPlayed && !location.hash) openHelp();
   animate();

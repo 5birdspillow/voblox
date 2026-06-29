@@ -1,9 +1,9 @@
 /* Voblox service worker — offline cache for the installed app */
-var CACHE = "voblox-v10";
+var CACHE = "voblox-v11";
 var ASSETS = [
   "index.html", "study.html", "dashboard.html",
   "styles.css", "world.css", "boss.css", "games.css", "manifest.webmanifest",
-  "vendor/three.min.js",
+  "vendor/three.min.js", "src/version.js",
   "src/content.js", "src/engine.js", "src/questions.js", "src/store.js",
   "src/app.js", "src/world.js", "src/boss.js", "src/dashboard.js",
   "src/quizshow.js", "src/memory.js", "src/hunt.js", "src/run.js", "src/whack.js",
