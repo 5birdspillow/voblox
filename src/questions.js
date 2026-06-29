@@ -191,13 +191,16 @@
     } catch (e) {}
   }
   function readQ(q) { speak(spoken(q)); }
+  function shush() { try { if ("speechSynthesis" in global) global.speechSynthesis.cancel(); } catch (e) {} }
 
   var VQ = {
     pick: pick, shuffle: shuffle, sample: sample, uniq: uniq, norm: norm, esc: esc,
     boldWord: boldWord, lev: lev, meaningClue: meaningClue, makeCloze: makeCloze,
     clozeFor: clozeFor, wordData: wordData, gen: gen, checkText: checkText, entryHTML: entryHTML,
-    speak: speak, spoken: spoken, readQ: readQ
+    speak: speak, spoken: spoken, readQ: readQ, shush: shush
   };
+  // stop any speech when the tab/app is hidden (locked screen, app switch, etc.)
+  if (typeof document !== "undefined") document.addEventListener("visibilitychange", function () { if (document.hidden) shush(); });
   if (typeof module !== "undefined" && module.exports) module.exports = VQ;
   global.VobloxQuestions = VQ;
 })(typeof window !== "undefined" ? window : globalThis);

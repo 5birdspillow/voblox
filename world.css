@@ -39,6 +39,10 @@ html, body.world { margin:0; height:100%; overflow:hidden; background:#9fd6ff; t
   font-family:"Trebuchet MS",sans-serif; box-shadow:0 4px 0 #0003; }
 .actbtn:active { transform:translateY(3px); border-bottom-width:4px; }
 
+/* build/version label */
+.ver { position: fixed; right: 7px; bottom: 3px; z-index: 4; font: 600 11px "Trebuchet MS", sans-serif;
+  color: #ffffffb0; text-shadow: 0 1px 2px #0007; pointer-events: none; }
+
 /* virtual joystick */
 #joy { position:fixed; z-index:6; width:120px; height:120px; border-radius:50%; background:#ffffff33;
   border:3px solid #ffffff66; display:none; pointer-events:none; }

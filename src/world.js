@@ -7,6 +7,7 @@
   "use strict";
   var THREE = window.THREE;
   var Content = window.VOBLOX_CONTENT, Engine = window.VobloxEngine, VQ = window.VobloxQuestions;
+  var VOBLOX_VERSION = "v10";
 
   var store = new window.VobloxStore.Store(Content.allWords());
   var available = Content.availableLessons();
@@ -284,7 +285,7 @@
   // ========== OVERLAYS ==========
   var overlay = document.getElementById("overlay"), obox = document.getElementById("overlaybox"), overlayKey = null;
   function openOverlay(html, keyFn) { obox.innerHTML = html; overlay.style.display = "flex"; overlayOpen = true; overlayKey = keyFn || null; }
-  function closeOverlay() { overlay.style.display = "none"; overlayOpen = false; overlayKey = null; keys = {}; }
+  function closeOverlay() { VQ.shush(); overlay.style.display = "none"; overlayOpen = false; overlayKey = null; keys = {}; }
   function speak(text) { try { if (!("speechSynthesis" in window)) return; var u = new SpeechSynthesisUtterance(text); u.rate = 0.9; var v = (speechSynthesis.getVoices() || []).filter(function (x) { return /en[-_]?US/i.test(x.lang); })[0]; if (v) u.voice = v; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) {} }
 
   // ---- vocab gate ----
@@ -324,7 +325,7 @@
   function afterGate() { closeOverlay(); checkVictory(); }
 
   // ---- boss launch ----
-  function gameExit() { overlayOpen = false; keys = {}; chests.forEach(refreshChest); updateHUD(); checkVictory(); }
+  function gameExit() { VQ.shush(); overlayOpen = false; keys = {}; chests.forEach(refreshChest); updateHUD(); checkVictory(); }
   function startBoss(words, mode, title) {
     closeOverlay(); overlayOpen = true;
     window.VobloxBoss.start({ words: words, store: store, mode: mode || "boss", title: title, onExit: gameExit });
@@ -499,6 +500,7 @@
   buildChests(WORDS);
   buildPortals();
   updateHUD();
+  var verEl = document.getElementById("ver"); if (verEl) verEl.textContent = "Voblox " + VOBLOX_VERSION;
   document.getElementById("loading").style.display = "none";
   if (!store.state.lastPlayed && !location.hash) openHelp();
   animate();
