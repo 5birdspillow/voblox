@@ -12,8 +12,12 @@
 
   // ---------- constants ----------
   var CHUNK = 16, WH = 48, SEA = 8, RENDER = ("ontouchstart" in window) ? 3 : 5;
-  var B = { AIR: 0, GRASS: 1, DIRT: 2, STONE: 3, SAND: 4, WATER: 5, LOG: 6, LEAVES: 7, PLANK: 8, GLASS: 9, COBBLE: 10, BRICK: 11, SANDSTONE: 12, WORD: 13, COAL: 14, IRON: 15, GOLD: 16, SNOW: 17 };
-  var NAMES = { 1: "Grass", 2: "Dirt", 3: "Stone", 4: "Sand", 6: "Wood", 7: "Leaves", 8: "Planks", 9: "Glass", 10: "Cobble", 11: "Brick", 12: "Sandstone", 17: "Snow" };
+  var B = { AIR: 0, GRASS: 1, DIRT: 2, STONE: 3, SAND: 4, WATER: 5, LOG: 6, LEAVES: 7, PLANK: 8, GLASS: 9, COBBLE: 10, BRICK: 11, SANDSTONE: 12, WORD: 13, COAL: 14, IRON: 15, GOLD: 16, SNOW: 17, FURNACE: 18, TORCH: 19 };
+  var NAMES = { 1: "Grass", 2: "Dirt", 3: "Stone", 4: "Sand", 6: "Wood", 7: "Leaves", 8: "Planks", 9: "Glass", 10: "Cobble", 11: "Brick", 12: "Sandstone", 14: "Coal", 15: "Iron", 16: "Gold", 17: "Snow", 18: "Furnace", 19: "Torch" };
+  // non-placeable items (ids >= 100)
+  var IT = { STICK: 100, WPICK: 101, SPICK: 102, IPICK: 103, SWORD: 104 };
+  var ITNAME = { 100: "Stick", 101: "Wood Pick", 102: "Stone Pick", 103: "Iron Pick", 104: "Sword" };
+  var ITEMOJI = { 100: "🪵", 101: "⛏️", 102: "⛏️", 103: "⛏️", 104: "🗡️" };
   function transparent(id) { return id === B.AIR || id === B.WATER || id === B.GLASS || id === B.LEAVES; }
   function opaque(id) { return id !== B.AIR && !transparent(id); }
   function solid(id) { return id !== B.AIR && id !== B.WATER; } // collidable
@@ -25,7 +29,8 @@
     7: { all: [0.26, 0.55, 0.27] }, 8: { all: [0.78, 0.62, 0.40] }, 9: { all: [0.78, 0.88, 0.96] },
     10: { all: [0.43, 0.43, 0.46] }, 11: { all: [0.70, 0.33, 0.28] }, 12: { all: [0.90, 0.84, 0.60] },
     13: { all: [1.0, 0.84, 0.20] }, 14: { all: [0.22, 0.22, 0.24] }, 15: { all: [0.66, 0.56, 0.46] },
-    16: { all: [0.88, 0.72, 0.26] }, 17: { all: [0.95, 0.97, 1.0] }
+    16: { all: [0.88, 0.72, 0.26] }, 17: { all: [0.95, 0.97, 1.0] },
+    18: { all: [0.30, 0.30, 0.33] }, 19: { all: [1.0, 0.74, 0.25] }
   };
   function faceCol(id, kind) { var c = COL[id] || COL[3]; return c[kind] || c.all || c.side || [1, 1, 1]; }
 
@@ -62,6 +67,12 @@
   function persist() { try { localStorage.setItem(SAVE, JSON.stringify(save)); } catch (e) {} }
 
   var store = new StoreAPI.Store(Content.allWords());
+  var inv = (save.inv = save.inv || {}); // collected materials {id:count}
+  var unlocked = (save.unlocked = save.unlocked || []); // crafted placeable block ids added to hotbar
+  function addInv(id, n) { inv[id] = (inv[id] || 0) + (n || 1); saveTimer = 1.5; }
+  function takeInv(id, n) { if ((inv[id] || 0) < n) return false; inv[id] -= n; if (inv[id] <= 0) delete inv[id]; return true; }
+  function hasInv(id, n) { return (inv[id] || 0) >= n; }
+  function pickTier() { return inv[IT.IPICK] ? 3 : inv[IT.SPICK] ? 2 : inv[IT.WPICK] ? 1 : 0; }
 
   // ---------- noise / generation ----------
   function hash(x, y, z) { var h = (x | 0) * 374761393 + (y | 0) * 668265263 + (z | 0) * 982451653 + SEED * 1013904223; h = (h ^ (h >>> 13)) >>> 0; h = (h * 1274126177) >>> 0; return ((h ^ (h >>> 16)) >>> 0) / 4294967295; }
@@ -165,8 +176,9 @@
         var F = FACES[f], nb = getBlock(wx + F.n[0], wy + F.n[1], wz + F.n[2]);
         var drawn = isW ? (nb === B.AIR && F.k === "top") : (!opaque(nb) && !(transparent(id) && nb === id));
         if (!drawn) continue;
-        var col = faceCol(id, F.k), s = isW ? 0.9 : (id === B.WORD ? 1.0 : shade(F.k));
-        if (!isW && id !== B.WORD) s *= 0.9 + 0.1 * hash(wx * 2 + 1, wy * 2 + 5, wz * 2 + 9); // subtle per-block variation
+        var glow = (id === B.WORD || id === B.TORCH);
+        var col = faceCol(id, F.k), s = isW ? 0.9 : (glow ? 1.0 : shade(F.k));
+        if (!isW && !glow) s *= 0.9 + 0.1 * hash(wx * 2 + 1, wy * 2 + 5, wz * 2 + 9); // subtle per-block variation
         var P = isW ? wp : sp, C = isW ? wc : sc, order = [0, 1, 2, 0, 2, 3];
         for (var o = 0; o < 6; o++) { var vv = F.v[order[o]]; P.push(wx + vv[0], wy + vv[1], wz + vv[2]); C.push(col[0] * s, col[1] * s, col[2] * s); }
       }
@@ -244,7 +256,20 @@
     }
     return null;
   }
-  function doMine() { if (paused) return; var h = ray(); if (!h) return; if (h.id === B.WORD) { openWordGate(h.x, h.y, h.z); return; } setBlock(h.x, h.y, h.z, B.AIR); }
+  function dropFor(id, tier) {
+    if (id === B.STONE || id === B.COBBLE || id === B.COAL || id === B.IRON || id === B.BRICK || id === B.SANDSTONE) return tier >= 1 ? (id === B.STONE ? B.COBBLE : id) : null;
+    if (id === B.GOLD) return tier >= 3 ? B.GOLD : null;
+    if (id === B.GRASS || id === B.DIRT) return B.DIRT;
+    if (id === B.LEAVES || id === B.WATER) return null;
+    return id; // sand, log, plank, glass, snow, furnace, torch drop themselves
+  }
+  function doMine() {
+    if (paused) return;
+    var h = ray(); if (!h) return;
+    if (h.id === B.WORD) { openWordGate(h.x, h.y, h.z); return; }
+    var drop = dropFor(h.id, pickTier()); if (drop) addInv(drop, 1);
+    setBlock(h.x, h.y, h.z, B.AIR); renderHotbar();
+  }
   function doPlace() {
     if (paused) return;
     var h = ray(); if (!h) return;
@@ -290,7 +315,7 @@
     store.record(q, correct);
     if (q.kind === "mc") Array.prototype.forEach.call(COVB.querySelectorAll(".choice"), function (b, idx) { b.disabled = true; if (q.choices[idx].correct) b.classList.add("right"); else if (b === btn) b.classList.add("wrong"); });
     var head;
-    if (correct) { setBlock(bx, by, bz, B.AIR); store.state.gems += 15; store.save(); cfetti(); head = '<div class="fb good">✅ Crystal cracked! <span class="gain">+15 💎</span></div>'; }
+    if (correct) { setBlock(bx, by, bz, B.AIR); store.state.gems += 15; addInv(B.IRON, 2); store.save(); cfetti(); renderHotbar(); head = '<div class="fb good">✅ Crystal cracked! <span class="gain">+15 💎 &amp; 2 iron ⛏️</span></div>'; }
     else { head = '<div class="fb bad">❌ The crystal holds — learn the word:</div>'; VQ.speak(q.data.word + ". " + q.data.senses[0].def); }
     COVB.innerHTML = '<div class="gatehead">✨ Word Crystal <span class="x" id="wx">✕</span></div><div class="card qcard">' + head + '<div class="reveal">' + VQ.entryHTML(q.data, { mnem: true }) + '</div><button id="wnext" class="submit big-next">Continue ⏎</button></div>';
     document.getElementById("wx").onclick = closeWordGate; document.getElementById("wnext").onclick = closeWordGate;
@@ -314,6 +339,7 @@
     if (paused) { if (wordKey) wordKey(e); return; }
     var k = (e.key || "").toLowerCase(); keys[k] = true;
     if (k === " ") { jumpReq = true; e.preventDefault(); }
+    if (k === "e") { openCraft(); return; }
     if (k >= "1" && k <= "9") { var i = +k - 1; if (i < hotbar.length) { sel = i; renderHotbar(); } }
   });
   document.addEventListener("keyup", function (e) { keys[(e.key || "").toLowerCase()] = false; });
@@ -338,6 +364,7 @@
     addBtn("bMine", "⛏", function () { doMine(); });
     addBtn("bPlace", "▦", function () { doPlace(); });
     addBtn("bJump", "⤒", function () { jumpReq = true; });
+    addBtn("bCraft", "📦", function () { openCraft(); });
     canvas.addEventListener("touchstart", function (e) {
       for (var i = 0; i < e.changedTouches.length; i++) { var t = e.changedTouches[i];
         if (t.clientX < window.innerWidth * 0.5 && joyId === null) { joyId = t.identifier; jox = t.clientX; joy0y = t.clientY; joyEl.style.display = "block"; joyEl.style.left = (t.clientX - 64) + "px"; joyEl.style.top = (t.clientY - 64) + "px"; moveNub(0, 0); }
@@ -360,15 +387,60 @@
   function moveNub(dx, dy) { if (!nubEl) return; var m = Math.hypot(dx, dy) || 1, cl = Math.min(m, 50); nubEl.style.left = (33 + (dx / m) * cl) + "px"; nubEl.style.top = (33 + (dy / m) * cl) + "px"; }
 
   // ---------- hotbar ----------
-  var hotbar = [B.GRASS, B.DIRT, B.STONE, B.COBBLE, B.PLANK, B.LOG, B.SAND, B.GLASS, B.BRICK], sel = 0;
+  var BASE_HOTBAR = [B.GRASS, B.DIRT, B.STONE, B.COBBLE, B.PLANK, B.LOG, B.SAND, B.GLASS, B.BRICK];
+  var hotbar = BASE_HOTBAR.concat(unlocked), sel = 0;
+  function refreshHotbar() { hotbar = BASE_HOTBAR.concat(unlocked); if (sel >= hotbar.length) sel = 0; renderHotbar(); }
   function renderHotbar() {
     var el = document.getElementById("hotbar");
     el.innerHTML = hotbar.map(function (id, i) {
       var c = faceCol(id, "side"), css = "rgb(" + Math.round(c[0] * 255) + "," + Math.round(c[1] * 255) + "," + Math.round(c[2] * 255) + ")";
-      return '<div class="slot' + (i === sel ? " sel" : "") + '" data-i="' + i + '"><div class="sw" style="background:' + css + '"></div><div class="nm">' + (NAMES[id] || "") + "</div></div>";
+      var cnt = inv[id] ? '<div class="cnt">' + inv[id] + "</div>" : "";
+      return '<div class="slot' + (i === sel ? " sel" : "") + '" data-i="' + i + '">' + cnt + '<div class="sw" style="background:' + css + '"></div><div class="nm">' + (NAMES[id] || "") + "</div></div>";
     }).join("");
     Array.prototype.forEach.call(el.querySelectorAll(".slot"), function (s) { s.onclick = function () { sel = +s.dataset.i; renderHotbar(); }; });
   }
+
+  // ---------- crafting ----------
+  function itemName(id) { return NAMES[id] || ITNAME[id] || ("#" + id); }
+  function matChip(id, count) {
+    var sw;
+    if (id < 100) { var c = faceCol(id, "side"); sw = '<span class="csw" style="background:rgb(' + Math.round(c[0] * 255) + "," + Math.round(c[1] * 255) + "," + Math.round(c[2] * 255) + ')"></span>'; }
+    else sw = '<span class="cem">' + (ITEMOJI[id] || "❔") + "</span>";
+    return '<span class="mchip">' + sw + '<span class="mct">' + itemName(id) + (count ? " ×" + count : "") + "</span></span>";
+  }
+  var RECIPES = [
+    { name: "Planks", out: { id: B.PLANK, n: 4 }, in: [{ id: B.LOG, n: 1 }] },
+    { name: "Sticks", out: { id: IT.STICK, n: 4 }, in: [{ id: B.PLANK, n: 2 }] },
+    { name: "Wood Pickaxe", out: { id: IT.WPICK, n: 1 }, in: [{ id: B.PLANK, n: 3 }, { id: IT.STICK, n: 2 }] },
+    { name: "Stone Pickaxe", out: { id: IT.SPICK, n: 1 }, in: [{ id: B.COBBLE, n: 3 }, { id: IT.STICK, n: 2 }] },
+    { name: "Iron Pickaxe", out: { id: IT.IPICK, n: 1 }, in: [{ id: B.IRON, n: 3 }, { id: IT.STICK, n: 2 }] },
+    { name: "Sword", out: { id: IT.SWORD, n: 1 }, in: [{ id: B.PLANK, n: 2 }, { id: IT.STICK, n: 1 }] },
+    { name: "Furnace", out: { id: B.FURNACE, n: 1 }, in: [{ id: B.COBBLE, n: 8 }], unlock: true },
+    { name: "Torch ×4", out: { id: B.TORCH, n: 4 }, in: [{ id: B.COAL, n: 1 }, { id: IT.STICK, n: 1 }], unlock: true }
+  ];
+  function canCraft(r) { return r.in.every(function (ing) { return hasInv(ing.id, ing.n); }); }
+  function craft(r) {
+    if (!canCraft(r)) return;
+    r.in.forEach(function (ing) { takeInv(ing.id, ing.n); });
+    addInv(r.out.id, r.out.n);
+    if (r.unlock && unlocked.indexOf(r.out.id) < 0) { unlocked.push(r.out.id); refreshHotbar(); }
+    persist(); openCraft();
+  }
+  function openCraft() {
+    paused = true; if (document.pointerLockElement) document.exitPointerLock();
+    var mats = Object.keys(inv).filter(function (k) { return inv[k] > 0; });
+    var matRows = mats.length ? mats.map(function (k) { return matChip(+k, inv[k]); }).join("") : '<span class="muted">Mine blocks to collect materials!</span>';
+    var recRows = RECIPES.map(function (r, i) {
+      var ok = canCraft(r);
+      return '<button class="crecipe' + (ok ? "" : " dis") + '" data-i="' + i + '"' + (ok ? "" : " disabled") + '>' + matChip(r.out.id, r.out.n) + '<span class="needs">needs ' + r.in.map(function (ing) { return ing.n + "× " + itemName(ing.id); }).join(", ") + "</span></button>";
+    }).join("");
+    COVB.innerHTML = '<div class="gatehead">🛠️ Crafting <span class="x" id="cx2">✕</span></div><div class="card"><div class="mats"><b>Materials:</b> ' + matRows + '</div><hr><div class="recipes">' + recRows + '</div><div class="help">Punch trees for wood, mine stone with a pickaxe, and crack Word Crystals for iron!</div></div>';
+    COV.style.display = "flex";
+    document.getElementById("cx2").onclick = closeCraft;
+    Array.prototype.forEach.call(COVB.querySelectorAll(".crecipe"), function (b) { if (!b.disabled) b.onclick = function () { craft(RECIPES[+b.dataset.i]); }; });
+    wordKey = function (e) { if (e.key === "Escape" || (e.key || "").toLowerCase() === "e") closeCraft(); };
+  }
+  function closeCraft() { COV.style.display = "none"; paused = false; wordKey = null; keys = {}; jumpReq = false; joy.x = 0; joy.y = 0; renderHotbar(); }
 
   // ---------- HUD ----------
   function updateHud() {
@@ -415,5 +487,6 @@
   setInterval(updateHud, 1500);
   frame();
   if (location.hash === "#word") setTimeout(function () { openWordGate(0, 5, 0); }, 300); // test hook for the word-mining overlay
+  if (location.hash === "#craft") setTimeout(function () { inv[B.LOG] = 4; inv[B.PLANK] = 8; inv[IT.STICK] = 4; inv[B.COBBLE] = 10; inv[B.COAL] = 2; inv[B.IRON] = 3; openCraft(); }, 300); // test hook for crafting screen
   if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(function () {});
 })();

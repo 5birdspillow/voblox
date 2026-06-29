@@ -35,3 +35,26 @@ html, body.craftbody { margin: 0; height: 100%; overflow: hidden; background: #7
 #bJump { right: calc(env(safe-area-inset-right) + 22px); bottom: calc(env(safe-area-inset-bottom) + 66px); width: 70px; height: 70px; font-size: 26px; background: #c0ffc0e0; }
 /* hide touch buttons on desktop */
 @media (hover: hover) and (pointer: fine) { .tbtn, #tjoy { display: none !important; } }
+
+/* hotbar count badge */
+.slot .cnt { position: absolute; top: 1px; right: 2px; font-size: 10px; font-weight: 900; color: #20303a;
+  background: #ffffffcc; border-radius: 5px; padding: 0 3px; line-height: 1.25; }
+
+/* touch craft button */
+#bCraft { right: calc(env(safe-area-inset-right) + 104px); bottom: calc(env(safe-area-inset-bottom) + 172px);
+  width: 60px; height: 60px; font-size: 24px; background: #e0c0ffe0; }
+
+/* crafting screen */
+.mats { margin-bottom: 8px; line-height: 2.1; }
+.mchip { display: inline-flex; align-items: center; gap: 4px; background: #eef2f8; border: 2px solid #0001;
+  border-radius: 9px; padding: 2px 7px; margin: 2px; font-size: 13px; font-weight: bold; color: #20303a; }
+.csw { width: 16px; height: 16px; border-radius: 4px; border: 1px solid #0002; display: inline-block; }
+.cem { font-size: 15px; }
+.recipes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.crecipe { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left;
+  background: #f4f8ff; border: 3px solid #0002; border-bottom-width: 5px; border-radius: 12px; padding: 8px 10px;
+  font-size: 14px; cursor: pointer; color: #20303a; }
+.crecipe:active { transform: translateY(2px); }
+.crecipe.dis { opacity: .45; cursor: default; }
+.crecipe .needs { font-size: 11px; color: #6a7b8a; font-weight: normal; }
+@media (max-width: 520px) { .recipes { grid-template-columns: 1fr; } }
