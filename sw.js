@@ -1,5 +1,5 @@
 /* Voblox service worker — offline cache for the installed app */
-var CACHE = "voblox-v8";
+var CACHE = "voblox-v9";
 var ASSETS = [
   "index.html", "study.html", "dashboard.html",
   "styles.css", "world.css", "boss.css", "games.css", "manifest.webmanifest",
@@ -20,13 +20,17 @@ self.addEventListener("activate", function (e) {
   }));
   self.clients.claim();
 });
+// network-first: always try the latest from the network (so updates show on refresh),
+// fall back to the cache only when offline.
 self.addEventListener("fetch", function (e) {
   if (e.request.method !== "GET") return;
-  e.respondWith(caches.match(e.request).then(function (r) {
-    return r || fetch(e.request).then(function (resp) {
+  e.respondWith(
+    fetch(e.request).then(function (resp) {
       var copy = resp.clone();
       caches.open(CACHE).then(function (c) { try { c.put(e.request, copy); } catch (_) {} });
       return resp;
-    }).catch(function () { return caches.match("index.html"); });
-  }));
+    }).catch(function () {
+      return caches.match(e.request).then(function (r) { return r || caches.match("index.html"); });
+    })
+  );
 });
