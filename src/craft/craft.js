@@ -271,6 +271,7 @@
     var h = ray(); if (!h) return;
     if (h.id === B.WORD) { openWordGate(h.x, h.y, h.z); return; }
     var drop = dropFor(h.id, pickTier()); if (drop) addInv(drop, 1);
+    puff(h.x, h.y, h.z, h.id); sfx(170, 0.07, "square", 0.045);
     setBlock(h.x, h.y, h.z, B.AIR); renderHotbar();
   }
   function doPlace() {
@@ -280,7 +281,7 @@
     // don't place inside the player
     var fex = player.pos.x, fey = player.pos.y, fez = player.pos.z;
     if (nx === Math.floor(fex) && nz === Math.floor(fez) && (ny === Math.floor(fey) || ny === Math.floor(fey + 1))) return;
-    setBlock(nx, ny, nz, hotbar[sel]);
+    setBlock(nx, ny, nz, hotbar[sel]); sfx(330, 0.05, "triangle", 0.045);
   }
 
   // ---------- word-mining (the learning hook) ----------
@@ -318,7 +319,7 @@
     store.record(q, correct);
     if (q.kind === "mc") Array.prototype.forEach.call(COVB.querySelectorAll(".choice"), function (b, idx) { b.disabled = true; if (q.choices[idx].correct) b.classList.add("right"); else if (b === btn) b.classList.add("wrong"); });
     var head;
-    if (correct) { setBlock(bx, by, bz, B.AIR); store.state.gems += 15; addInv(B.IRON, 2); store.save(); cfetti(); renderHotbar(); head = '<div class="fb good">✅ Crystal cracked! <span class="gain">+15 💎 &amp; 2 iron ⛏️</span></div>'; }
+    if (correct) { setBlock(bx, by, bz, B.AIR); store.state.gems += 15; addInv(B.IRON, 2); store.save(); cfetti(); chime(); renderHotbar(); if (!save.firstCrystal) { save.firstCrystal = true; persist(); toast("🏆 First Word Crystal cracked! Iron makes better tools."); } head = '<div class="fb good">✅ Crystal cracked! <span class="gain">+15 💎 &amp; 2 iron ⛏️</span></div>'; }
     else { head = '<div class="fb bad">❌ The crystal holds — learn the word:</div>'; VQ.speak(q.data.word + ". " + q.data.senses[0].def); }
     COVB.innerHTML = '<div class="gatehead">✨ Word Crystal <span class="x" id="wx">✕</span></div><div class="card qcard">' + head + '<div class="reveal">' + VQ.entryHTML(q.data, { mnem: true }) + '</div><button id="wnext" class="submit big-next">Continue ⏎</button></div>';
     document.getElementById("wx").onclick = closeWordGate; document.getElementById("wnext").onclick = closeWordGate;
@@ -429,9 +430,12 @@
     r.in.forEach(function (ing) { takeInv(ing.id, ing.n); });
     addInv(r.out.id, r.out.n);
     if (r.unlock && unlocked.indexOf(r.out.id) < 0) { unlocked.push(r.out.id); refreshHotbar(); }
+    sfx(440, 0.07, "triangle", 0.05);
+    if ((r.out.id === IT.WPICK || r.out.id === IT.SPICK || r.out.id === IT.IPICK) && !save.firstPick) { save.firstPick = true; toast("🏆 Crafted your first pickaxe! Now you can mine ore."); }
     persist(); openCraft();
   }
   function openCraft() {
+    if (dead) return;
     paused = true; if (document.pointerLockElement) document.exitPointerLock();
     var mats = Object.keys(inv).filter(function (k) { return inv[k] > 0; });
     var matRows = mats.length ? mats.map(function (k) { return matChip(+k, inv[k]); }).join("") : '<span class="muted">Mine blocks to collect materials!</span>';
@@ -449,7 +453,7 @@
 
   // ---------- survival & creatures ----------
   var MAXHP = 10, MAXHUNGER = 10, mobs = [], spawnT = 2, hungerT = 0, hpT = 0, dead = false;
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x557744, 1.15)); // lights only affect the (Lambert) mobs; the world is unlit/baked
+  var mobHemi = new THREE.HemisphereLight(0xffffff, 0x557744, 1.15); scene.add(mobHemi); // lights only affect the (Lambert) mobs; the world is unlit/baked
   var sun2 = new THREE.DirectionalLight(0xffffff, 0.45); sun2.position.set(12, 22, 6); scene.add(sun2);
   var survEl = document.createElement("div"); survEl.id = "surv"; document.body.appendChild(survEl);
   function isNight() { return tod < 0.24 || tod > 0.76; }
@@ -499,7 +503,7 @@
     var m = mobs[i]; m.hp -= (inv[IT.SWORD] ? 4 : 2); m.group.position.y += 0.1;
     if (m.hp <= 0) { if (m.type !== "zombie") { addInv(IT.FOOD, 1 + Math.floor(Math.random() * 2)); renderHotbar(); } else { store.state.gems += 3; store.save(); } removeMob(i); }
   }
-  function hurtPlayer(n) { if (dead) return; player.health = Math.max(0, player.health - n); survFlash(); updateSurvHud(); if (player.health <= 0) die(); }
+  function hurtPlayer(n) { if (dead) return; player.health = Math.max(0, player.health - n); survFlash(); sfx(110, 0.18, "sawtooth", 0.07); updateSurvHud(); if (player.health <= 0) die(); }
   function eat() { if (player.hunger >= MAXHUNGER || dead) return; if (takeInv(IT.FOOD, 1)) { player.hunger = Math.min(MAXHUNGER, player.hunger + 3); updateSurvHud(); renderHotbar(); } }
   function updateSurvival(dt) {
     if (dead) return;
@@ -510,6 +514,45 @@
   function updateSurvHud() { var f = inv[IT.FOOD] || 0; survEl.innerHTML = "❤️ " + player.health + "/" + MAXHP + " &nbsp; 🍖 " + player.hunger + "/" + MAXHUNGER + (f ? ' &nbsp; <span class="eatable">🍗×' + f + " (F)</span>" : ""); }
   function die() { dead = true; paused = true; if (document.pointerLockElement) document.exitPointerLock(); COVB.innerHTML = '<div class="card hero" style="text-align:center"><div class="big-emoji">💫</div><div class="hero-line">You fainted!</div><div class="hero-sub">No worries — you keep everything you collected.</div><button id="resp" class="submit big-next">Wake up ⏎</button></div>'; COV.style.display = "flex"; document.getElementById("resp").onclick = respawn; wordKey = function (e) { if (e.key === "Enter") respawn(); }; }
   function respawn() { dead = false; player.health = MAXHP; player.hunger = Math.max(player.hunger, 5); var gy = groundY(0, 0, WH - 1); player.pos.set(0.5, gy + 1, 0.5); player.vel.set(0, 0, 0); player._fellFrom = null; COV.style.display = "none"; paused = false; wordKey = null; keys = {}; updateSurvHud(); }
+
+  // ---------- polish: particles, sound, toasts, help ----------
+  var particles = [], pfxPool = [], actx = null;
+  function sfx(freq, dur, type, vol) {
+    try {
+      if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+      if (actx.state === "suspended") actx.resume();
+      var o = actx.createOscillator(), g = actx.createGain(); o.type = type || "square"; o.frequency.value = freq;
+      o.connect(g); g.connect(actx.destination); var t = actx.currentTime;
+      g.gain.setValueAtTime(vol || 0.05, t); g.gain.exponentialRampToValueAtTime(0.0001, t + (dur || 0.09));
+      o.start(t); o.stop(t + (dur || 0.1));
+    } catch (e) {}
+  }
+  function chime() { sfx(660, 0.12, "triangle", 0.06); setTimeout(function () { sfx(990, 0.16, "triangle", 0.06); }, 110); }
+  function puff(x, y, z, id) {
+    var c = faceCol(id, "side");
+    for (var i = 0; i < 6; i++) {
+      var m = pfxPool.pop(); if (!m) m = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 0.16), new THREE.MeshBasicMaterial());
+      m.material.color.setRGB(c[0] * 0.9, c[1] * 0.9, c[2] * 0.9); m.scale.set(1, 1, 1); m.visible = true;
+      m.position.set(x + 0.5 + (Math.random() - 0.5) * 0.5, y + 0.5 + (Math.random() - 0.5) * 0.5, z + 0.5 + (Math.random() - 0.5) * 0.5);
+      scene.add(m); particles.push({ m: m, vx: (Math.random() - 0.5) * 2, vy: 1.5 + Math.random() * 1.5, vz: (Math.random() - 0.5) * 2, life: 0.5 });
+    }
+  }
+  function updateParticles(dt) {
+    for (var i = particles.length - 1; i >= 0; i--) {
+      var p = particles[i]; p.life -= dt; p.vy -= 7 * dt;
+      p.m.position.x += p.vx * dt; p.m.position.y += p.vy * dt; p.m.position.z += p.vz * dt;
+      var s = Math.max(0.05, p.life * 1.8); p.m.scale.set(s, s, s);
+      if (p.life <= 0) { scene.remove(p.m); p.m.visible = false; pfxPool.push(p.m); particles.splice(i, 1); }
+    }
+  }
+  function toast(msg) { var t = document.createElement("div"); t.className = "ctoast"; t.textContent = msg; document.body.appendChild(t); requestAnimationFrame(function () { t.style.opacity = "1"; }); setTimeout(function () { t.style.opacity = "0"; setTimeout(function () { t.remove(); }, 400); }, 2400); }
+  function showHelp() {
+    paused = true;
+    COVB.innerHTML = '<div class="card"><h2>⛏️ Welcome to Craft World!</h2><p><b>Move:</b> on a computer use <b>W A S D</b> and click to look with the mouse. On a tablet, drag the <b>left side</b> to walk and the <b>right side</b> to look.</p><p><b>Mine</b> blocks (left-click / ⛏) and <b>place</b> them (right-click / ▦). <b>Jump</b> with Space / ⤒.</p><p><b>Craft</b> tools with <b>E</b> / 📦 from what you mine, and eat food with <b>F</b> / 🍖.</p><p><b>✨ Look for glowing yellow Word Crystals</b> — answer the word to crack them open for treasure!</p><button id="okh" class="submit big-next">Let’s go! ⏎</button></div>';
+    COV.style.display = "flex";
+    function go() { save.craftSeen = true; persist(); COV.style.display = "none"; paused = false; wordKey = null; }
+    document.getElementById("okh").onclick = go; wordKey = function (e) { if (e.key === "Enter") go(); };
+  }
 
   // ---------- HUD ----------
   function updateHud() {
@@ -525,8 +568,9 @@
   function updateDayNight(dt) {
     tod = (tod + dt / 240) % 1;
     var light = 0.5 - 0.5 * Math.cos(tod * Math.PI * 2);
-    var b = 0.26 + 0.74 * light;
+    var b = 0.34 + 0.66 * light;
     solidMat.color.setRGB(b, b, b); waterMat.color.setRGB(b * 0.85, b * 0.92, b);
+    if (typeof mobHemi !== "undefined" && mobHemi) { mobHemi.intensity = 0.55 + 0.7 * light; if (typeof sun2 !== "undefined" && sun2) sun2.intensity = 0.2 + 0.4 * light; }
     var sky = NIGHTSKY.clone().lerp(DAYSKY, light);
     scene.background.copy(sky); scene.fog.color.copy(sky);
   }
@@ -537,6 +581,7 @@
     updateDayNight(dt);
     updatePlayer(dt); updateCamera(); streamChunks();
     if (!paused) { updateSurvival(dt); for (var mi = 0; mi < mobs.length; mi++) updateMob(mobs[mi], dt); spawnMobs(dt); }
+    updateParticles(dt);
     saveTimer -= dt; if (saveTimer < 0 && saveTimer > -1) { save.px = player.pos.x; save.py = player.pos.y; save.pz = player.pos.z; save.yaw = player.yaw; save.pitch = player.pitch; save.health = player.health; save.hunger = player.hunger; persist(); saveTimer = -2; }
     renderer.render(scene, camera);
   }
@@ -554,6 +599,7 @@
   renderHotbar(); updateHud(); updateSurvHud();
   var v = document.getElementById("ver"); if (v) v.textContent = "build " + (window.VOBLOX_VERSION || "dev");
   document.getElementById("loading").style.display = "none";
+  if (!location.hash && !save.craftSeen) showHelp();
   setInterval(updateHud, 1500);
   frame();
   if (location.hash === "#word") setTimeout(function () { openWordGate(0, 5, 0); }, 300); // test hook for the word-mining overlay
