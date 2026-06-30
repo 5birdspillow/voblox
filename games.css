@@ -41,7 +41,7 @@
 @media (max-width: 560px) { .mgrid { grid-template-columns: repeat(3, 1fr); } .mcard { font-size: 12px; } }
 
 /* Canvas arcade games (Word Hunt, Word Run) */
-.gamewrap.hunt, .gamewrap.run { padding: 0; }
+.gamewrap.hunt, .gamewrap.run { padding: 0; overflow: hidden; touch-action: none; }
 .gamewrap.hunt canvas, .gamewrap.run canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
 .gamewrap.hunt canvas { cursor: none; }
 .ghud { position: absolute; top: 0; left: 0; right: 0; padding: calc(env(safe-area-inset-top) + 10px) 12px 0; pointer-events: none; }
@@ -52,6 +52,10 @@
 .ghud .grow button { pointer-events: auto; }
 .gmsg { position: absolute; top: 38%; left: 0; right: 0; text-align: center; font-size: 30px; font-weight: 900; color: #fff; text-shadow: 0 2px 8px #000; opacity: 0; transition: opacity .2s; pointer-events: none; padding: 0 12px; }
 .runhint { position: absolute; bottom: calc(env(safe-area-inset-bottom) + 12px); left: 0; right: 0; text-align: center; color: #ffffffcc; font-weight: bold; text-shadow: 0 1px 3px #000; pointer-events: none; }
+.gamewrap.run .rgo { position: absolute; bottom: calc(env(safe-area-inset-bottom) + 46px); left: 50%; transform: translateX(-50%);
+  z-index: 6; pointer-events: auto; background: #2f9e44; color: #fff; border: none; border-bottom: 5px solid #1e6b2e;
+  border-radius: 14px; padding: 12px 32px; font-family: inherit; font-weight: 900; font-size: 19px; box-shadow: 0 4px 12px #0004; cursor: pointer; }
+.gamewrap.run .rgo:active { transform: translateX(-50%) translateY(2px); border-bottom-width: 3px; }
 
 /* Whack-a-Word */
 .whack { background: radial-gradient(120% 90% at 50% 0%, #7ec850, #3c7a2a 75%); padding: 0; display: flex; flex-direction: column; }

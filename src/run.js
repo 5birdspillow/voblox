@@ -11,7 +11,8 @@
     wrap.innerHTML = '<canvas id="rcv"></canvas>' +
       '<div class="ghud"><div class="clue" id="rclue"></div>' +
       '<div class="grow"><span id="rlives"></span><span id="rscore"></span><button class="replay" id="rspeak" type="button" title="Read again">🔊</button><button class="bossquit" id="quit">Leave</button></div></div>' +
-      '<div class="gmsg" id="rmsg"></div><div class="runhint">⬆️⬇️ choose a lane &nbsp;•&nbsp; ➡️ or tap to lock it in</div>';
+      '<button class="rgo" id="rgo" type="button">GO ▶</button>' +
+      '<div class="gmsg" id="rmsg"></div><div class="runhint">Tap the matching lane &nbsp;•&nbsp; GO ▶ (or ➡️)</div>';
     document.body.appendChild(wrap);
     var cv = wrap.querySelector("#rcv"), ctx = cv.getContext("2d");
     var W, H; function resize() { W = cv.width = wrap.clientWidth; H = cv.height = wrap.clientHeight; } resize();
@@ -35,9 +36,13 @@
     document.addEventListener("keydown", onKey);
     function pickLaneByY(y) { var best = 0, bd = 1e9; for (var l = 0; l < LANES; l++) { var d = Math.abs(y - laneY(l)); if (d < bd) { bd = d; best = l; } } setLane(best); }
     var lastTap = -9999;
-    function tapAt(y) { pickLaneByY(y); commit(); } // tap a lane = choose that word and run through now
-    cv.addEventListener("mousedown", function (e) { if (performance.now() - lastTap < 800) return; tapAt(e.clientY); });
-    cv.addEventListener("touchstart", function (e) { lastTap = performance.now(); tapAt(e.changedTouches[0].clientY); }, { passive: true });
+    // Touch/click MOVES you into a lane; the gate auto-checks when it reaches you, so you can line up
+    // the matching word in time. Use ➡️ (keyboard) or the GO button to lock in early if you're sure.
+    function moveToY(clientY) { var r = cv.getBoundingClientRect(); pickLaneByY(clientY - r.top); }
+    cv.addEventListener("mousedown", function (e) { if (performance.now() - lastTap < 800) return; moveToY(e.clientY); });
+    cv.addEventListener("touchstart", function (e) { lastTap = performance.now(); moveToY(e.changedTouches[0].clientY); }, { passive: true });
+    cv.addEventListener("touchmove", function (e) { lastTap = performance.now(); moveToY(e.changedTouches[0].clientY); }, { passive: true });
+    document.getElementById("rgo").onclick = commit;
     function flash(m, col) { msgEl.textContent = m; msgEl.style.color = col || "#fff"; msgEl.style.opacity = "1"; setTimeout(function () { msgEl.style.opacity = "0"; }, 850); }
     function updateHud() { var h = ""; for (var i = 0; i < 3; i++) h += (i < lives ? "❤️" : "🖤"); document.getElementById("rlives").textContent = h; document.getElementById("rscore").textContent = "🏁 " + score; }
 
