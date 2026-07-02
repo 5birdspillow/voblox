@@ -703,11 +703,11 @@
 
   // the Vobux block shop — special blocks bought with words-earned Vobux
   var SHOP = [
-    { id: B.CANDY, name: "Candy Block", price: 100 },
-    { id: B.ICE, name: "Ice Block", price: 100 },
-    { id: B.GLOW, name: "Glow Block", price: 250 },
-    { id: B.TNT, name: "TNT (gentle!)", price: 250 },
-    { id: B.RAINBOW, name: "Rainbow Block", price: 300 }
+    { id: B.CANDY, name: "Candy Block", price: 200 },
+    { id: B.ICE, name: "Ice Block", price: 200 },
+    { id: B.GLOW, name: "Glow Block", price: 800 },
+    { id: B.TNT, name: "TNT (gentle!)", price: 1500 },
+    { id: B.RAINBOW, name: "Rainbow Block", price: 2500 }
   ];
   function buyBlock(i) {
     var s2 = SHOP[i];

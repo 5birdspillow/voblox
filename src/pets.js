@@ -10,19 +10,19 @@
   var VQ = global.VobloxQuestions, AV = global.VobloxAvatar, Bots = global.VobloxBots, P = global.VobloxProfile;
   function S(id, emoji, name, type) { return { id: id, emoji: emoji, name: name, type: type }; }
   var EGGS = [
-    { id: "basic", name: "Basic Egg", emoji: "🥚", price: 150, rarity: "common", pets: [
+    { id: "basic", name: "Basic Egg", emoji: "🥚", price: 250, rarity: "common", pets: [
       S("dog", "🐶", "Pup", "leaf"), S("cat", "🐱", "Kitty", "fire"), S("bunny", "🐰", "Hopper", "leaf"),
       S("hamster", "🐹", "Nibbles", "leaf"), S("duck", "🦆", "Quackers", "water"), S("pig", "🐷", "Truffle", "leaf"),
       S("mouse", "🐭", "Peanut", "fire"), S("chick", "🐤", "Pip", "fire")] },
-    { id: "spark", name: "Spark Egg", emoji: "🐣", price: 400, rarity: "rare", pets: [
+    { id: "spark", name: "Spark Egg", emoji: "🐣", price: 1200, rarity: "rare", pets: [
       S("fox", "🦊", "Blaze-tail", "fire"), S("owl", "🦉", "Professor Hoot", "leaf"), S("penguin", "🐧", "Waddles", "water"),
       S("koala", "🐨", "Snoozy", "leaf"), S("raccoon", "🦝", "Bandit", "fire"), S("wolf", "🐺", "Luna-howl", "water"),
       S("frog", "🐸", "Ribbles", "water"), S("bee", "🐝", "Buzz", "leaf")] },
-    { id: "royal", name: "Royal Egg", emoji: "🪺", price: 900, rarity: "epic", unlockLevel: 5, pets: [
+    { id: "royal", name: "Royal Egg", emoji: "🪺", price: 4000, rarity: "epic", unlockLevel: 5, pets: [
       S("panda", "🐼", "Bamboo-boss", "leaf"), S("tiger", "🐯", "Stripes", "fire"), S("lion", "🦁", "King Fluff", "fire"),
       S("eagle", "🦅", "Skyclaw", "water"), S("octopus", "🐙", "Inky", "water"), S("polar", "🐻‍❄️", "Frostpaw", "water"),
       S("gorilla", "🦍", "Bigsy", "leaf"), S("shark", "🦈", "Chompers", "water")] },
-    { id: "mythic", name: "Mythic Egg", emoji: "🌈", price: 1800, rarity: "legendary", needMastery: true, pets: [
+    { id: "mythic", name: "Mythic Egg", emoji: "🌈", price: 9000, rarity: "legendary", needMastery: true, pets: [
       S("dragon", "🐉", "Ember-wing", "star"), S("unicorn", "🦄", "Stardust", "star"),
       S("phoenix", "🐦‍🔥", "Flare", "star"), S("trex", "🦖", "Rexy Prime", "star"),
       S("whale", "🐋", "Moonsong", "star"), S("alien", "👾", "Zorp", "star"),

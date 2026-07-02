@@ -1,9 +1,10 @@
 /*
  * Voblox — cosmetic item catalog: avatar wear (hats/faces/shirts/pants/trails),
  * pet buddies, and per-game gear. Cosmetic-only by design: power comes from
- * learning words, gems come mostly from answering, items are what gems buy.
- * Prices vs the economy: answers pay 10–45 gems, so common ≈ a few minutes of
- * words and legendary ≈ a great week.
+ * learning words, Vobux come mostly from answering, items are what Vobux buy.
+ * Economy: a mastered lesson ≈ 2,500–3,500 Vobux (answers + quests + matches).
+ * Commons stay pocket-money cheap; RARE ≈ a good day; EPIC ≈ a whole lesson;
+ * LEGENDARY ≈ 3–4 lessons of real saving. That's the point.
  * Item: { id, name, emoji, slot, rarity, price? , unlock?{level | game+rankPts}, color? }
  */
 (function (global) {
@@ -21,26 +22,26 @@
     I("hat.bow", "Big Bow", "🎀", "hat", "common", 80),
     I("hat.flower", "Flower Clip", "🌸", "hat", "common", 90),
     I("hat.rescue", "Rescue Helmet", "⛑️", "hat", "common", 100),
-    I("hat.knight", "Knight Helm", "🪖", "hat", "rare", 300),
-    I("hat.tophat", "Fancy Top Hat", "🎩", "hat", "rare", 260),
-    I("hat.headphones", "DJ Phones", "🎧", "hat", "rare", 280),
-    I("hat.mush", "Mushroom Cap", "🍄", "hat", "rare", 320),
-    I("hat.pumpkin", "Pumpkin Head", "🎃", "hat", "epic", 650),
-    I("hat.star", "Star Pin", "⭐", "hat", "epic", 700),
-    I("hat.pirate", "Pirate Flag Hat", "🏴‍☠️", "hat", "epic", 600),
+    I("hat.knight", "Knight Helm", "🪖", "hat", "rare", 700),
+    I("hat.tophat", "Fancy Top Hat", "🎩", "hat", "rare", 650),
+    I("hat.headphones", "DJ Phones", "🎧", "hat", "rare", 680),
+    I("hat.mush", "Mushroom Cap", "🍄", "hat", "rare", 750),
+    I("hat.pumpkin", "Pumpkin Head", "🎃", "hat", "epic", 2800),
+    I("hat.star", "Star Pin", "⭐", "hat", "epic", 3000),
+    I("hat.pirate", "Pirate Flag Hat", "🏴‍☠️", "hat", "epic", 2600),
     I("hat.grad", "Scholar Cap", "🎓", "hat", "epic", 0, { unlock: { level: 10 } }),
-    I("hat.crown", "Golden Crown", "👑", "hat", "legendary", 1500),
+    I("hat.crown", "Golden Crown", "👑", "hat", "legendary", 9500),
 
     // ---- faces (slot: face) ----
     I("face.wink", "Winky", "😉", "face", "common", 90),
     I("face.silly", "Silly Tongue", "😜", "face", "common", 100),
-    I("face.cool", "Cool Shades", "😎", "face", "rare", 250),
-    I("face.cat", "Cat Face", "😺", "face", "rare", 280),
-    I("face.party", "Party Time", "🥳", "face", "rare", 300),
-    I("face.angel", "Little Angel", "😇", "face", "rare", 300),
-    I("face.ghost", "Spooky", "👻", "face", "rare", 320),
-    I("face.star", "Star Eyes", "🤩", "face", "epic", 600),
-    I("face.alien", "Alien", "👽", "face", "epic", 700),
+    I("face.cool", "Cool Shades", "😎", "face", "rare", 650),
+    I("face.cat", "Cat Face", "😺", "face", "rare", 700),
+    I("face.party", "Party Time", "🥳", "face", "rare", 750),
+    I("face.angel", "Little Angel", "😇", "face", "rare", 750),
+    I("face.ghost", "Spooky", "👻", "face", "rare", 800),
+    I("face.star", "Star Eyes", "🤩", "face", "epic", 2800),
+    I("face.alien", "Alien", "👽", "face", "epic", 3200),
     I("face.robot", "Robo Face", "🤖", "face", "epic", 0, { unlock: { level: 5 } }),
 
     // ---- shirts (slot: shirt; color drives the torso) ----
@@ -49,9 +50,9 @@
     I("shirt.orange", "Orange Tee", "👕", "shirt", "common", 80, { color: "#ff8c42" }),
     I("shirt.white", "White Tee", "👕", "shirt", "common", 80, { color: "#f2f4f8" }),
     I("shirt.pink", "Pink Tee", "👕", "shirt", "common", 90, { color: "#ff7eb9" }),
-    I("shirt.purple", "Purple Tee", "👕", "shirt", "rare", 250, { color: "#9b59b6" }),
-    I("shirt.black", "Ninja Black", "👕", "shirt", "rare", 250, { color: "#2c3e50" }),
-    I("shirt.gold", "Golden Shirt", "👕", "shirt", "legendary", 1500, { color: "#ffb020" }),
+    I("shirt.purple", "Purple Tee", "👕", "shirt", "rare", 600, { color: "#9b59b6" }),
+    I("shirt.black", "Ninja Black", "👕", "shirt", "rare", 650, { color: "#2c3e50" }),
+    I("shirt.gold", "Golden Shirt", "👕", "shirt", "legendary", 8500, { color: "#ffb020" }),
 
     // ---- pants (slot: pants) ----
     I("pants.brown", "Brown Pants", "👖", "pants", "common", 70, { color: "#7a5230" }),
@@ -59,54 +60,54 @@
     I("pants.red", "Red Pants", "👖", "pants", "common", 70, { color: "#b3392f" }),
     I("pants.green", "Green Pants", "👖", "pants", "common", 70, { color: "#2f7d4f" }),
     I("pants.white", "White Pants", "👖", "pants", "common", 70, { color: "#eef0f4" }),
-    I("pants.purple", "Purple Pants", "👖", "pants", "rare", 220, { color: "#6b4fa8" }),
-    I("pants.camo", "Camo Pants", "👖", "pants", "rare", 240, { color: "#5b6d4a" }),
-    I("pants.gold", "Golden Pants", "👖", "pants", "epic", 600, { color: "#d8a020" }),
+    I("pants.purple", "Purple Pants", "👖", "pants", "rare", 550, { color: "#6b4fa8" }),
+    I("pants.camo", "Camo Pants", "👖", "pants", "rare", 600, { color: "#5b6d4a" }),
+    I("pants.gold", "Golden Pants", "👖", "pants", "epic", 2500, { color: "#d8a020" }),
 
     // ---- trails (slot: trail; games emit these while you move) ----
     I("trail.bubbles", "Bubble Trail", "🫧", "trail", "common", 150, { color: "#9fd6ff" }),
-    I("trail.hearts", "Heart Trail", "💖", "trail", "rare", 300, { color: "#ff7eb9" }),
-    I("trail.snow", "Snow Trail", "❄️", "trail", "rare", 300, { color: "#cfe8ff" }),
-    I("trail.sparkle", "Sparkle Trail", "✨", "trail", "rare", 350, { color: "#ffe14d" }),
-    I("trail.stars", "Star Trail", "⭐", "trail", "rare", 350, { color: "#ffd740" }),
-    I("trail.fire", "Fire Trail", "🔥", "trail", "epic", 600, { color: "#ff7a3d" }),
-    I("trail.zap", "Lightning Trail", "⚡", "trail", "epic", 700, { color: "#ffe14d" }),
-    I("trail.rainbow", "Rainbow Trail", "🌈", "trail", "epic", 800, { color: "#b06dff" }),
+    I("trail.hearts", "Heart Trail", "💖", "trail", "rare", 700, { color: "#ff7eb9" }),
+    I("trail.snow", "Snow Trail", "❄️", "trail", "rare", 700, { color: "#cfe8ff" }),
+    I("trail.sparkle", "Sparkle Trail", "✨", "trail", "rare", 800, { color: "#ffe14d" }),
+    I("trail.stars", "Star Trail", "⭐", "trail", "rare", 800, { color: "#ffd740" }),
+    I("trail.fire", "Fire Trail", "🔥", "trail", "epic", 2600, { color: "#ff7a3d" }),
+    I("trail.zap", "Lightning Trail", "⚡", "trail", "epic", 3000, { color: "#ffe14d" }),
+    I("trail.rainbow", "Rainbow Trail", "🌈", "trail", "epic", 3500, { color: "#b06dff" }),
 
     // ---- pet buddies (slot: pet; cosmetic follower shown in arcade games) ----
     I("pet.bird", "Birdy", "🐦", "pet", "common", 200),
     I("pet.turtle", "Sheldon", "🐢", "pet", "common", 220),
-    I("pet.bunny", "Hoppy", "🐰", "pet", "rare", 380),
-    I("pet.dog", "Buddy", "🐶", "pet", "rare", 400),
-    I("pet.cat", "Whiskers", "🐱", "pet", "rare", 400),
-    I("pet.fox", "Foxy", "🦊", "pet", "epic", 700),
-    I("pet.panda", "Bamboo", "🐼", "pet", "epic", 750),
-    I("pet.trex", "Rexy", "🦖", "pet", "epic", 800),
-    I("pet.dragon", "Ember", "🐉", "pet", "legendary", 1500),
-    I("pet.unicorn", "Sparkle", "🦄", "pet", "legendary", 1500),
+    I("pet.bunny", "Hoppy", "🐰", "pet", "rare", 900),
+    I("pet.dog", "Buddy", "🐶", "pet", "rare", 950),
+    I("pet.cat", "Whiskers", "🐱", "pet", "rare", 950),
+    I("pet.fox", "Foxy", "🦊", "pet", "epic", 2800),
+    I("pet.panda", "Bamboo", "🐼", "pet", "epic", 3000),
+    I("pet.trex", "Rexy", "🦖", "pet", "epic", 3200),
+    I("pet.dragon", "Ember", "🐉", "pet", "legendary", 10000),
+    I("pet.unicorn", "Sparkle", "🦄", "pet", "legendary", 10000),
 
     // ---- per-game gear (slot: gear.<gameId>) ----
     I("gear.pickle.wood", "Wood Paddle", "🏓", "gear.pickle", "common", 100),
-    I("gear.pickle.pro", "Pro Paddle", "🏓", "gear.pickle", "rare", 300),
+    I("gear.pickle.pro", "Pro Paddle", "🏓", "gear.pickle", "rare", 700),
     I("gear.pickle.gold", "Golden Paddle", "🏓", "gear.pickle", "epic", 0, { unlock: { game: "pickle", rankPts: 100 } }),
     I("gear.fishing.rod", "Bamboo Rod", "🎣", "gear.fishing", "common", 100),
-    I("gear.fishing.zap", "Zap Rod", "🎣", "gear.fishing", "rare", 350),
+    I("gear.fishing.zap", "Zap Rod", "🎣", "gear.fishing", "rare", 800),
     I("gear.fishing.star", "Star Rod", "🎣", "gear.fishing", "epic", 0, { unlock: { game: "fishing", rankPts: 100 } }),
-    I("gear.soccer.boots", "Speed Boots", "👟", "gear.soccer", "rare", 300),
+    I("gear.soccer.boots", "Speed Boots", "👟", "gear.soccer", "rare", 700),
     I("gear.soccer.gold", "Golden Ball", "⚽", "gear.soccer", "epic", 0, { unlock: { game: "soccer", rankPts: 100 } }),
     I("gear.karts.horn", "Duck Horn", "🦆", "gear.karts", "common", 150),
     I("gear.karts.flame", "Flame Kart", "🏎️", "gear.karts", "rare", 0, { unlock: { game: "karts", rankPts: 50 } }),
-    I("gear.karts.gold", "Gold Kart", "🏎️", "gear.karts", "epic", 800),
-    I("gear.obby.wings", "Cloud Wings", "🪽", "gear.obby", "epic", 700),
-    I("gear.chess.candy", "Candy Pieces", "🍬", "gear.chess", "rare", 300),
-    I("gear.chess.blocky", "Blocky Pieces", "🟩", "gear.chess", "rare", 300),
-    I("gear.chess.neon", "Neon Board", "🌌", "gear.chess", "epic", 600),
-    I("gear.bjj.blue", "Blue Gi", "🥋", "gear.bjj", "rare", 300),
+    I("gear.karts.gold", "Gold Kart", "🏎️", "gear.karts", "epic", 3000),
+    I("gear.obby.wings", "Cloud Wings", "🪽", "gear.obby", "epic", 2800),
+    I("gear.chess.candy", "Candy Pieces", "🍬", "gear.chess", "rare", 700),
+    I("gear.chess.blocky", "Blocky Pieces", "🟩", "gear.chess", "rare", 700),
+    I("gear.chess.neon", "Neon Board", "🌌", "gear.chess", "epic", 2500),
+    I("gear.bjj.blue", "Blue Gi", "🥋", "gear.bjj", "rare", 700),
     I("gear.bjj.black", "Black Gi", "🥋", "gear.bjj", "epic", 0, { unlock: { game: "bjj", rankPts: 100 } }),
-    I("gear.chef.apron", "Flame Apron", "🍳", "gear.chef", "rare", 280),
+    I("gear.chef.apron", "Flame Apron", "🍳", "gear.chef", "rare", 650),
     I("gear.chef.gold", "Golden Spatula", "🏆", "gear.chef", "epic", 0, { unlock: { game: "chef", rankPts: 100 } }),
-    I("gear.towerd.candy", "Candy Towers", "🍭", "gear.towerd", "rare", 300),
-    I("gear.towerd.space", "Space Towers", "🛸", "gear.towerd", "epic", 650)
+    I("gear.towerd.candy", "Candy Towers", "🍭", "gear.towerd", "rare", 700),
+    I("gear.towerd.space", "Space Towers", "🛸", "gear.towerd", "epic", 2500)
   ];
 
   var byId = {}; ALL.forEach(function (it) { byId[it.id] = it; });

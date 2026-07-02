@@ -14,7 +14,7 @@
 
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
 
-  var DUPE_GEMS = { common: 40, rare: 120, epic: 300, legendary: 700 };
+  var DUPE_GEMS = { common: 40, rare: 150, epic: 500, legendary: 1500 };
 
   var env = null, tab = "quests", lockerSlot = "hat", prevRaf = 0;
 

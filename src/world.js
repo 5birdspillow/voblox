@@ -563,7 +563,17 @@
     document.getElementById("m_words").onclick = openWordList;
     document.getElementById("m_help").onclick = openHelp;
     document.getElementById("m_chess").onclick = function () { if (unlocked) openChess(); else flash("Reach 90% to unlock chess!"); };
-    document.getElementById("m_reset").onclick = function () { if (window.confirm("Reset ALL progress?")) { store.reset(); chests.forEach(refreshChest); updateHUD(); closeOverlay(); } };
+    document.getElementById("m_reset").onclick = function () {
+      if (!window.confirm("Reset ALL progress? This erases words, Vobux, level, items, pets, ranks AND Vocraft. (Your 3 manual save slots are kept — delete those in Backpack → Slots.)")) return;
+      var typed = window.prompt("Grown-up check — type RESET to erase everything:");
+      if ((typed || "").trim().toUpperCase() !== "RESET") { flash("Reset cancelled — nothing was erased."); return; }
+      try {
+        localStorage.removeItem("voblox.save.v1");
+        localStorage.removeItem("voblox.craft.v1");
+        localStorage.removeItem("voblox.slot.auto"); // the rolling auto-backup goes too, or it would undo the reset
+      } catch (e) {}
+      location.reload();
+    };
   }
   function esc(s) { return VQ.esc(s); }
   function gradeText(p) { return p >= 90 ? "A 🌟" : p >= 80 ? "B 👍" : "keep going 💪"; }
