@@ -241,8 +241,9 @@
     if (paused) return;
     var input = readMove();
     var sp = 4.6, s = Math.sin(player.yaw), c = Math.cos(player.yaw);
-    // forward = -z when yaw 0; right = +x
-    var wx = (input.x * c - input.z * s), wz = (input.x * s + input.z * c);
+    // camera forward is (-sin yaw, -cos yaw); rotate input by +yaw so W always walks
+    // toward the crosshair (the old transposed matrix inverted controls once you turned)
+    var wx = (input.x * c + input.z * s), wz = (-input.x * s + input.z * c);
     var len = Math.hypot(wx, wz); if (len > 1) { wx /= len; wz /= len; }
     player.vel.x = wx * sp; player.vel.z = wz * sp;
     player.vel.y -= 22 * dt; if (player.vel.y < -45) player.vel.y = -45;
@@ -891,6 +892,26 @@
   if (!location.hash && !save.craftSeen) showHelp();
   setInterval(updateHud, 1500);
   frame();
+  if (location.hash === "#move") setTimeout(function () { // test hook: W must move toward the crosshair at ANY yaw
+    var results = [];
+    function trial(yaw, cb) {
+      player.yaw = yaw; player.pitch = 0;
+      // hover in open air so terrain can't block the trial
+      player.pos.y = groundY(player.pos.x, player.pos.z, WH - 1) + 7; player.vel.set(0, 0, 0);
+      var x0 = player.pos.x, z0 = player.pos.z;
+      keys["w"] = true;
+      setTimeout(function () {
+        keys["w"] = false;
+        var mx = player.pos.x - x0, mz = player.pos.z - z0;
+        var d = fwd(), dot = mx * d.x + mz * d.z, mag = Math.hypot(mx, mz);
+        results.push((dot > mag * 0.7 && mag > 0.5) ? "OK" : "BAD(" + yaw.toFixed(1) + ")");
+        cb();
+      }, 500);
+    }
+    trial(0, function () { trial(Math.PI / 2, function () { trial(Math.PI, function () { trial(-Math.PI / 2, function () {
+      toast("MOVE TEST: " + results.join(" "));
+    }); }); }); });
+  }, 600);
   if (location.hash === "#word") setTimeout(function () { openWordGate(0, 5, 0); }, 300); // test hook for the word-mining overlay
   if (location.hash === "#craft") setTimeout(function () { inv[B.LOG] = 4; inv[B.PLANK] = 8; inv[IT.STICK] = 4; inv[B.COBBLE] = 10; inv[B.COAL] = 2; inv[B.IRON] = 3; openCraft(); }, 300); // test hook for crafting screen
   if (location.hash === "#mob") setTimeout(function () { var px = player.pos.x, pz = player.pos.z; mobs.push(makeMob("pig", px - 1.5, groundY(px - 1.5, pz - 4, WH - 1), pz - 4)); mobs.push(makeMob("zombie", px + 1.6, groundY(px + 1.6, pz - 4, WH - 1), pz - 4)); mobs.push(makeMob("slime", px, groundY(px, pz - 5, WH - 1), pz - 5)); mobs.forEach(function (m) { m.group.position.copy(m.pos); }); }, 400); // test hook: spawn mobs in view
