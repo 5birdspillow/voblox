@@ -49,11 +49,20 @@
     x.fillText(text, 128, 34, 236);
     var t = new THREE.CanvasTexture(c); t.anisotropy = 4; return t;
   }
-  function faceTex() {
+  function faceTex(skinHex, face) {
     var c = document.createElement("canvas"); c.width = 64; c.height = 64; var x = c.getContext("2d");
-    x.fillStyle = "#ffcc88"; x.fillRect(0, 0, 64, 64);
-    x.fillStyle = "#26323a"; x.fillRect(16, 24, 8, 10); x.fillRect(40, 24, 8, 10);
-    x.strokeStyle = "#26323a"; x.lineWidth = 4; x.beginPath(); x.arc(32, 40, 12, 0.15 * Math.PI, 0.85 * Math.PI); x.stroke();
+    x.fillStyle = skinHex || "#ffcc88"; x.fillRect(0, 0, 64, 64);
+    if (face && !/^[a-z]+$/.test(face)) { // equipped emoji face
+      x.font = "44px serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(face, 32, 36);
+    } else {
+      x.fillStyle = "#26323a"; x.fillRect(16, 24, 8, 10); x.fillRect(40, 24, 8, 10);
+      x.strokeStyle = "#26323a"; x.lineWidth = 4; x.beginPath(); x.arc(32, 40, 12, 0.15 * Math.PI, 0.85 * Math.PI); x.stroke();
+    }
+    return new THREE.CanvasTexture(c);
+  }
+  function emojiTex(emoji) {
+    var c = document.createElement("canvas"); c.width = 64; c.height = 64; var x = c.getContext("2d");
+    x.font = "52px serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(emoji, 32, 36);
     return new THREE.CanvasTexture(c);
   }
   function box(w, h, d, color) { var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ color: color })); m.castShadow = true; return m; }
@@ -157,7 +166,8 @@
     return { group: g, game: game };
   }
   function buildPortals() {
-    var games = window.VobloxGames || [];
+    // arcade-only games (hub:true) don't get a physical portal — 18 rings would crowd the island
+    var games = (window.VobloxGames || []).filter(function (g) { return !g.hub; });
     portals.forEach(function (p) { scene.remove(p.group); });
     portals = [];
     var R = 9.5, N = games.length;
@@ -165,17 +175,36 @@
     for (var i = 0; i < N; i++) { var a = (i / Math.max(N, 1)) * Math.PI * 2 + 0.4; portals.push(makePortal(games[i], Math.cos(a) * R, Math.sin(a) * R)); }
   }
 
-  // ---------- avatar ----------
+  // ---------- avatar (colors/face/hat come from the equipped Locker items) ----------
   var avatar = (function () {
-    var g = new THREE.Group(), skin = 0xffcc88, shirt = 0x2f7be0, pants = 0x394063;
-    function limb(w, h, d, color, px, py, pz) { var p = new THREE.Group(); p.position.set(px, py, pz); var m = box(w, h, d, color); m.position.y = -h / 2; p.add(m); return p; }
-    var ll = limb(0.34, 1.0, 0.34, pants, -0.22, 1.0, 0), rl = limb(0.34, 1.0, 0.34, pants, 0.22, 1.0, 0);
-    var torso = box(0.9, 1.05, 0.5, shirt); torso.position.y = 1.52;
-    var la = limb(0.3, 1.0, 0.3, skin, -0.62, 2.02, 0), ra = limb(0.3, 1.0, 0.3, skin, 0.62, 2.02, 0);
-    var side = new THREE.MeshLambertMaterial({ color: skin }), face = new THREE.MeshLambertMaterial({ map: faceTex() });
-    var head = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.82, 0.82), [side, side, side, side, face, side]); head.position.y = 2.5; head.castShadow = true;
-    g.add(ll, rl, torso, la, ra, head); scene.add(g);
-    return { group: g, ll: ll, rl: rl, la: la, ra: ra };
+    var g = new THREE.Group();
+    var cfg0 = window.VobloxAvatar ? window.VobloxAvatar.resolve(store.state)
+      : { skin: "#ffcc88", shirt: "#2f7be0", pants: "#394063", face: "smile", hat: null };
+    function hex(h) { return parseInt(String(h).slice(1), 16) || 0xffffff; }
+    var pantsMat = new THREE.MeshLambertMaterial({ color: hex(cfg0.pants) });
+    var shirtMat = new THREE.MeshLambertMaterial({ color: hex(cfg0.shirt) });
+    var skinMat = new THREE.MeshLambertMaterial({ color: hex(cfg0.skin) });
+    var faceMat = new THREE.MeshLambertMaterial({ map: faceTex(cfg0.skin, cfg0.face) });
+    function limb(w, h, d, mat, px, py, pz) {
+      var p = new THREE.Group(); p.position.set(px, py, pz);
+      var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.castShadow = true; m.position.y = -h / 2;
+      p.add(m); return p;
+    }
+    var ll = limb(0.34, 1.0, 0.34, pantsMat, -0.22, 1.0, 0), rl = limb(0.34, 1.0, 0.34, pantsMat, 0.22, 1.0, 0);
+    var torso = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.05, 0.5), shirtMat); torso.castShadow = true; torso.position.y = 1.52;
+    var la = limb(0.3, 1.0, 0.3, skinMat, -0.62, 2.02, 0), ra = limb(0.3, 1.0, 0.3, skinMat, 0.62, 2.02, 0);
+    var head = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.82, 0.82), [skinMat, skinMat, skinMat, skinMat, faceMat, skinMat]);
+    head.position.y = 2.5; head.castShadow = true;
+    var hatSpr = new THREE.Sprite(new THREE.SpriteMaterial({ map: emojiTex(cfg0.hat || " "), depthWrite: false, transparent: true }));
+    hatSpr.scale.set(0.9, 0.9, 1); hatSpr.position.set(0, 3.2, 0); hatSpr.visible = !!cfg0.hat;
+    g.add(ll, rl, torso, la, ra, head, hatSpr); scene.add(g);
+    function applyConfig(cfg) {
+      pantsMat.color.setHex(hex(cfg.pants)); shirtMat.color.setHex(hex(cfg.shirt)); skinMat.color.setHex(hex(cfg.skin));
+      faceMat.map = faceTex(cfg.skin, cfg.face); faceMat.needsUpdate = true;
+      if (cfg.hat) { hatSpr.material.map = emojiTex(cfg.hat); hatSpr.material.needsUpdate = true; hatSpr.visible = true; }
+      else hatSpr.visible = false;
+    }
+    return { group: g, ll: ll, rl: rl, la: la, ra: ra, applyConfig: applyConfig };
   })();
   var pos = avatar.group.position; pos.set(0, 0, 3.0);
 
@@ -325,12 +354,24 @@
   function afterGate() { closeOverlay(); checkVictory(); }
 
   // ---- boss launch ----
-  function gameExit() { VQ.shush(); overlayOpen = false; keys = {}; chests.forEach(refreshChest); updateHUD(); checkVictory(); }
+  function gameExit() { VQ.shush(); overlayOpen = false; keys = {}; chests.forEach(refreshChest); updateHUD(); if (window.VobloxProfile) window.VobloxProfile.slots.auto(); checkVictory(); }
   function startBoss(words, mode, title) {
     closeOverlay(); overlayOpen = true;
     window.VobloxBoss.start({ words: words, store: store, mode: mode || "boss", title: title, onExit: gameExit });
   }
-  function launchGame(game) { closeOverlay(); overlayOpen = true; game.start({ words: WORDS, store: store, onExit: gameExit }); }
+  function launchGame(game, xtra) { closeOverlay(); overlayOpen = true; game.start({ words: WORDS, store: store, onExit: gameExit, resume: !!(xtra && xtra.resume) }); }
+  function openArcade() {
+    window.VobloxArcade.open({
+      store: store,
+      openOverlay: openOverlay,
+      closeOverlay: closeOverlay,
+      launch: launchGame,
+      startBoss: function () { startBoss(WORDS, "boss", "Boss: " + lesson.title); },
+      startReview: startReview,
+      back: openMenu,
+      onEquip: function () { if (window.VobloxAvatar) avatar.applyConfig(window.VobloxAvatar.resolve(store.state)); }
+    });
+  }
   function startReview() {
     var due = store.dueCards(Content.allWords(), Date.now());
     var set = due.length ? due : WORDS;
@@ -341,6 +382,7 @@
   function updateHUD() {
     var r = store.rank(), p = store.predicted(WORDS);
     document.getElementById("rankchip").textContent = r.icon + " " + r.name;
+    var lc = document.getElementById("lvlchip"); if (lc) lc.textContent = "⭐ Lv " + (store.state.level || 1);
     document.getElementById("gemchip").textContent = "💎 " + store.state.gems;
     var cc = document.getElementById("combochip");
     if (store.state.combo > 1) { cc.style.display = "inline-block"; cc.textContent = "🔥 x" + store.state.combo; } else cc.style.display = "none";
@@ -354,9 +396,9 @@
     var unlocked = store.state.chessUnlocked || store.predicted(WORDS) >= 90;
     openOverlay('<div class="card menucard"><h2>☰ Menu — ' + esc(lesson.title) + '</h2>' +
       '<button class="menubtn" id="m_resume">▶ Back to the world</button>' +
-      '<a class="menubtn" href="craft.html" style="background:linear-gradient(#9ad06a,#6fae3e);border-color:#4f7e2a">⛏️ Craft World — NEW! (build &amp; mine)</a>' +
+      '<button class="menubtn" id="m_arcade" style="background:linear-gradient(#ffd76a,#f0a92e);border-color:#a06a12;color:#3a2a00">🕹️ Voblox Arcade — NEW! (games · locker · shop)</button>' +
+      '<a class="menubtn" href="craft.html" style="background:linear-gradient(#9ad06a,#6fae3e);border-color:#4f7e2a">⛏️ Craft World (build &amp; mine)</a>' +
       '<button class="menubtn" id="m_boss">⚔️ Boss Battle (beat the lesson!)</button>' +
-      '<button class="menubtn" id="m_games">🎮 Mini-Games (pick a game!)</button>' +
       '<button class="menubtn" id="m_review">🔁 Daily Review (mix of words)</button>' +
       '<button class="menubtn" id="m_lessons">🗺️ Choose Lesson</button>' +
       '<button class="menubtn" id="m_words">📖 Word List (all meanings)</button>' +
@@ -367,8 +409,8 @@
       '<div class="help">Predicted grade for ' + esc(lesson.title) + ': <b>' + gradeText(store.predicted(WORDS)) + '</b></div></div>',
       function (e) { if (e.key === "Escape") closeOverlay(); });
     document.getElementById("m_resume").onclick = closeOverlay;
+    document.getElementById("m_arcade").onclick = openArcade;
     document.getElementById("m_boss").onclick = function () { startBoss(WORDS, "boss", "Boss: " + lesson.title); };
-    document.getElementById("m_games").onclick = openGames;
     document.getElementById("m_review").onclick = startReview;
     document.getElementById("m_lessons").onclick = openLessons;
     document.getElementById("m_words").onclick = openWordList;
@@ -395,18 +437,6 @@
     activeLesson = String(n); store.state.activeLesson = activeLesson; store.save();
     lesson = Content.getLesson(activeLesson); WORDS = lesson.words;
     buildChests(WORDS); updateHUD(); closeOverlay();
-  }
-
-  function openGames() {
-    var games = window.VobloxGames || [];
-    var rows = '<button class="menubtn" id="g_boss">⚔️ Boss Battle</button>' +
-      games.map(function (gm) { return '<button class="menubtn" data-g="' + gm.id + '">' + gm.emoji + " " + esc(gm.name) + "</button>"; }).join("");
-    openOverlay('<div class="card menucard"><h2>🎮 Mini-Games <span class="x" id="gx" style="float:right">✕</span></h2>' + rows +
-      '<div class="help">All games use Leo’s ' + esc(lesson.title) + ' words. Each one is also a portal you can walk into in the world!</div></div>',
-      function (e) { if (e.key === "Escape") openMenu(); });
-    document.getElementById("gx").onclick = openMenu;
-    document.getElementById("g_boss").onclick = function () { startBoss(WORDS, "boss", "Boss: " + lesson.title); };
-    Array.prototype.forEach.call(obox.querySelectorAll("[data-g]"), function (b) { b.onclick = function () { var gm = games.filter(function (x) { return x.id === b.dataset.g; })[0]; if (gm) launchGame(gm); }; });
   }
 
   function openWordList() {
@@ -509,5 +539,6 @@
   else if (location.hash === "#review") startReview();
   else if (location.hash.indexOf("#game=") === 0) { var gid = location.hash.slice(6); var gm = (window.VobloxGames || []).filter(function (x) { return x.id === gid; })[0]; if (gm) launchGame(gm); }
   else if (location.hash === "#chess") openChess();
+  else if (location.hash === "#arcade") openArcade();
   if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(function () {});
 })();

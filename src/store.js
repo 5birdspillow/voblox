@@ -29,6 +29,9 @@
     this.state = load() || freshState(allWords);
     if (!this.state.playDays) this.state.playDays = [];
     this.ensureCards();
+    // profile expansion (xp/level, inventory, gameStats, …) — fills missing fields
+    // in place, so pre-expansion saves upgrade automatically at every entry point
+    if (global.VobloxProfile) global.VobloxProfile.ensure(this.state);
   }
   Store.prototype.ensureCards = function () {
     var s = this.state;
@@ -74,21 +77,43 @@
     return n;
   };
 
-  // record a graded answer; returns { earned, loot }
+  // record a graded answer; returns { earned, loot, leveledUp, level }
   Store.prototype.record = function (q, correct) {
     var s = this.state;
     Engine.grade(s.cards[q.word], q.format, correct, Date.now());
-    var earned = 0, loot = null;
+    var earned = 0, loot = null, lvl = null;
     if (correct) {
       s.combo += 1; if (s.combo > s.bestCombo) s.bestCombo = s.combo;
       s.totalCorrect += 1;
       var base = q.kind === "text" ? (q.format === "audio_spell" ? 25 : 20) : 10;
       earned = base + Math.min(Math.max(s.combo - 1, 0) * 2, 20);
       s.gems += earned;
+      // learning is the main XP source: XP mirrors gems earned per answer
+      if (global.VobloxProfile) {
+        lvl = global.VobloxProfile.addXP(s, earned);
+        if (lvl.leveledUp && global.VobloxSfx) { global.VobloxSfx.fanfare(); global.VobloxSfx.toast("⭐ LEVEL " + lvl.level + "! +🎁 chest"); }
+      }
       if (s.totalCorrect % 5 === 0) { loot = LOOT[Math.floor(Math.random() * LOOT.length)]; s.collection.push(loot); }
     } else { s.combo = 0; }
     this.save();
-    return { earned: earned, loot: loot };
+    return { earned: earned, loot: loot, leveledUp: !!(lvl && lvl.leveledUp), level: lvl ? lvl.level : undefined };
+  };
+
+  // ---- profile expansion helpers (thin wrappers over the pure VobloxProfile fns) ----
+  Store.prototype.addXP = function (n) { var r = global.VobloxProfile.addXP(this.state, n); this.save(); return r; };
+  Store.prototype.awardItem = function (id) { if (this.state.inventory.indexOf(id) === -1) this.state.inventory.push(id); this.save(); };
+  Store.prototype.equip = function (slot, id) { this.state.equipped[slot] = id; this.save(); };
+  Store.prototype.game = function (gameId) { return global.VobloxProfile.gameStat(this.state, gameId); };
+  // once-per-match result: { win, score, rankPtsDelta, xp, gems } -> rank/level changes (+ celebration)
+  Store.prototype.recordGame = function (gameId, res) {
+    var r = global.VobloxProfile.applyGameResult(this.state, gameId, res);
+    this.save();
+    if (global.VobloxSfx) {
+      if (r.leveledUp) { global.VobloxSfx.fanfare(); global.VobloxSfx.toast("⭐ LEVEL " + r.level + "! +🎁 chest"); }
+      if (r.rankedUp) { global.VobloxSfx.chime(); global.VobloxSfx.toast(r.newRank.icon + " Rank up: " + r.newRank.name + "!"); }
+    }
+    if (global.VobloxProfile.slots) global.VobloxProfile.slots.auto();
+    return r;
   };
 
   var API = { Store: Store, RANKS: RANKS, LOOT: LOOT, SAVE_KEY: SAVE_KEY, freshState: freshState };
