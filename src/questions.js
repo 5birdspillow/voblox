@@ -193,11 +193,53 @@
   function readQ(q) { speak(spoken(q)); }
   function shush() { try { if ("speechSynthesis" in global) global.speechSynthesis.cancel(); } catch (e) {} }
 
+  // In-game "word power" mini-quiz used by the arcade games: renders an MC question
+  // into `container` (a .gover element), records via store, teaches on a miss, then
+  // calls cb(correct, res). Multiple-choice only, so it never stalls the action.
+  var MINI_FORMATS = ["word2def", "cloze_mc", "def2word_mc", "synonym", "antonym"];
+  function miniQuiz(container, words, store, o) {
+    o = o || {};
+    var Engine = global.VobloxEngine;
+    var cards = words.map(function (w) { return store.state.cards[w.word]; }).filter(Boolean);
+    var card = (Engine.selectDue && Engine.selectDue(cards, Date.now())) || cards[Math.floor(Math.random() * cards.length)];
+    var data = words.filter(function (w) { return w.word === card.word; })[0];
+    var fmt = Engine.pickFormat(card, data, o.lastFormat || null, MINI_FORMATS);
+    var q = gen(card, words, { format: fmt });
+    container.innerHTML = '<div class="wqcard"><div class="wqtitle">' + (o.title || "⚡ Word Power!") + '</div>' +
+      '<div class="wqprompt">' + q.promptHTML + ' <button class="replay" id="wqsay" type="button">🔊</button></div>' +
+      '<div class="wqchoices">' + q.choices.map(function (ch, i) { return '<button class="wqc" data-i="' + i + '">' + esc(ch.label) + "</button>"; }).join("") + "</div>" +
+      (o.skippable ? '<button class="wqskip" id="wqskip" type="button">skip</button>' : "") + "</div>";
+    container.style.display = "flex";
+    readQ(q);
+    function done(ok, res) { container.style.display = "none"; container.innerHTML = ""; shush(); if (o.cb) o.cb(ok, res, fmt); }
+    var say = container.querySelector("#wqsay"); if (say) say.onclick = function () { readQ(q); };
+    var skip = container.querySelector("#wqskip"); if (skip) skip.onclick = function () { done(null, null); };
+    Array.prototype.forEach.call(container.querySelectorAll(".wqc"), function (b) {
+      b.onclick = function () {
+        var ok = !!q.choices[parseInt(b.dataset.i, 10)].correct;
+        Array.prototype.forEach.call(container.querySelectorAll(".wqc"), function (bb, idx) {
+          bb.disabled = true; if (q.choices[idx].correct) bb.classList.add("right"); else if (bb === b) bb.classList.add("wrong");
+        });
+        var res = store.record(q, ok);
+        if (ok) { setTimeout(function () { done(true, res); }, 620); }
+        else {
+          var card2 = container.querySelector(".wqcard");
+          var teach = document.createElement("div"); teach.className = "wqteach"; teach.innerHTML = entryHTML(q.data, { mnem: true });
+          card2.appendChild(teach);
+          var btn = document.createElement("button"); btn.className = "wqskip"; btn.type = "button"; btn.textContent = "Got it";
+          btn.onclick = function () { done(false, res); };
+          card2.appendChild(btn);
+        }
+      };
+    });
+    return q;
+  }
+
   var VQ = {
     pick: pick, shuffle: shuffle, sample: sample, uniq: uniq, norm: norm, esc: esc,
     boldWord: boldWord, lev: lev, meaningClue: meaningClue, makeCloze: makeCloze,
     clozeFor: clozeFor, wordData: wordData, gen: gen, checkText: checkText, entryHTML: entryHTML,
-    speak: speak, spoken: spoken, readQ: readQ, shush: shush
+    speak: speak, spoken: spoken, readQ: readQ, shush: shush, miniQuiz: miniQuiz
   };
   // stop any speech when the tab/app is hidden (locked screen, app switch, etc.)
   if (typeof document !== "undefined") document.addEventListener("visibilitychange", function () { if (document.hidden) shush(); });

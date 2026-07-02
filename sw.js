@@ -1,5 +1,5 @@
 /* Voblox service worker — offline cache for the installed app */
-var CACHE = "voblox-v21";
+var CACHE = "voblox-v22";
 var ASSETS = [
   "index.html", "study.html", "dashboard.html", "craft.html",
   "styles.css", "world.css", "boss.css", "games.css", "craft.css", "manifest.webmanifest",
@@ -8,7 +8,7 @@ var ASSETS = [
   "src/profile.js", "src/sfx.js", "src/avatar.js", "src/bots.js", "src/items.js", "src/arcade.js",
   "src/app.js", "src/world.js", "src/boss.js", "src/dashboard.js",
   "src/quizshow.js", "src/memory.js", "src/hunt.js", "src/run.js", "src/whack.js",
-  "src/hoops.js", "src/snake.js", "src/spell.js", "src/games.js",
+  "src/hoops.js", "src/snake.js", "src/spell.js", "src/pickle.js", "src/fishing.js", "src/games.js",
   "icons/icon-180.png", "icons/icon-192.png", "icons/icon-512.png"
 ];
 self.addEventListener("install", function (e) {

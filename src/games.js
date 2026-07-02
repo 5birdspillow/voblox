@@ -15,5 +15,8 @@
   add("VobloxHoops", { id: "hoops", name: "Word Hoops", emoji: "🏀", color: 0xff9933 });
   add("VobloxSnake", { id: "snake", name: "Word Snake", emoji: "🐍", color: 0x3fbf6f });
   add("VobloxSpell", { id: "spell", name: "Spell Quest", emoji: "🔤", color: 0x33b5e5 });
+  // arcade games (hub: true → launched from the 🕹️ Arcade, no island portal)
+  add("VobloxPickle", { id: "pickle", name: "Pickleball Blitz", emoji: "🏓", color: 0x69f0ae, hub: true });
+  add("VobloxFishing", { id: "fishing", name: "Fishing Frenzy", emoji: "🎣", color: 0x40c4ff, hub: true });
   global.VobloxGames = games;
 })(typeof window !== "undefined" ? window : globalThis);
