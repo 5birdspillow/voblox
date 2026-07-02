@@ -489,7 +489,7 @@
   function submitText(chest, q) { var inp = document.getElementById("answer"), r = VQ.checkText(q, inp.value); if (r === "empty") return; if (r === "near" && q.hintAllowed && !q._retried) { q._retried = true; document.getElementById("hint").textContent = "So close — check the spelling and try once more!"; inp.classList.add("almost"); inp.select(); return; } inp.disabled = true; resolveGate(chest, q, r === "correct"); }
   function resolveGate(chest, q, correct) {
     var res = store.record(q, correct); if (correct) confetti(); refreshChest(chest); updateHUD();
-    var head = correct ? '<div class="fb good">✅ ' + ["Nice!", "Yes!", "Boom!", "You got it!"][Math.floor(Math.random() * 4)] + (res.earned ? ' <span class="gain">+' + res.earned + ' 💎</span>' : "") + '</div>' : '<div class="fb bad">❌ Not quite — here’s the word:</div>';
+    var head = correct ? '<div class="fb good">✅ ' + ["Nice!", "Yes!", "Boom!", "You got it!"][Math.floor(Math.random() * 4)] + (res.earned ? ' <span class="gain">+' + res.earned + ' <img class="vbx" src="icons/vobux.png" alt="Vobux"></span>' : "") + '</div>' : '<div class="fb bad">❌ Not quite — here’s the word:</div>';
     var loot = res.loot ? '<div class="loot">🎁 Loot! You found ' + res.loot + '</div>' : "";
     var done = chest.ready ? '<div class="loot" style="background:#dff5e1;border-color:#7fce8a">✓ <b>' + chest.word + '</b> mastered — chest opened!</div>' : "";
     openOverlay('<div class="gatehead">✦ Vocab Gate <span class="x" id="gx">✕</span></div><div class="card qcard">' + head + '<div class="reveal">' + VQ.entryHTML(q.data, { mnem: true }) + '</div>' + loot + done + '<button id="next" class="submit big-next">Continue ⏎</button></div>', function (e) { if (e.key === "Enter") afterGate(); });
@@ -528,7 +528,7 @@
     var r = store.rank(), p = store.predicted(WORDS);
     document.getElementById("rankchip").textContent = r.icon + " " + r.name;
     var lc = document.getElementById("lvlchip"); if (lc) lc.textContent = "⭐ Lv " + (store.state.level || 1);
-    document.getElementById("gemchip").textContent = "💎 " + store.state.gems;
+    document.getElementById("gemchip").innerHTML = '<img class="vbx" src="icons/vobux.png" alt="V"> ' + store.state.gems;
     var cc = document.getElementById("combochip");
     if (store.state.combo > 1) { cc.style.display = "inline-block"; cc.textContent = "🔥 x" + store.state.combo; } else cc.style.display = "none";
     document.getElementById("meterfill").style.width = p + "%";

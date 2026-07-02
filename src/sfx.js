@@ -68,7 +68,7 @@
     toast: function (msg) {
       try {
         var t = global.document.createElement("div");
-        t.className = "vtoast"; t.textContent = msg;
+        t.className = "vtoast"; t.innerHTML = msg; // internal strings only (may carry the Vobux icon)
         global.document.body.appendChild(t);
         requestAnimationFrame(function () { t.style.opacity = "1"; });
         setTimeout(function () { t.style.opacity = "0"; setTimeout(function () { t.remove(); }, 400); }, 2400);

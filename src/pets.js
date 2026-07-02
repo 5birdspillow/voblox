@@ -78,7 +78,7 @@
 
     var msgEl = document.getElementById("ptmsg"), bigEl = document.getElementById("ptbig");
     function big(m, col) { bigEl.textContent = m; bigEl.style.color = col || "#fff"; bigEl.style.opacity = "1"; setTimeout(function () { bigEl.style.opacity = "0"; }, 1000); }
-    function hud() { document.getElementById("ptgems").textContent = "💎 " + state.gems; }
+    function hud() { document.getElementById("ptgems").innerHTML = '<img class="vbx" src="icons/vobux.png" alt="V"> ' + state.gems; }
     function card() { return document.getElementById("ptcard"); }
     function closeCard() { card().style.display = "none"; card().innerHTML = ""; }
 
@@ -92,9 +92,9 @@
         var rc = global.VobloxItems.RARITY[e.rarity];
         return '<button class="cc-opp" data-e="' + i + '" ' + (locked ? "disabled style='opacity:.55'" : "") + '>' +
           '<span class="cc-oname">' + e.emoji + " " + e.name + ' <span style="color:' + rc.color + ';font-size:12px">' + rc.label + "</span></span>" +
-          '<span class="cc-otitle">' + (locked ? "🔒 " + why : e.price + " 💎") + "</span></button>";
+          '<span class="cc-otitle">' + (locked ? "🔒 " + why : e.price + ' <img class="vbx" src="icons/vobux.png" alt="Vobux">') + "</span></button>";
       }).join("");
-      card().innerHTML = '<div class="wqcard"><div class="wqtitle">🥚 Hatch an egg! (you have ' + state.gems + ' 💎 Vobux)</div>' + rows +
+      card().innerHTML = '<div class="wqcard"><div class="wqtitle">🥚 Hatch an egg! (you have ' + state.gems + ' <img class="vbx" src="icons/vobux.png" alt=""> Vobux)</div>' + rows +
         '<div class="muted2" style="margin-top:6px">✨ Every egg has a 1-in-20 SHINY chance!</div>' +
         '<button class="wqskip" id="ptx">close</button></div>';
       card().style.display = "flex";

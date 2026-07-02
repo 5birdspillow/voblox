@@ -196,3 +196,7 @@ hr { border:none; border-top:2px dashed #cdd; margin:14px 0; }
   .logo { font-size:40px; }
   .prompt { font-size:20px; }
 }
+
+/* Vobux currency icon (Leo's Robux-style hexagon) */
+.vbx { height: 1em; width: 1em; vertical-align: -0.12em; }
+

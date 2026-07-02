@@ -165,7 +165,7 @@
           level: levelForXP(st.xp || 0),
           gems: st.gems || 0,
           name: (st.profile && st.profile.name) || "Leo",
-          label: "Lv " + levelForXP(st.xp || 0) + " · " + (st.gems || 0) + " 💎"
+          label: "Lv " + levelForXP(st.xp || 0) + " · " + (st.gems || 0) + " Vobux"
         };
         ls().setItem(slotKey(n), JSON.stringify({ meta: meta, save: st, craft: rawCraft ? JSON.parse(rawCraft) : null }));
         return meta;

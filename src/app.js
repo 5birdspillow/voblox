@@ -125,7 +125,7 @@
     el("hud").innerHTML =
       '<div class="hud-left">' +
         '<span class="chip">' + r.icon + ' ' + r.name + '</span>' +
-        '<span class="chip">💎 ' + state.gems + '</span>' +
+        '<span class="chip"><img class="vbx" src="icons/vobux.png" alt="V"> ' + state.gems + '</span>' +
         (state.combo > 1 ? '<span class="chip combo">🔥 x' + state.combo + '</span>' : '') +
       '</div>' +
       '<div class="meter" title="Predicted quiz score">' +

@@ -556,7 +556,7 @@
 
   // ---------- HUD ----------
   function updateHud() {
-    document.getElementById("cgems").textContent = "💎 " + store.state.gems;
+    document.getElementById("cgems").innerHTML = '<img class="vbx" src="icons/vobux.png" alt="V"> ' + store.state.gems;
     var p = store.predicted(Content.getLesson(store.state.activeLesson || "5").words);
     document.getElementById("cgrade").textContent = (p >= 90 ? "A" : p >= 80 ? "B" : p + "%");
   }

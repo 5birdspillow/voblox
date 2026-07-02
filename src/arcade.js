@@ -66,7 +66,7 @@
       '<canvas id="aheadface" width="44" height="44"></canvas>' +
       '<div class="ahead-mid"><b>' + esc(st.profile.name) + '</b> <span class="lvltag">⭐ Lv ' + st.level + '</span>' +
       '<div class="xpbar"><div class="xpfill" style="width:' + Math.round(100 * pr.have / pr.need) + '%"></div><span>' + pr.have + " / " + pr.need + " XP</span></div></div>" +
-      '<div class="ahead-right"><span class="chip">💎 ' + (st.gems || 0) + "</span>" +
+      '<div class="ahead-right"><span class="chip"><img class="vbx" src="icons/vobux.png" alt="V"> ' + (st.gems || 0) + "</span>" +
       (st.chests > 0 ? '<button class="chestbtn" id="openchest">🎁 ' + st.chests + "</button>" : "") +
       "</div></div>";
   }
@@ -82,7 +82,7 @@
     st.chests -= 1;
     var roll = IT().rollChest(Math.random, st);
     var got = roll.item, msg;
-    if (roll.dupe) { var g = DUPE_GEMS[got.rarity] || 40; st.gems += g; msg = "Already owned — +" + g + " 💎 instead!"; }
+    if (roll.dupe) { var g = DUPE_GEMS[got.rarity] || 40; st.gems += g; msg = "Already owned — +" + g + ' <img class="vbx" src="icons/vobux.png" alt="Vobux"> instead!'; }
     else { st.inventory.push(got.id); msg = "NEW item added to your Locker!"; }
     save(); SFX().fanfare();
     var el = document.getElementById("abody");
@@ -115,7 +115,7 @@
     Array.prototype.forEach.call(el.querySelectorAll("[data-q]"), function (b) {
       b.onclick = function () {
         var r = P().claimQuest(state(), parseInt(b.dataset.q, 10));
-        if (r.ok) { save(); SFX().coin(); SFX().toast("🎁 Quest done! +" + r.gems + " 💎 + a chest!"); render(); }
+        if (r.ok) { save(); SFX().coin(); SFX().toast('🎁 Quest done! +' + r.gems + ' <img class="vbx" src="icons/vobux.png" alt="Vobux"> + a chest!'); render(); }
       };
     });
   }
@@ -160,7 +160,7 @@
       else if (owned) action = '<button class="ibtn" data-eq="' + it.id + '">Equip</button>';
       else {
         var cg = IT().canGet(it, st);
-        if (it.price) action = '<button class="ibtn buy' + (cg.ok ? "" : " no") + '" data-buy="' + it.id + '">' + it.price + " 💎</button>";
+        if (it.price) action = '<button class="ibtn buy' + (cg.ok ? "" : " no") + '" data-buy="' + it.id + '">' + it.price + ' <img class="vbx" src="icons/vobux.png" alt="Vobux"></button>';
         else action = '<div class="ilock">🔒 ' + esc(cg.why) + "</div>";
       }
       return '<div class="icard' + (owned ? "" : " locked") + '" style="border-color:' + rc.color + '">' +
@@ -214,11 +214,11 @@
       var rc = IT().RARITY[it.rarity];
       return '<div class="icard" style="border-color:' + rc.color + '"><div class="iemoji">' + it.emoji + "</div>" +
         '<div class="iname">' + esc(it.name) + '</div><div class="crrar" style="color:' + rc.color + ';font-size:11px">' + rc.label + "</div>" +
-        (owned ? '<div class="ilock">✓ owned</div>' : '<button class="ibtn buy' + (st.gems >= it.price ? "" : " no") + '" data-buy="' + it.id + '">' + it.price + " 💎</button>") +
+        (owned ? '<div class="ilock">✓ owned</div>' : '<button class="ibtn buy' + (st.gems >= it.price ? "" : " no") + '" data-buy="' + it.id + '">' + it.price + ' <img class="vbx" src="icons/vobux.png" alt="Vobux"></button>') +
         "</div>";
     }).join("");
     el.innerHTML = headerHTML() +
-      '<div class="asec">🛍️ Today\'s Shop <span class="muted2">(pay with 💎 Vobux — new deals every day!)</span></div>' +
+      '<div class="asec">🛍️ Today\'s Shop <span class="muted2">(pay with <img class="vbx" src="icons/vobux.png" alt=""> Vobux — new deals every day!)</span></div>' +
       '<div class="igrid shopgrid">' + cards + "</div>" +
       '<div class="asec">🎁 Reward Chests</div>' +
       '<div class="shopchest">' + (st.chests > 0
