@@ -18,5 +18,7 @@
   // arcade games (hub: true → launched from the 🕹️ Arcade, no island portal)
   add("VobloxPickle", { id: "pickle", name: "Pickleball Blitz", emoji: "🏓", color: 0x69f0ae, hub: true });
   add("VobloxFishing", { id: "fishing", name: "Fishing Frenzy", emoji: "🎣", color: 0x40c4ff, hub: true });
+  add("VobloxSoccer", { id: "soccer", name: "Soccer Strikers", emoji: "⚽", color: 0x2f9e44, hub: true });
+  add("VobloxKarts", { id: "karts", name: "Turbo Karts", emoji: "🏎️", color: 0xe8590c, hub: true });
   global.VobloxGames = games;
 })(typeof window !== "undefined" ? window : globalThis);

@@ -211,7 +211,8 @@
       (o.skippable ? '<button class="wqskip" id="wqskip" type="button">skip</button>' : "") + "</div>";
     container.style.display = "flex";
     readQ(q);
-    function done(ok, res) { container.style.display = "none"; container.innerHTML = ""; shush(); if (o.cb) o.cb(ok, res, fmt); }
+    var fired = false; // a delayed correct-answer close must not double-fire after a skip
+    function done(ok, res) { if (fired) return; fired = true; container.style.display = "none"; container.innerHTML = ""; shush(); if (o.cb) o.cb(ok, res, fmt); }
     var say = container.querySelector("#wqsay"); if (say) say.onclick = function () { readQ(q); };
     var skip = container.querySelector("#wqskip"); if (skip) skip.onclick = function () { done(null, null); };
     Array.prototype.forEach.call(container.querySelectorAll(".wqc"), function (b) {
