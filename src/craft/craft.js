@@ -14,15 +14,15 @@
 
   // ---------- constants ----------
   var CHUNK = 16, WH = 48, SEA = 8, RENDER = ("ontouchstart" in window) ? 3 : 5;
-  var B = { AIR: 0, GRASS: 1, DIRT: 2, STONE: 3, SAND: 4, WATER: 5, LOG: 6, LEAVES: 7, PLANK: 8, GLASS: 9, COBBLE: 10, BRICK: 11, SANDSTONE: 12, WORD: 13, COAL: 14, IRON: 15, GOLD: 16, SNOW: 17, FURNACE: 18, TORCH: 19, DIAMOND: 20, BOUNCE: 21, CHEST: 22, RAINBOW: 23, GLOW: 24, CANDY: 25, ICE: 26, TNT: 27 };
-  var NAMES = { 1: "Grass", 2: "Dirt", 3: "Stone", 4: "Sand", 6: "Wood", 7: "Leaves", 8: "Planks", 9: "Glass", 10: "Cobble", 11: "Brick", 12: "Sandstone", 14: "Coal", 15: "Iron", 16: "Gold", 17: "Snow", 18: "Furnace", 19: "Torch", 20: "Diamond", 21: "Bounce!", 22: "Treasure", 23: "Rainbow", 24: "Glow", 25: "Candy", 26: "Ice", 27: "TNT" };
+  var B = { AIR: 0, GRASS: 1, DIRT: 2, STONE: 3, SAND: 4, WATER: 5, LOG: 6, LEAVES: 7, PLANK: 8, GLASS: 9, COBBLE: 10, BRICK: 11, SANDSTONE: 12, WORD: 13, COAL: 14, IRON: 15, GOLD: 16, SNOW: 17, FURNACE: 18, TORCH: 19, DIAMOND: 20, BOUNCE: 21, CHEST: 22, RAINBOW: 23, GLOW: 24, CANDY: 25, ICE: 26, TNT: 27, LAVA: 28 };
+  var NAMES = { 1: "Grass", 2: "Dirt", 3: "Stone", 4: "Sand", 6: "Wood", 7: "Leaves", 8: "Planks", 9: "Glass", 10: "Cobble", 11: "Brick", 12: "Sandstone", 14: "Coal", 15: "Iron", 16: "Gold", 17: "Snow", 18: "Furnace", 19: "Torch", 20: "Diamond", 21: "Bounce!", 22: "Treasure", 23: "Rainbow", 24: "Glow", 25: "Candy", 26: "Ice", 27: "TNT", 28: "Lava" };
   // non-placeable items (ids >= 100)
-  var IT = { STICK: 100, WPICK: 101, SPICK: 102, IPICK: 103, SWORD: 104, FOOD: 105, DPICK: 106, WOOL: 107, BAG: 108, SLIME: 109, DSWORD: 110 };
-  var ITNAME = { 100: "Stick", 101: "Wood Pick", 102: "Stone Pick", 103: "Iron Pick", 104: "Sword", 105: "Food", 106: "DIAMOND Pick", 107: "Wool", 108: "Sleeping Bag", 109: "Slimeball", 110: "Diamond Sword" };
-  var ITEMOJI = { 100: "🪵", 101: "⛏️", 102: "⛏️", 103: "⛏️", 104: "🗡️", 105: "🍖", 106: "💠", 107: "🧶", 108: "🛏️", 109: "🟢", 110: "⚔️" };
-  function transparent(id) { return id === B.AIR || id === B.WATER || id === B.GLASS || id === B.LEAVES; }
+  var IT = { STICK: 100, WPICK: 101, SPICK: 102, IPICK: 103, SWORD: 104, FOOD: 105, DPICK: 106, WOOL: 107, BAG: 108, SLIME: 109, DSWORD: 110, APPLE: 111, GAPPLE: 112, BOW: 113, ARROW: 114, AIRON: 115, ADIA: 116 };
+  var ITNAME = { 100: "Stick", 101: "Wood Pick", 102: "Stone Pick", 103: "Iron Pick", 104: "Sword", 105: "Food", 106: "DIAMOND Pick", 107: "Wool", 108: "Sleeping Bag", 109: "Slimeball", 110: "Diamond Sword", 111: "Apple", 112: "GOLDEN Apple", 113: "Bow", 114: "Arrow", 115: "Iron Armor", 116: "DIAMOND Armor" };
+  var ITEMOJI = { 100: "🪵", 101: "⛏️", 102: "⛏️", 103: "⛏️", 104: "🗡️", 105: "🍖", 106: "💠", 107: "🧶", 108: "🛏️", 109: "🟢", 110: "⚔️", 111: "🍎", 112: "🍏", 113: "🏹", 114: "➶", 115: "🛡️", 116: "🛡️" };
+  function transparent(id) { return id === B.AIR || id === B.WATER || id === B.GLASS || id === B.LEAVES || id === B.LAVA; }
   function opaque(id) { return id !== B.AIR && !transparent(id); }
-  function solid(id) { return id !== B.AIR && id !== B.WATER; } // collidable
+  function solid(id) { return id !== B.AIR && id !== B.WATER && id !== B.LAVA; } // collidable (you sink into lava — carefully!)
 
   var COL = {
     1: { top: [0.40, 0.72, 0.33], side: [0.52, 0.40, 0.26], bot: [0.45, 0.33, 0.21] },
@@ -37,7 +37,7 @@
     22: { top: [0.80, 0.62, 0.24], side: [0.55, 0.38, 0.18] },
     23: { all: [1.0, 1.0, 1.0] }, 24: { all: [1.0, 0.95, 0.55] },
     25: { all: [0.98, 0.55, 0.75] }, 26: { all: [0.72, 0.90, 1.0] },
-    27: { all: [0.85, 0.24, 0.20] }
+    27: { all: [0.85, 0.24, 0.20] }, 28: { all: [1.0, 0.46, 0.10] }
   };
   function faceCol(id, kind) { var c = COL[id] || COL[3]; return c[kind] || c.all || c.side || [1, 1, 1]; }
 
@@ -133,7 +133,7 @@
             else if (ly > 2 && ly < 16 && hash(wx, ly + 1400, wz) > 0.99955) id = B.CHEST; // buried treasure!
           }
         }
-        if (ly > 1 && ly < h - 4 && noise3(wx / 13, ly / 9, wz / 13) > 0.78) id = B.AIR; // caves
+        if (ly > 1 && ly < h - 4) { var n3 = noise3(wx / 13, ly / 9, wz / 13); if (n3 > 0.78) id = (ly < 6 && n3 > 0.815) ? B.LAVA : B.AIR; } // caves, with lava pools at the very bottom
         blocks[idx(lx, ly, lz)] = id;
       }
       if (h < SEA) for (var wy = h + 1; wy <= SEA; wy++) if (blocks[idx(lx, wy, lz)] === B.AIR) blocks[idx(lx, wy, lz)] = B.WATER;
@@ -148,6 +148,17 @@
           if (lxx >= 0 && lxx < CHUNK && lzz >= 0 && lzz < CHUNK && yy < WH && blocks[idx(lxx, yy, lzz)] === B.AIR) blocks[idx(lxx, yy, lzz)] = B.LEAVES;
         }
       }
+    }
+    // ~7% of chunks hide a DUNGEON: a cobblestone room deep underground with loot
+    if (hash(cx, 999, cz) > 0.93) {
+      var ry = 3;
+      for (var ax = 4; ax <= 11; ax++) for (var az = 4; az <= 11; az++) for (var ay = ry; ay <= ry + 4; ay++) {
+        var isWall = (ax === 4 || ax === 11 || az === 4 || az === 11 || ay === ry || ay === ry + 4);
+        blocks[idx(ax, ay, az)] = isWall ? B.COBBLE : B.AIR;
+      }
+      blocks[idx(6, ry + 1, 6)] = B.CHEST; blocks[idx(9, ry + 1, 9)] = B.CHEST;
+      blocks[idx(6, ry + 1, 9)] = B.GOLD; blocks[idx(9, ry + 1, 6)] = B.WORD;
+      blocks[idx(7, ry + 1, 7)] = B.TORCH; blocks[idx(8, ry + 1, 8)] = B.TORCH;
     }
     c.blocks = blocks;
     // apply saved edits in this chunk
@@ -189,7 +200,7 @@
         var F = FACES[f], nb = getBlock(wx + F.n[0], wy + F.n[1], wz + F.n[2]);
         var drawn = isW ? (nb === B.AIR && F.k === "top") : (!opaque(nb) && !(transparent(id) && nb === id));
         if (!drawn) continue;
-        var glow = (id === B.WORD || id === B.TORCH || id === B.GLOW || id === B.DIAMOND);
+        var glow = (id === B.WORD || id === B.TORCH || id === B.GLOW || id === B.DIAMOND || id === B.LAVA);
         var col = faceCol(id, F.k), s = isW ? 0.9 : (glow ? 1.0 : shade(F.k));
         if (id === B.RAINBOW) { // every rainbow block gets its own bright hue
           var hu = hash(wx * 3 + 11, wy * 3 + 17, wz * 3 + 23) * 6;
@@ -237,10 +248,14 @@
     if (!collides(p.x, p.y, p.z)) { player.pos[axis] += d; return false; }
     return true; // blocked
   }
+  var speedT = 0, bobPhase = 0, lavaT = 0, sprinting = false;
   function updatePlayer(dt) {
     if (paused) return;
+    if (speedT > 0) speedT -= dt;
     var input = readMove();
-    var sp = 4.6, s = Math.sin(player.yaw), c = Math.cos(player.yaw);
+    sprinting = (keys["shift"] || Math.hypot(joy.x, joy.y) > 0.93) && (input.x !== 0 || input.z !== 0);
+    var sp = 4.6 * (sprinting ? 1.42 : 1) * (speedT > 0 ? 1.35 : 1);
+    var s = Math.sin(player.yaw), c = Math.cos(player.yaw);
     // camera forward is (-sin yaw, -cos yaw); rotate input by +yaw so W always walks
     // toward the crosshair (the old transposed matrix inverted controls once you turned)
     var wx = (input.x * c + input.z * s), wz = (-input.x * s + input.z * c);
@@ -264,13 +279,27 @@
       }
     }
     else player._fellFrom = (player._fellFrom == null) ? player.pos.y : Math.max(player._fellFrom, player.pos.y);
+    // lava is HOT (stand clear!)
+    var feet = getBlock(Math.floor(player.pos.x), Math.floor(player.pos.y + 0.1), Math.floor(player.pos.z));
+    var waist = getBlock(Math.floor(player.pos.x), Math.floor(player.pos.y + 0.9), Math.floor(player.pos.z));
+    if (feet === B.LAVA || waist === B.LAVA) {
+      lavaT += dt; player._fellFrom = null;
+      if (lavaT > 0.7) { lavaT = 0; hurtPlayer(1); toast("🔥 HOT HOT HOT — get out of the lava!"); }
+    } else lavaT = 0;
+    // walk bob + sprint feel
+    var hv = Math.hypot(player.vel.x, player.vel.z);
+    if (player.onGround && hv > 1) bobPhase += dt * hv * 1.9; else bobPhase *= 0.9;
+    var wantFov = sprinting ? 77 : (speedT > 0 ? 78 : 70);
+    if (Math.abs(camera.fov - wantFov) > 0.2) { camera.fov += (wantFov - camera.fov) * Math.min(1, dt * 7); camera.updateProjectionMatrix(); }
+    if (sprinting) hungerT += dt * 0.5; // sprinting makes you hungry
     // clamp into world vertically
     if (player.pos.y < -8) { player.pos.set(player.pos.x, heightAt(player.pos.x, player.pos.z) + 3, player.pos.z); player.vel.set(0, 0, 0); }
   }
   function updateCamera() {
-    camera.position.set(player.pos.x, player.pos.y + EYE, player.pos.z);
+    var bob = Math.sin(bobPhase * 2.1) * 0.045;
+    camera.position.set(player.pos.x, player.pos.y + EYE + bob, player.pos.z);
     var cp = Math.cos(player.pitch);
-    camera.lookAt(player.pos.x - Math.sin(player.yaw) * cp, player.pos.y + EYE + Math.sin(player.pitch), player.pos.z - Math.cos(player.yaw) * cp);
+    camera.lookAt(player.pos.x - Math.sin(player.yaw) * cp, player.pos.y + EYE + bob + Math.sin(player.pitch), player.pos.z - Math.cos(player.yaw) * cp);
   }
 
   // ---------- raycast (voxel DDA) ----------
@@ -292,7 +321,7 @@
     if (id === B.GOLD) return tier >= 3 ? B.GOLD : null;
     if (id === B.DIAMOND) return tier >= 3 ? B.DIAMOND : null; // iron pick unlocks diamonds
     if (id === B.GRASS || id === B.DIRT) return B.DIRT;
-    if (id === B.LEAVES || id === B.WATER) return null;
+    if (id === B.LEAVES || id === B.WATER || id === B.LAVA) return null;
     return id; // sand, log, plank, glass, snow, furnace, torch, shop blocks drop themselves
   }
   function openTreasure(h) {
@@ -308,12 +337,52 @@
     cfetti(); chime(); renderHotbar();
     bumpJob("chests", 1); checkAch();
   }
-  function doMine() {
-    if (paused) return;
-    var mi = attackTarget(); if (mi != null) { hitMob(mi); return; }
-    var h = ray(); if (!h) return;
-    if (h.id === B.WORD) { openWordGate(h.x, h.y, h.z); return; }
-    if (h.id === B.CHEST) { openTreasure(h); return; }
+  // ---------- hold-to-mine: blocks take time, better picks mine FASTER ----------
+  var PICKBLOCKS = {}; [B.STONE, B.COBBLE, B.BRICK, B.SANDSTONE, B.FURNACE, B.COAL, B.IRON, B.GOLD, B.DIAMOND].forEach(function (b2) { PICKBLOCKS[b2] = 1; });
+  var HARDNESS = {};
+  [[B.LEAVES, 0.2], [B.GRASS, 0.35], [B.DIRT, 0.35], [B.SAND, 0.35], [B.SNOW, 0.35],
+   [B.LOG, 0.5], [B.PLANK, 0.5], [B.GLASS, 0.3], [B.ICE, 0.3], [B.CANDY, 0.3], [B.GLOW, 0.3], [B.RAINBOW, 0.3], [B.BOUNCE, 0.3], [B.TORCH, 0.15], [B.TNT, 0.3],
+   [B.STONE, 0.9], [B.COBBLE, 0.9], [B.BRICK, 0.9], [B.SANDSTONE, 0.9], [B.FURNACE, 0.9],
+   [B.COAL, 1.1], [B.IRON, 1.1], [B.GOLD, 1.25], [B.DIAMOND, 1.5],
+   [B.WORD, 0.25], [B.CHEST, 0.3]].forEach(function (p2) { HARDNESS[p2[0]] = p2[1]; });
+  function mineTime(id) {
+    var base = HARDNESS[id] || 0.5;
+    if (PICKBLOCKS[id]) {
+      var tier = pickTier();
+      base = tier > 0 ? base / (0.6 + 0.5 * tier) : base * 2.2; // no pick = painfully slow (and no drop)
+    }
+    return base;
+  }
+  var mineHeld = false, mineT = 0, mineTarget = null, mineIdle = 0, atkSwing = 0, needPickHintT = 0;
+  var crackBox = new THREE.Mesh(new THREE.BoxGeometry(1.02, 1.02, 1.02), new THREE.MeshBasicMaterial({ color: 0x111111, wireframe: true, transparent: true, opacity: 0.85 }));
+  crackBox.visible = false; scene.add(crackBox);
+  var ringEl = document.createElement("div"); ringEl.id = "mring"; document.body.appendChild(ringEl);
+  function clearMineVis() { crackBox.visible = false; ringEl.style.display = "none"; }
+  function updateMining(dt) {
+    atkSwing -= dt; needPickHintT -= dt;
+    if (!mineHeld || paused || dead) {
+      mineIdle += dt; if (mineIdle > 1.1) { mineTarget = null; mineT = 0; } // taps within ~1s keep chipping the same block
+      clearMineVis(); return;
+    }
+    mineIdle = 0;
+    var mi = attackTarget();
+    if (mi != null) { if (atkSwing <= 0) { hitMob(mi); atkSwing = 0.38; } clearMineVis(); return; }
+    var h = ray();
+    if (!h) { clearMineVis(); return; }
+    if (!mineTarget || mineTarget.x !== h.x || mineTarget.y !== h.y || mineTarget.z !== h.z) { mineTarget = { x: h.x, y: h.y, z: h.z }; mineT = 0.1; } // small head start so taps feel snappy
+    mineT += dt;
+    var need = mineTime(h.id), pr = Math.min(1, mineT / need);
+    crackBox.visible = true; crackBox.position.set(h.x + 0.5, h.y + 0.5, h.z + 0.5);
+    var cs = 1.02 - pr * 0.16; crackBox.scale.set(cs, cs, cs);
+    ringEl.style.display = "block";
+    ringEl.style.background = "conic-gradient(#ffce3a " + Math.round(pr * 360) + "deg, #ffffff22 0deg)";
+    if ((mineT % 0.24) < dt) { sfx(150 + pr * 90, 0.05, "square", 0.035); puff(h.x, h.y, h.z, h.id); }
+    if (PICKBLOCKS[h.id] && pickTier() === 0 && needPickHintT <= 0) { needPickHintT = 4; toast("⛏️ Craft a pickaxe (E) to mine stone properly!"); }
+    if (pr >= 1) { finishMine(h); mineTarget = null; mineT = 0; clearMineVis(); }
+  }
+  function finishMine(h) {
+    if (h.id === B.WORD) { mineHeld = false; openWordGate(h.x, h.y, h.z); return; }
+    if (h.id === B.CHEST) { mineHeld = false; openTreasure(h); return; }
     var tier = pickTier();
     var drop = dropFor(h.id, tier);
     if (drop) {
@@ -323,16 +392,24 @@
       if (drop === B.DIAMOND) { stats.diamonds = (stats.diamonds || 0) + 1; toast("💠 DIAMOND!"); chime(); }
       if (drop === B.LOG) { stats.logs = (stats.logs || 0) + 1; bumpJob("logs", 1); }
     }
+    if (h.id === B.LEAVES && Math.random() < 0.12) { addInv(IT.APPLE, 1); toast("🍎 An apple fell out!"); }
     stats.mined = (stats.mined || 0) + 1;
     if (h.y < (stats.deepest === undefined ? 99 : stats.deepest)) stats.deepest = h.y;
     sess.mined++;
     bumpJob("mine", 1);
-    puff(h.x, h.y, h.z, h.id); sfx(170, 0.07, "square", 0.045);
+    puff(h.x, h.y, h.z, h.id); sfx(170, 0.07, "square", 0.055); sfx(90, 0.09, "square", 0.03);
     setBlock(h.x, h.y, h.z, B.AIR); renderHotbar();
     checkAch();
   }
+  function doMine() { // single swing (kept for tests + instant attack on press)
+    if (paused) return;
+    var mi = attackTarget(); if (mi != null) { hitMob(mi); atkSwing = 0.38; return; }
+  }
   function doPlace() {
     if (paused) return;
+    // aiming at a wolf? the place button becomes "offer food" (that's how you tame your dog!)
+    var mi = attackTarget();
+    if (mi != null && mobs[mi].type === "wolf") { feedWolf(mi); return; }
     var h = ray(); if (!h) return;
     var nx = h.px, ny = h.py, nz = h.pz;
     // don't place inside the player
@@ -428,6 +505,7 @@
     if (k === "f") { eat(); return; }
     if (k === "q") { openBook(); return; }
     if (k === "z") { sleep(); return; }
+    if (k === "r") { shoot(); return; }
     if (k >= "1" && k <= "9") { var i = +k - 1; if (i < hotbar.length) { sel = i; renderHotbar(); } }
   });
   document.addEventListener("keyup", function (e) { keys[(e.key || "").toLowerCase()] = false; });
@@ -439,8 +517,9 @@
   });
   document.addEventListener("mousedown", function (e) {
     if (document.pointerLockElement !== canvas) return;
-    if (e.button === 0) doMine(); else if (e.button === 2) doPlace();
+    if (e.button === 0) { mineHeld = true; doMine(); } else if (e.button === 2) doPlace();
   });
+  document.addEventListener("mouseup", function (e) { if (e.button === 0) mineHeld = false; });
   document.addEventListener("contextmenu", function (e) { e.preventDefault(); });
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 
@@ -450,11 +529,17 @@
   if ("ontouchstart" in window) {
     joyEl = document.createElement("div"); joyEl.id = "tjoy"; nubEl = document.createElement("div"); nubEl.id = "tnub"; joyEl.appendChild(nubEl); document.body.appendChild(joyEl);
     addBtn("bMine", "⛏", function () { doMine(); });
+    // the mine button is HOLD-to-mine (blocks chip away while pressed)
+    var bm = document.getElementById("bMine");
+    bm.addEventListener("touchstart", function () { mineHeld = true; }, { passive: true });
+    bm.addEventListener("touchend", function () { mineHeld = false; }, { passive: true });
+    bm.addEventListener("touchcancel", function () { mineHeld = false; }, { passive: true });
     addBtn("bPlace", "▦", function () { doPlace(); });
     addBtn("bJump", "⤒", function () { jumpReq = true; });
     addBtn("bCraft", "📦", function () { openCraft(); });
     addBtn("bEat", "🍖", function () { eat(); });
     addBtn("bBook", "📖", function () { openBook(); });
+    addBtn("bBow", "🏹", function () { shoot(); });
     canvas.addEventListener("touchstart", function (e) {
       for (var i = 0; i < e.changedTouches.length; i++) { var t = e.changedTouches[i];
         if (t.clientX < window.innerWidth * 0.5 && joyId === null) { joyId = t.identifier; jox = t.clientX; joy0y = t.clientY; joyEl.style.display = "block"; joyEl.style.left = (t.clientX - 64) + "px"; joyEl.style.top = (t.clientY - 64) + "px"; moveNub(0, 0); }
@@ -488,6 +573,7 @@
       return '<div class="slot' + (i === sel ? " sel" : "") + '" data-i="' + i + '">' + cnt + '<div class="sw" style="background:' + css + '"></div><div class="nm">' + (NAMES[id] || "") + "</div></div>";
     }).join("");
     Array.prototype.forEach.call(el.querySelectorAll(".slot"), function (s) { s.onclick = function () { sel = +s.dataset.i; renderHotbar(); }; });
+    updateBowBtn();
   }
 
   // ---------- crafting ----------
@@ -510,7 +596,12 @@
     { name: "DIAMOND Pickaxe", out: { id: IT.DPICK, n: 1 }, in: [{ id: B.DIAMOND, n: 3 }, { id: IT.STICK, n: 2 }] },
     { name: "Diamond Sword", out: { id: IT.DSWORD, n: 1 }, in: [{ id: B.DIAMOND, n: 2 }, { id: IT.STICK, n: 1 }] },
     { name: "Sleeping Bag", out: { id: IT.BAG, n: 1 }, in: [{ id: IT.WOOL, n: 3 }] },
-    { name: "Bounce Block ×2", out: { id: B.BOUNCE, n: 2 }, in: [{ id: IT.SLIME, n: 2 }, { id: B.PLANK, n: 2 }], unlock: true }
+    { name: "Bounce Block ×2", out: { id: B.BOUNCE, n: 2 }, in: [{ id: IT.SLIME, n: 2 }, { id: B.PLANK, n: 2 }], unlock: true },
+    { name: "Bow", out: { id: IT.BOW, n: 1 }, in: [{ id: IT.STICK, n: 3 }, { id: IT.WOOL, n: 2 }] },
+    { name: "Arrows ×6", out: { id: IT.ARROW, n: 6 }, in: [{ id: IT.STICK, n: 2 }, { id: B.COBBLE, n: 2 }] },
+    { name: "GOLDEN Apple", out: { id: IT.GAPPLE, n: 1 }, in: [{ id: IT.APPLE, n: 1 }, { id: B.GOLD, n: 1 }] },
+    { name: "Iron Armor", out: { id: IT.AIRON, n: 1 }, in: [{ id: B.IRON, n: 5 }] },
+    { name: "DIAMOND Armor", out: { id: IT.ADIA, n: 1 }, in: [{ id: B.DIAMOND, n: 5 }] }
   ];
   function canCraft(r) { return r.in.every(function (ing) { return hasInv(ing.id, ing.n); }); }
   function craft(r) {
@@ -548,12 +639,18 @@
   var survEl = document.createElement("div"); survEl.id = "surv"; document.body.appendChild(survEl);
   function isNight() { return tod < 0.24 || tod > 0.76; }
   function groundY(x, z, fromY) { var fx = Math.floor(x), fz = Math.floor(z); for (var y = Math.min(WH - 1, Math.floor(fromY)); y >= 0; y--) if (solid(getBlock(fx, y, fz))) return y + 1; return 1; }
+  function isHostile(t) { return t === "zombie" || t === "bones" || t === "boomy"; }
   function makeMob(type, x, y, z) {
     var g = new THREE.Group();
-    var col = { pig: 0xe79aa6, cow: 0x6e4a34, sheep: 0xeae6dc, zombie: 0x5a8f4a, slime: 0x59c94f }[type] || 0xcccccc;
+    var col = { pig: 0xe79aa6, cow: 0x6e4a34, sheep: 0xeae6dc, zombie: 0x5a8f4a, slime: 0x59c94f, boomy: 0x3fae4a, bones: 0xd8dde2, wolf: 0x9aa3ad, dog: 0xb98a5a }[type] || 0xcccccc;
     var M = new THREE.MeshLambertMaterial({ color: col });
-    function bx(w, h, d, px, py, pz) { var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M); m.position.set(px, py, pz); g.add(m); }
-    if (type === "zombie") { bx(0.6, 1.0, 0.35, 0, 1.05, 0); bx(0.5, 0.5, 0.5, 0, 1.8, 0); bx(0.18, 0.8, 0.18, -0.39, 1.05, 0.22); bx(0.18, 0.8, 0.18, 0.39, 1.05, 0.22); bx(0.2, 0.85, 0.2, -0.17, 0.42, 0); bx(0.2, 0.85, 0.2, 0.17, 0.42, 0); }
+    function bx(w, h, d, px, py, pz, mat) { var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat || M); m.position.set(px, py, pz); g.add(m); return m; }
+    if (type === "zombie" || type === "bones") {
+      bx(0.6, 1.0, 0.35, 0, 1.05, 0); bx(0.5, 0.5, 0.5, 0, 1.8, 0);
+      bx(0.18, 0.8, 0.18, -0.39, 1.05, 0.22); bx(0.18, 0.8, 0.18, 0.39, 1.05, 0.22);
+      bx(0.2, 0.85, 0.2, -0.17, 0.42, 0); bx(0.2, 0.85, 0.2, 0.17, 0.42, 0);
+      if (type === "bones") bx(0.5, 0.1, 0.06, 0, 1.2, 0.45, new THREE.MeshLambertMaterial({ color: 0x8a6a4a })); // its little bow
+    }
     else if (type === "slime") {
       var jelly = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.65, 0.85), new THREE.MeshLambertMaterial({ color: col, transparent: true, opacity: 0.85 }));
       jelly.position.y = 0.36; g.add(jelly); g._jelly = jelly;
@@ -561,9 +658,24 @@
       var e1 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.06), eye); e1.position.set(-0.18, 0.46, 0.44); g.add(e1);
       var e2 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.06), eye); e2.position.set(0.18, 0.46, 0.44); g.add(e2);
     }
+    else if (type === "boomy") { // the huggable menace
+      bx(0.55, 0.85, 0.5, 0, 1.15, 0); bx(0.5, 0.5, 0.5, 0, 1.85, 0);
+      [[-0.16, 0.32], [0.16, 0.32], [-0.16, -0.32], [0.16, -0.32]].forEach(function (p) { bx(0.2, 0.45, 0.2, p[0], 0.5, p[1]); });
+      var fm = new THREE.MeshLambertMaterial({ color: 0x123018 });
+      bx(0.12, 0.15, 0.05, -0.13, 1.92, 0.26, fm); bx(0.12, 0.15, 0.05, 0.13, 1.92, 0.26, fm); bx(0.1, 0.2, 0.05, 0, 1.72, 0.26, fm);
+    }
+    else if (type === "wolf" || type === "dog") {
+      bx(0.5, 0.45, 0.95, 0, 0.55, 0); bx(0.4, 0.4, 0.42, 0, 0.75, 0.6);
+      bx(0.13, 0.13, 0.1, -0.13, 1.0, 0.62); bx(0.13, 0.13, 0.1, 0.13, 1.0, 0.62); // ears
+      bx(0.16, 0.14, 0.3, 0, 0.68, 0.86); // snout
+      [[-0.16, 0.3], [0.16, 0.3], [-0.16, -0.3], [0.16, -0.3]].forEach(function (p) { bx(0.14, 0.4, 0.14, p[0], 0.18, p[1]); });
+      g._tail = bx(0.1, 0.1, 0.35, 0, 0.65, -0.6);
+      if (type === "dog") bx(0.46, 0.1, 0.1, 0, 0.83, 0.6, new THREE.MeshLambertMaterial({ color: 0xd23f3f })); // red collar!
+    }
     else { bx(0.75, 0.6, 1.05, 0, 0.6, 0); bx(0.5, 0.5, 0.5, 0, 0.78, 0.62); [[-0.27, 0.38], [0.27, 0.38], [-0.27, -0.38], [0.27, -0.38]].forEach(function (p) { bx(0.18, 0.42, 0.18, p[0], 0.21, p[1]); }); if (type === "pig") bx(0.2, 0.16, 0.1, 0, 0.74, 0.9); }
     g.position.set(x, y, z); scene.add(g);
-    return { type: type, pos: new THREE.Vector3(x, y, z), vel: 0, dir: Math.random() * 6.28, hp: type === "zombie" ? 6 : type === "slime" ? 3 : 4, group: g, wander: 0, moving: true, atkCd: 0, hopT: Math.random() * 2 };
+    var hp = type === "zombie" ? 6 : type === "bones" ? 5 : type === "boomy" ? 4 : type === "slime" ? 3 : type === "dog" ? 12 : 4;
+    return { type: type, pos: new THREE.Vector3(x, y, z), vel: 0, dir: Math.random() * 6.28, hp: hp, group: g, wander: 0, moving: true, atkCd: 0, hopT: Math.random() * 2, fuse: -1, shootCd: 2, fleeT: 0 };
   }
   function tryMove(m, dx, dz) { var nx = m.pos.x + dx, nz = m.pos.z + dz, gy = groundY(nx, nz, m.pos.y + 1); if (gy - m.pos.y > 1.3) return; m.pos.x = nx; m.pos.z = nz; }
   function updateMob(m, dt) {
@@ -573,6 +685,56 @@
       var dx = player.pos.x - m.pos.x, dz = player.pos.z - m.pos.z, d = Math.hypot(dx, dz) || 1;
       m.dir = Math.atan2(dx, dz); tryMove(m, (dx / d) * 1.6 * dt, (dz / d) * 1.6 * dt);
       m.atkCd -= dt; if (d < 1.2 && m.atkCd <= 0) { hurtPlayer(1); m.atkCd = 1.1; }
+    } else if (m.type === "boomy") {
+      var bdx = player.pos.x - m.pos.x, bdz = player.pos.z - m.pos.z, bd = Math.hypot(bdx, bdz) || 1;
+      m.dir = Math.atan2(bdx, bdz);
+      if (m.fuse >= 0) { // hissing!
+        m.fuse -= dt;
+        var fl = (Math.sin(m.fuse * 22) > 0) ? 1.12 : 0.95; m.group.scale.set(fl, 2 - fl, fl);
+        if (bd > 3.6) { m.fuse = -1; m.group.scale.set(1, 1, 1); } // you escaped — it calms down
+        else if (m.fuse <= 0) { boomyExplode(m); return; }
+      } else {
+        if (bd < 7) tryMove(m, (bdx / bd) * 1.9 * dt, (bdz / bd) * 1.9 * dt);
+        else { m.wander -= dt; if (m.wander <= 0) { m.dir = Math.random() * 6.28; m.wander = 2 + Math.random() * 2; } tryMove(m, Math.sin(m.dir) * 0.8 * dt, Math.cos(m.dir) * 0.8 * dt); }
+        if (bd < 1.9) { m.fuse = 1.4; sfx(1200, 0.5, "sawtooth", 0.05); sfx(700, 0.55, "sawtooth", 0.04); } // hisssss
+      }
+    } else if (m.type === "bones") {
+      var sdx = player.pos.x - m.pos.x, sdz = player.pos.z - m.pos.z, sd = Math.hypot(sdx, sdz) || 1;
+      m.dir = Math.atan2(sdx, sdz);
+      if (sd > 9) tryMove(m, (sdx / sd) * 1.4 * dt, (sdz / sd) * 1.4 * dt);
+      else if (sd < 5) tryMove(m, (-sdx / sd) * 1.3 * dt, (-sdz / sd) * 1.3 * dt); // keeps its distance
+      m.shootCd -= dt;
+      if (m.shootCd <= 0 && sd < 14) {
+        m.shootCd = 2.2 + Math.random() * 0.8;
+        var from = m.pos.clone(); from.y += 1.35;
+        var to = player.pos.clone(); to.y += 1.0;
+        var v = to.sub(from).normalize().multiplyScalar(8);
+        spawnArrow(from, v, false);
+        sfx(500, 0.08, "triangle", 0.04);
+      }
+    } else if (m.type === "dog") {
+      var pdx = player.pos.x - m.pos.x, pdz = player.pos.z - m.pos.z, pd = Math.hypot(pdx, pdz) || 1;
+      // guard: charge the nearest hostile near its kid
+      var target = null, td = 7;
+      for (var hi = 0; hi < mobs.length; hi++) { var hm = mobs[hi]; if (!isHostile(hm.type)) continue; var hd = Math.hypot(hm.pos.x - player.pos.x, hm.pos.z - player.pos.z); if (hd < td) { td = hd; target = hm; } }
+      if (target) {
+        var tdx = target.pos.x - m.pos.x, tdz = target.pos.z - m.pos.z, tdd = Math.hypot(tdx, tdz) || 1;
+        m.dir = Math.atan2(tdx, tdz); tryMove(m, (tdx / tdd) * 3.4 * dt, (tdz / tdd) * 3.4 * dt);
+        m.atkCd -= dt;
+        if (tdd < 1.1 && m.atkCd <= 0) { m.atkCd = 0.8; damageMob(target, 2, false); if (m.vel === 0) m.vel = 4; sfx(260, 0.06, "square", 0.05); }
+      } else if (pd > 14) { m.pos.set(player.pos.x + 1.2, player.pos.y + 0.5, player.pos.z + 1.2); } // teleports back to you
+      else if (pd > 2.6) { m.dir = Math.atan2(pdx, pdz); tryMove(m, (pdx / pd) * 3.2 * dt, (pdz / pd) * 3.2 * dt); }
+      else { m.dir = player.yaw + Math.PI; }
+      if (m.group._tail) m.group._tail.rotation.y = Math.sin(performance.now() / 120) * 0.6; // waggy tail
+    } else if (m.type === "wolf") {
+      m.fleeT -= dt;
+      if (m.fleeT > 0) { tryMove(m, Math.sin(m.dir) * 3.5 * dt, Math.cos(m.dir) * 3.5 * dt); }
+      else {
+        m.wander -= dt; if (m.wander <= 0) { m.dir = Math.random() * 6.28; m.wander = 1.5 + Math.random() * 2.5; m.moving = Math.random() < 0.6; }
+        if (m.moving) tryMove(m, Math.sin(m.dir) * 1.2 * dt, Math.cos(m.dir) * 1.2 * dt);
+        var wd = Math.hypot(player.pos.x - m.pos.x, player.pos.z - m.pos.z);
+        if (wd < 6 && !save.dog && !hintedWolf) { hintedWolf = true; toast("🐺 A wolf! Get close, aim at it, and tap ▦ with 🍖 food to make a friend!"); }
+      }
     } else if (m.type === "slime") {
       // slimes bounce around; they only travel while airborne
       m.hopT -= dt;
@@ -589,13 +751,41 @@
   function spawnNear(type, minR, maxR) { var a = Math.random() * 6.28, r = minR + Math.random() * (maxR - minR), x = player.pos.x + Math.cos(a) * r, z = player.pos.z + Math.sin(a) * r, gy = groundY(x, z, WH - 1); if (gy <= 2) return; mobs.push(makeMob(type, x, gy, z)); }
   function spawnMobs(dt) {
     spawnT -= dt;
+    if (dogAwayT > 0) { dogAwayT -= dt; if (dogAwayT <= 0 && save.dog) { save.dogAway = false; persist(); mobs.push(makeMob("dog", player.pos.x + 1.5, player.pos.y + 0.5, player.pos.z + 1.5)); toast("🐕 Rex is back, all healed!"); chime(); } }
     if (spawnT <= 0) {
       spawnT = 3;
-      var an = 0, zo = 0; mobs.forEach(function (m) { if (m.type === "zombie") zo++; else an++; });
-      if (!isNight() && an < 6) spawnNear(["pig", "cow", "sheep", "slime"][Math.floor(Math.random() * 4)], 8, 22);
-      if (isNight() && zo < 4) spawnNear("zombie", 9, 17);
+      var an = 0, zo = 0, wolves = 0; mobs.forEach(function (m) { if (isHostile(m.type)) zo++; else { an++; if (m.type === "wolf") wolves++; } });
+      if (!isNight() && an < 6) {
+        var pick2 = Math.random();
+        if (pick2 < 0.14 && wolves < 1 && !save.dog) spawnNear("wolf", 9, 20);
+        else spawnNear(["pig", "cow", "sheep", "slime"][Math.floor(Math.random() * 4)], 8, 22);
+      }
+      if (isNight() && zo < 4) {
+        var r2 = Math.random();
+        spawnNear(r2 < 0.55 ? "zombie" : r2 < 0.82 ? "bones" : "boomy", 9, 17);
+      }
+      checkDungeon();
     }
-    for (var i = mobs.length - 1; i >= 0; i--) { var m = mobs[i], dd = Math.hypot(m.pos.x - player.pos.x, m.pos.z - player.pos.z); if (dd > 50 || (m.type === "zombie" && !isNight() && dd > 7)) removeMob(i); }
+    // day-leftover hostiles fade out only when THEY are on the surface and you're not close
+    // (dungeon guards live deep, so they stay; never vanish something the player is fighting)
+    for (var i = mobs.length - 1; i >= 0; i--) { var m = mobs[i], dd = Math.hypot(m.pos.x - player.pos.x, m.pos.z - player.pos.z); if (m.type === "dog") continue; if (dd > 50 || (isHostile(m.type) && !isNight() && m.pos.y > 12 && dd > 12)) removeMob(i); }
+  }
+  // 🏚️ walking into a dungeon room announces it (once) and wakes its guards
+  function checkDungeon() {
+    var pcx = Math.floor(player.pos.x / CHUNK), pcz = Math.floor(player.pos.z / CHUNK);
+    if (hash(pcx, 999, pcz) <= 0.93) return;
+    var cxw = pcx * CHUNK + 7.5, czw = pcz * CHUNK + 7.5;
+    if (Math.abs(player.pos.x - cxw) > 5 || Math.abs(player.pos.z - czw) > 5 || Math.abs(player.pos.y - 5) > 4) return;
+    save.dgSeen = save.dgSeen || {};
+    var k = pcx + "," + pcz;
+    if (save.dgSeen[k]) return;
+    save.dgSeen[k] = 1; persist();
+    stats.dungeons = (stats.dungeons || 0) + 1;
+    toast("🏚️ You found a DUNGEON! Grab the treasure — but watch out…");
+    sfx(160, 0.3, "sawtooth", 0.06);
+    mobs.push(makeMob("zombie", cxw - 2, 4, czw - 2));
+    mobs.push(makeMob("zombie", cxw + 2, 4, czw + 2));
+    checkAch();
   }
   function attackTarget() {
     var d = fwd(), best = null, bd = 4;
@@ -603,34 +793,168 @@
     return best;
   }
   function hitMob(i) {
-    var m = mobs[i]; m.hp -= (inv[IT.DSWORD] ? 7 : inv[IT.SWORD] ? 4 : 2); m.group.position.y += 0.1;
-    if (m.hp <= 0) {
-      if (m.type === "zombie") {
-        store.state.gems += 3; store.save(); updateHud();
-        stats.zkills = (stats.zkills || 0) + 1; sess.kills++;
-        bumpJob("zombies", 1);
-      } else if (m.type === "slime") {
-        addInv(IT.SLIME, 1 + Math.floor(Math.random() * 2));
-        toast("🟢 Slimeball! Craft Bounce Blocks with it!");
-      } else if (m.type === "sheep") {
-        addInv(IT.WOOL, 2); addInv(IT.FOOD, 1);
-        toast("🧶 Wool! 3 wool = a Sleeping Bag.");
-      } else {
-        addInv(IT.FOOD, 1 + Math.floor(Math.random() * 2));
-      }
-      renderHotbar(); removeMob(i); checkAch();
+    var m = mobs[i];
+    if (m.type === "dog") { toast("🐕 Rex looks at you funny. (That's your dog!)"); return; }
+    if (m.type === "wolf") { m.fleeT = 2; m.dir = Math.atan2(m.pos.x - player.pos.x, m.pos.z - player.pos.z); }
+    damageMob(m, (inv[IT.DSWORD] ? 7 : inv[IT.SWORD] ? 4 : 2), false);
+  }
+  function damageMob(m, dmg, viaBow) {
+    m.hp -= dmg;
+    // knockback pop
+    var kx = m.pos.x - player.pos.x, kz = m.pos.z - player.pos.z, kd = Math.hypot(kx, kz) || 1;
+    tryMove(m, (kx / kd) * 0.45, (kz / kd) * 0.45); if (m.vel === 0) m.vel = 3.4;
+    puff(Math.floor(m.pos.x), Math.floor(m.pos.y + 0.5), Math.floor(m.pos.z), B.BRICK);
+    if (m.hp > 0) return;
+    if (m.type === "zombie" || m.type === "bones" || m.type === "boomy") {
+      store.state.gems += (m.type === "zombie" ? 3 : 5); store.save(); updateHud();
+      stats.zkills = (stats.zkills || 0) + 1; sess.kills++;
+      bumpJob("zombies", 1);
+      if (m.type === "bones") { addInv(IT.ARROW, 2 + Math.floor(Math.random() * 2)); toast("💀 Bones dropped arrows!"); }
+      if (m.type === "boomy") { stats.boomKills = (stats.boomKills || 0) + 1; if (Math.random() < 0.3) addInv(IT.APPLE, 1); }
+      if (viaBow) { stats.bowKills = (stats.bowKills || 0) + 1; bumpJob("bow", 1); }
+    } else if (m.type === "slime") {
+      addInv(IT.SLIME, 1 + Math.floor(Math.random() * 2));
+      toast("🟢 Slimeball! Craft Bounce Blocks with it!");
+    } else if (m.type === "sheep") {
+      addInv(IT.WOOL, 2); addInv(IT.FOOD, 1);
+      toast("🧶 Wool! 3 wool = a Sleeping Bag.");
+    } else if (m.type === "dog") {
+      // your buddy never dies — he runs home to heal and comes back
+      dogAwayT = 45; save.dogAway = true; persist();
+      toast("🐕 Rex ran home to heal — he'll be back soon!");
+    } else if (m.type === "wolf") {
+      // wolves just run away for good (kid-safe: no wolf harming)
+    } else {
+      addInv(IT.FOOD, 1 + Math.floor(Math.random() * 2));
+    }
+    renderHotbar();
+    var mi2 = mobs.indexOf(m); if (mi2 >= 0) removeMob(mi2);
+    checkAch();
+  }
+  function boomyExplode(m) {
+    var bx2 = Math.floor(m.pos.x), by2 = Math.floor(m.pos.y + 1), bz2 = Math.floor(m.pos.z);
+    for (var dx = -2; dx <= 2; dx++) for (var dy = -2; dy <= 2; dy++) for (var dz = -2; dz <= 2; dz++) {
+      if (dx * dx + dy * dy + dz * dz > 4.2) continue;
+      var bid = getBlock(bx2 + dx, by2 + dy, bz2 + dz);
+      if (bid !== B.AIR && bid !== B.WATER && bid !== B.LAVA && bid !== B.WORD && bid !== B.CHEST) setBlock(bx2 + dx, by2 + dy, bz2 + dz, B.AIR);
+    }
+    puff(bx2, by2, bz2, B.TNT); puff(bx2 + 1, by2, bz2, B.TNT); puff(bx2, by2 + 1, bz2, B.TNT); puff(bx2 - 1, by2, bz2, B.LEAVES);
+    sfx(80, 0.45, "sawtooth", 0.1); sfx(55, 0.55, "square", 0.08);
+    // knock the player back (and hurt a little — armor helps)
+    var px2 = player.pos.x - m.pos.x, pz2 = player.pos.z - m.pos.z, pd2 = Math.hypot(px2, pz2) || 1;
+    if (pd2 < 5) {
+      hurtPlayer(2);
+      player.vel.y = 6.5; player.pos.x += (px2 / pd2) * 1.2; player.pos.z += (pz2 / pd2) * 1.2; player._fellFrom = null;
+    }
+    var mi3 = mobs.indexOf(m); if (mi3 >= 0) removeMob(mi3);
+  }
+  // 🐺 → 🐕 feed a wolf to tame it
+  var hintedWolf = false, dogAwayT = (save.dogAway ? 45 : 0);
+  function feedWolf(i) {
+    var m = mobs[i];
+    if (save.dog) { toast("🐕 You already have Rex — he's the best dog!"); return; }
+    if (!takeInv(IT.FOOD, 1)) { toast("You need 🍖 food to make friends! (hunt a pig or cow)"); return; }
+    puff(Math.floor(m.pos.x), Math.floor(m.pos.y + 1), Math.floor(m.pos.z), B.BRICK); // hearts-ish
+    sfx(520, 0.1, "sine", 0.05); sfx(660, 0.12, "sine", 0.05);
+    renderHotbar();
+    if (Math.random() < 0.6) {
+      var wp = m.pos.clone();
+      var wi = mobs.indexOf(m); if (wi >= 0) removeMob(wi);
+      mobs.push(makeMob("dog", wp.x, wp.y, wp.z));
+      save.dog = true; persist();
+      toast("🎉🐕 The wolf is now your dog REX! He follows you and fights monsters!");
+      chime(); cfetti(); checkAch();
+    } else {
+      toast("🐺 Nom nom… it wants MORE food. One more try!");
     }
   }
-  function hurtPlayer(n) { if (dead) return; player.health = Math.max(0, player.health - n); survFlash(); sfx(110, 0.18, "sawtooth", 0.07); updateSurvHud(); if (player.health <= 0) die(); }
-  function eat() { if (player.hunger >= MAXHUNGER || dead) return; if (takeInv(IT.FOOD, 1)) { player.hunger = Math.min(MAXHUNGER, player.hunger + 3); updateSurvHud(); renderHotbar(); } }
+  // ---------- arrows (yours and the skeletons') ----------
+  var projs = [];
+  function spawnArrow(from, vel, mine2) {
+    var mesh = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.55), new THREE.MeshBasicMaterial({ color: mine2 ? 0x7a4a1e : 0xcfd6dd }));
+    mesh.position.copy(from); scene.add(mesh);
+    projs.push({ mesh: mesh, pos: from.clone(), vel: vel.clone(), mine: mine2, life: 2.6 });
+  }
+  function shoot() {
+    if (paused || dead) return;
+    if (!hasInv(IT.BOW, 1)) { toast("🏹 Craft a Bow first (3 sticks + 2 wool)!"); return; }
+    if (!takeInv(IT.ARROW, 1)) { toast("Out of arrows! Craft more (2 sticks + 2 cobble = 6)."); return; }
+    var d = fwd();
+    var from = new THREE.Vector3(camera.position.x + d.x * 0.4, camera.position.y + d.y * 0.4 - 0.12, camera.position.z + d.z * 0.4);
+    spawnArrow(from, new THREE.Vector3(d.x * 20, d.y * 20 + 0.8, d.z * 20), true);
+    sfx(700, 0.09, "triangle", 0.06); sfx(320, 0.06, "square", 0.03);
+    renderHotbar(); updateBowBtn();
+  }
+  function updateProjectiles(dt) {
+    for (var i = projs.length - 1; i >= 0; i--) {
+      var p = projs[i];
+      p.life -= dt; p.vel.y -= 7 * dt;
+      // swept movement: arrows are fast, so walk this frame's travel in ≤0.4-block
+      // sub-steps or they tunnel straight through mobs and thin walls on slow frames
+      var mvx = p.vel.x * dt, mvy = p.vel.y * dt, mvz = p.vel.z * dt;
+      var steps = Math.max(1, Math.ceil(Math.hypot(mvx, mvy, mvz) / 0.4));
+      var gone = p.life <= 0;
+      for (var st = 0; st < steps && !gone; st++) {
+        p.pos.x += mvx / steps; p.pos.y += mvy / steps; p.pos.z += mvz / steps;
+        if (solid(getBlock(Math.floor(p.pos.x), Math.floor(p.pos.y), Math.floor(p.pos.z)))) { gone = true; break; }
+        if (p.mine) {
+          for (var mi4 = 0; mi4 < mobs.length; mi4++) {
+            var mm = mobs[mi4]; if (mm.type === "dog") continue;
+            // capsule: clamp arrow height into the mob's body span, then radial test
+            var cy = Math.max(mm.pos.y + 0.15, Math.min(mm.pos.y + 1.75, p.pos.y));
+            var hd2 = Math.hypot(mm.pos.x - p.pos.x, cy - p.pos.y, mm.pos.z - p.pos.z);
+            if (window._bd && hd2 < window._bd.v) window._bd.v = hd2;
+            if (hd2 < 0.8) { damageMob(mm, 4, true); gone = true; break; }
+          }
+        } else {
+          var py = Math.max(player.pos.y + 0.2, Math.min(player.pos.y + 1.7, p.pos.y));
+          if (Math.hypot(player.pos.x - p.pos.x, py - p.pos.y, player.pos.z - p.pos.z) < 0.8) { hurtPlayer(1); gone = true; }
+        }
+      }
+      p.mesh.position.copy(p.pos);
+      p.mesh.rotation.y = Math.atan2(p.vel.x, p.vel.z);
+      p.mesh.rotation.x = -Math.atan2(p.vel.y, Math.hypot(p.vel.x, p.vel.z));
+      if (gone) { scene.remove(p.mesh); p.mesh.geometry.dispose(); projs.splice(i, 1); }
+    }
+  }
+  function updateBowBtn() { var b = document.getElementById("bBow"); if (b) b.style.display = hasInv(IT.BOW, 1) ? "flex" : "none"; }
+  function hurtPlayer(n) {
+    if (dead) return;
+    if (inv[IT.ADIA]) n = Math.max(1, Math.round(n * 0.5)); // diamond armor halves damage
+    else if (inv[IT.AIRON]) n = Math.max(1, Math.round(n * 0.7));
+    player.health = Math.max(0, player.health - n); survFlash(); sfx(110, 0.18, "sawtooth", 0.07); updateSurvHud(); if (player.health <= 0) die();
+  }
+  function eat() {
+    if (dead) return;
+    // emergency: a golden apple when hurt = FULL heal + full tummy + speed boost
+    if (player.health <= 6 && hasInv(IT.GAPPLE, 1)) {
+      takeInv(IT.GAPPLE, 1);
+      player.health = MAXHP; player.hunger = MAXHUNGER; speedT = 8;
+      stats.gapples = (stats.gapples || 0) + 1;
+      toast("🍏 GOLDEN APPLE! Fully healed + speed boost!"); chime(); cfetti();
+      updateSurvHud(); renderHotbar(); checkAch(); return;
+    }
+    if (player.hunger >= MAXHUNGER) return;
+    if (takeInv(IT.FOOD, 1)) { player.hunger = Math.min(MAXHUNGER, player.hunger + 3); sfx(220, 0.08, "triangle", 0.05); }
+    else if (takeInv(IT.APPLE, 1)) { player.hunger = Math.min(MAXHUNGER, player.hunger + 2); sfx(300, 0.07, "triangle", 0.05); }
+    else { toast("No food! Hunt animals 🍖 or punch leaves for apples 🍎"); return; }
+    updateSurvHud(); renderHotbar();
+  }
   function updateSurvival(dt) {
     if (dead) return;
     hungerT += dt; if (hungerT > 7) { hungerT = 0; player.hunger = Math.max(0, player.hunger - 1); updateSurvHud(); }
     hpT += dt; if (hpT > 3) { hpT = 0; if (player.hunger >= 8 && player.health < MAXHP) { player.health++; updateSurvHud(); } else if (player.hunger <= 0 && player.health > 0) { player.health--; updateSurvHud(); if (player.health <= 0) die(); } }
   }
   function survFlash() { survEl.classList.add("hurt"); setTimeout(function () { survEl.classList.remove("hurt"); }, 220); }
-  function updateSurvHud() { var f = inv[IT.FOOD] || 0; survEl.innerHTML = "❤️ " + player.health + "/" + MAXHP + " &nbsp; 🍖 " + player.hunger + "/" + MAXHUNGER + (f ? ' &nbsp; <span class="eatable">🍗×' + f + " (F)</span>" : ""); }
-  function die() { dead = true; paused = true; if (document.pointerLockElement) document.exitPointerLock(); COVB.innerHTML = '<div class="card hero" style="text-align:center"><div class="big-emoji">💫</div><div class="hero-line">You fainted!</div><div class="hero-sub">No worries — you keep everything you collected.</div><button id="resp" class="submit big-next">Wake up ⏎</button></div>'; COV.style.display = "flex"; document.getElementById("resp").onclick = respawn; wordKey = function (e) { if (e.key === "Enter") respawn(); }; }
+  function updateSurvHud() {
+    var f = (inv[IT.FOOD] || 0) + (inv[IT.APPLE] || 0);
+    var armor = inv[IT.ADIA] ? " 🛡💠" : inv[IT.AIRON] ? " 🛡" : "";
+    var depth = player.pos.y < 13 ? ' · <span style="color:#8fd2ff">⛏ y=' + Math.floor(player.pos.y) + "</span>" : "";
+    survEl.innerHTML = "❤️ " + player.health + "/" + MAXHP + armor + " &nbsp; 🍖 " + player.hunger + "/" + MAXHUNGER +
+      (f ? ' &nbsp; <span class="eatable">🍗×' + f + " (F)</span>" : "") +
+      ' &nbsp; <span style="color:#ffe14d">☀️ Day ' + (save.day || 1) + "</span>" + depth;
+  }
+  function die() { dead = true; mineHeld = false; paused = true; if (document.pointerLockElement) document.exitPointerLock(); COVB.innerHTML = '<div class="card hero" style="text-align:center"><div class="big-emoji">💫</div><div class="hero-line">You fainted on Day ' + (save.day || 1) + '!</div><div class="hero-sub">No worries — you keep everything you collected' + (save.dog ? " and Rex is safe" : "") + '.</div><button id="resp" class="submit big-next">Wake up ⏎</button></div>'; COV.style.display = "flex"; document.getElementById("resp").onclick = respawn; wordKey = function (e) { if (e.key === "Enter") respawn(); }; }
   function respawn() { dead = false; player.health = MAXHP; player.hunger = Math.max(player.hunger, 5); var gy = groundY(0, 0, WH - 1); player.pos.set(0.5, gy + 1, 0.5); player.vel.set(0, 0, 0); player._fellFrom = null; COV.style.display = "none"; paused = false; wordKey = null; keys = {}; updateSurvHud(); }
 
   // ---------- VOCRAFT progression: stats, achievements, daily jobs, shop, sleep ----------
@@ -655,7 +979,14 @@
     { id: "diamond1", name: "Shiny!!", emoji: "💎", pay: 50, cond: function () { return (stats.diamonds || 0) >= 1; } },
     { id: "zomb5", name: "Night Guard", emoji: "🧟", pay: 25, cond: function () { return (stats.zkills || 0) >= 5; } },
     { id: "chest3", name: "Treasure Hunter", emoji: "🎁", pay: 30, cond: function () { return (stats.chests || 0) >= 3; } },
-    { id: "sleep1", name: "Cozy Camper", emoji: "🛏️", pay: 15, cond: function () { return (stats.slept || 0) >= 1; } }
+    { id: "sleep1", name: "Cozy Camper", emoji: "🛏️", pay: 15, cond: function () { return (stats.slept || 0) >= 1; } },
+    { id: "bow1", name: "Marksman", emoji: "🏹", pay: 20, cond: function () { return (stats.bowKills || 0) >= 1; } },
+    { id: "boom1", name: "Boomy Buster", emoji: "🧨", pay: 25, cond: function () { return (stats.boomKills || 0) >= 1; } },
+    { id: "dog", name: "Best Friend", emoji: "🐕", pay: 30, cond: function () { return !!save.dog; } },
+    { id: "armor", name: "Armored Up", emoji: "🛡️", pay: 25, cond: function () { return !!(inv[IT.AIRON] || inv[IT.ADIA]); } },
+    { id: "dungeon1", name: "Dungeon Raider", emoji: "🏚️", pay: 30, cond: function () { return (stats.dungeons || 0) >= 1; } },
+    { id: "gapple", name: "Golden Snack", emoji: "🍏", pay: 20, cond: function () { return (stats.gapples || 0) >= 1; } },
+    { id: "day7", name: "Week Survivor", emoji: "📅", pay: 40, cond: function () { return (save.day || 1) >= 7; } }
   ];
   function checkAch() {
     for (var i = 0; i < ACH.length; i++) {
@@ -677,7 +1008,8 @@
     { kind: "crystals", text: "Crack {n} Word Crystals", ns: [2, 3], pay: 40 },
     { kind: "zombies", text: "Defeat {n} zombies", ns: [2, 3], pay: 30 },
     { kind: "place", text: "Build with {n} blocks", ns: [20, 35], pay: 25 },
-    { kind: "chests", text: "Open {n} treasure chest", ns: [1], pay: 35 }
+    { kind: "chests", text: "Open {n} treasure chest", ns: [1], pay: 35 },
+    { kind: "bow", text: "Shoot {n} monsters with your bow", ns: [2, 3], pay: 30 }
   ];
   function ensureJobs() {
     var dk = P ? P.dayKey() : "x";
@@ -836,7 +1168,7 @@
   function toast(msg) { var t = document.createElement("div"); t.className = "ctoast"; t.textContent = msg; document.body.appendChild(t); requestAnimationFrame(function () { t.style.opacity = "1"; }); setTimeout(function () { t.style.opacity = "0"; setTimeout(function () { t.remove(); }, 400); }, 2400); }
   function showHelp() {
     paused = true;
-    COVB.innerHTML = '<div class="card"><h2>⛏️ Welcome to VOCRAFT!</h2><p><b>Move:</b> on a computer use <b>W A S D</b> and click to look with the mouse. On a tablet, drag the <b>left side</b> to walk and the <b>right side</b> to look.</p><p><b>Mine</b> blocks (left-click / ⛏) and <b>place</b> them (right-click / ▦). <b>Jump</b> with Space / ⤒. <b>Craft</b> with <b>E</b> / 📦, eat with <b>F</b> / 🍖.</p><p><b>📖 Your Vocraft Book (Q)</b> has daily jobs, trophies, and a Vobux block shop — dig deep for 💠 diamonds and 🎁 buried treasure!</p><p><b>✨ Crack glowing Word Crystals</b> — answer the word for Vobux and iron!</p><button id="okh" class="submit big-next">Let’s go! ⏎</button></div>';
+    COVB.innerHTML = '<div class="card"><h2>⛏️ Welcome to VOCRAFT!</h2><p><b>Move:</b> <b>W A S D</b> + mouse (hold <b>Shift</b> to sprint!). On a tablet, drag the <b>left side</b> to walk (push far = sprint) and the <b>right side</b> to look.</p><p><b>HOLD to mine</b> (left-click / ⛏) — better pickaxes dig faster! <b>Place</b> with right-click / ▦, <b>jump</b> Space / ⤒, <b>craft</b> E / 📦, <b>eat</b> F / 🍖, <b>shoot your bow</b> R / 🏹.</p><p><b>📖 Your Vocraft Book (Q)</b>: daily jobs, trophies, block shop. Find 💠 diamonds, 🎁 treasure, 🏚️ dungeons… and <b>tame a wolf</b> (aim + ▦ with food) to get a dog!</p><p><b>✨ Crack glowing Word Crystals</b> — answer the word for Vobux and iron!</p><button id="okh" class="submit big-next">Let’s go! ⏎</button></div>';
     COV.style.display = "flex";
     function go() { save.craftSeen = true; persist(); COV.style.display = "none"; paused = false; wordKey = null; }
     document.getElementById("okh").onclick = go; wordKey = function (e) { if (e.key === "Enter") go(); };
@@ -856,7 +1188,9 @@
   window.addEventListener("resize", resize);
   var DAYSKY = new THREE.Color(0x8fd2ff), NIGHTSKY = new THREE.Color(0x0a1330), tod = 0.32;
   function updateDayNight(dt) {
+    var prevTod = tod;
     tod = (tod + dt / 240) % 1;
+    if (tod < prevTod) { save.day = (save.day || 1) + 1; updateSurvHud(); toast("☀️ Day " + save.day + "!"); checkAch(); persist(); }
     var light = 0.5 - 0.5 * Math.cos(tod * Math.PI * 2);
     var b = 0.34 + 0.66 * light;
     solidMat.color.setRGB(b, b, b); waterMat.color.setRGB(b * 0.85, b * 0.92, b);
@@ -870,7 +1204,7 @@
     var dt = Math.min(clock.getDelta(), 0.05);
     updateDayNight(dt);
     updatePlayer(dt); updateCamera(); streamChunks();
-    if (!paused) { updateSurvival(dt); for (var mi = 0; mi < mobs.length; mi++) updateMob(mobs[mi], dt); spawnMobs(dt); }
+    if (!paused) { updateMining(dt); updateSurvival(dt); for (var mi = 0; mi < mobs.length; mi++) updateMob(mobs[mi], dt); spawnMobs(dt); updateProjectiles(dt); }
     updateParticles(dt);
     saveTimer -= dt; if (saveTimer < 0 && saveTimer > -1) { save.px = player.pos.x; save.py = player.pos.y; save.pz = player.pos.z; save.yaw = player.yaw; save.pitch = player.pitch; save.health = player.health; save.hunger = player.hunger; persist(); saveTimer = -2; }
     renderer.render(scene, camera);
@@ -887,6 +1221,7 @@
     if (!save.edits || Object.keys(save.edits).length === 0 || save.py < -5) { player.pos.y = h + 2; player.pitch = -0.25; }
   })();
   renderHotbar(); updateHud(); updateSurvHud();
+  if (save.dog && !save.dogAway) setTimeout(function () { mobs.push(makeMob("dog", player.pos.x + 1.5, player.pos.y + 0.5, player.pos.z + 1.5)); }, 600); // Rex is waiting for you
   var v = document.getElementById("ver"); if (v) v.textContent = "build " + (window.VOBLOX_VERSION || "dev");
   document.getElementById("loading").style.display = "none";
   if (!location.hash && !save.craftSeen) showHelp();
@@ -913,8 +1248,41 @@
     }); }); }); });
   }, 600);
   if (location.hash === "#word") setTimeout(function () { openWordGate(0, 5, 0); }, 300); // test hook for the word-mining overlay
-  if (location.hash === "#craft") setTimeout(function () { inv[B.LOG] = 4; inv[B.PLANK] = 8; inv[IT.STICK] = 4; inv[B.COBBLE] = 10; inv[B.COAL] = 2; inv[B.IRON] = 3; openCraft(); }, 300); // test hook for crafting screen
-  if (location.hash === "#mob") setTimeout(function () { var px = player.pos.x, pz = player.pos.z; mobs.push(makeMob("pig", px - 1.5, groundY(px - 1.5, pz - 4, WH - 1), pz - 4)); mobs.push(makeMob("zombie", px + 1.6, groundY(px + 1.6, pz - 4, WH - 1), pz - 4)); mobs.push(makeMob("slime", px, groundY(px, pz - 5, WH - 1), pz - 5)); mobs.forEach(function (m) { m.group.position.copy(m.pos); }); }, 400); // test hook: spawn mobs in view
+  if (location.hash === "#craft") setTimeout(function () { inv[B.LOG] = 4; inv[B.PLANK] = 8; inv[IT.STICK] = 4; inv[B.COBBLE] = 10; inv[B.COAL] = 2; inv[B.IRON] = 3; inv[IT.WOOL] = 2; inv[IT.APPLE] = 1; inv[B.GOLD] = 1; openCraft(); setTimeout(function () { var card = COVB.querySelector(".card"); if (card) COVB.scrollTop = COVB.scrollHeight; window.scrollTo(0, 0); var rec = COVB.querySelectorAll(".crecipe"); if (rec.length) rec[rec.length - 1].scrollIntoView(false); }, 300); }, 300); // test hook for crafting screen (scrolled to the new recipes)
+  if (location.hash === "#mob") setTimeout(function () { var px = player.pos.x, pz = player.pos.z; player.pos.y = groundY(px, pz, WH - 1) + 2; ["pig", "zombie", "slime", "boomy", "bones", "wolf", "dog"].forEach(function (t2, i2) { var mx = px - 4.5 + i2 * 1.5, mz = pz - 5; mobs.push(makeMob(t2, mx, groundY(mx, mz, WH - 1) + 0.5, mz)); }); mobs.forEach(function (m) { m.group.position.copy(m.pos); }); }, 400); // test hook: the whole zoo in view
+  if (location.hash === "#bow") setTimeout(function () { // test hook: arrows fly and hit
+    inv[IT.BOW] = 1; inv[IT.ARROW] = 10; renderHotbar();
+    var px = Math.floor(player.pos.x), pz = Math.floor(player.pos.z);
+    // sky arena: two glass platforms, nothing in between to block arrows
+    for (var gx = -1; gx <= 1; gx++) for (var gz = -1; gz <= 1; gz++) { setBlock(px + gx, 29, pz + gz, B.GLASS); setBlock(px + gx, 29, pz - 8 + gz, B.GLASS); }
+    player.pos.set(px + 0.5, 30.2, pz + 0.5); player.vel.set(0, 0, 0);
+    var zm = makeMob("zombie", px + 0.5, 30.2, pz - 7.5);
+    mobs.push(zm);
+    player.yaw = 0;
+    function aimAndShoot() { // aim the crosshair at the zombie's chest, then fire
+      var dx = zm.pos.x - camera.position.x, dy = (zm.pos.y + 1.0) - camera.position.y, dz = zm.pos.z - camera.position.z;
+      player.yaw = Math.atan2(-dx, -dz); player.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+      shoot();
+    }
+    var minD = 99, probe = setInterval(function () {
+      for (var pi = 0; pi < projs.length; pi++) {
+        var pp = projs[pi];
+        var dd2 = Math.hypot(zm.pos.x - pp.pos.x, (zm.pos.y + 1) - pp.pos.y, zm.pos.z - pp.pos.z);
+        if (dd2 < minD) minD = dd2;
+      }
+    }, 30);
+    setTimeout(aimAndShoot, 200); setTimeout(aimAndShoot, 800); setTimeout(aimAndShoot, 1400);
+    window._bd = { v: 99 };
+    setTimeout(function () { clearInterval(probe); toast("BOW: left=" + (inv[IT.ARROW] || 0) + " zhp=" + zm.hp + " tested=" + window._bd.v.toFixed(2) + " probe=" + minD.toFixed(2) + " kills=" + (stats.zkills || 0)); }, 2400);
+  }, 400);
+  if (location.hash === "#dungeon") setTimeout(function () { // test hook: teleport into the nearest dungeon
+    var pcx = Math.floor(player.pos.x / CHUNK), pcz = Math.floor(player.pos.z / CHUNK);
+    outer: for (var rr = 0; rr < 9; rr++) for (var ddx = -rr; ddx <= rr; ddx++) for (var ddz = -rr; ddz <= rr; ddz++) {
+      if (hash(pcx + ddx, 999, pcz + ddz) > 0.93) { pcx += ddx; pcz += ddz; break outer; }
+    }
+    getChunk(pcx, pcz, true);
+    player.pos.set(pcx * CHUNK + 7.5, 4.2, pcz * CHUNK + 7.5); player.vel.set(0, 0, 0); player.yaw = 2.4; player.pitch = -0.15;
+  }, 500);
   if (location.hash === "#book") setTimeout(function () { stats.mined = 34; stats.logs = 3; stats.crafted = 1; store.state.gems = Math.max(store.state.gems, 420); ensureJobs(); bumpJob("mine", 34); openBook(); }, 300); // test hook: the Vocraft Book
   if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(function () {});
 })();

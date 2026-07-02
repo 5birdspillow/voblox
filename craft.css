@@ -68,6 +68,19 @@ html, body.craftbody { margin: 0; height: 100%; overflow: hidden; background: #7
 #bEat { right: calc(env(safe-area-inset-right) + 16px); bottom: calc(env(safe-area-inset-bottom) + 234px);
   width: 60px; height: 60px; font-size: 24px; background: #ffd0a0e0; }
 
+/* hold-to-mine progress ring around the crosshair */
+#mring { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 46px; height: 46px;
+  border-radius: 50%; z-index: 3; pointer-events: none; display: none;
+  -webkit-mask: radial-gradient(farthest-side, transparent 60%, #000 63%); mask: radial-gradient(farthest-side, transparent 60%, #000 63%); }
+
+/* book button lives top-right (menu, not action) */
+#bBook { top: calc(env(safe-area-inset-top) + 52px); right: calc(env(safe-area-inset-right) + 12px);
+  width: 48px; height: 48px; font-size: 22px; background: #fff2c0e0; }
+
+/* bow button appears once you own a bow */
+#bBow { display: none; right: calc(env(safe-area-inset-right) + 104px); bottom: calc(env(safe-area-inset-bottom) + 18px);
+  width: 64px; height: 64px; font-size: 26px; background: #d0ffd0e0; }
+
 /* achievement / feedback toast */
 .ctoast { position: fixed; left: 50%; top: calc(env(safe-area-inset-top) + 92px); transform: translateX(-50%);
   z-index: 70; background: #1c2330ee; color: #fff; border: 2px solid #ffce3a; border-radius: 14px;
