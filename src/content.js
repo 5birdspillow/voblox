@@ -1,7 +1,8 @@
 /*
  * Voblox — word content
  * ----------------------
- * Lesson data, transcribed from Leo's Wordly Wise 3000 Book 4 workbook (Lessons 5–6).
+ * Lesson data, transcribed from Leo's Wordly Wise 3000 Book 4 workbook (Lessons 5, 6, 8).
+ * (Lesson 7 was skipped in Leo's summer program.)
  * Definitions and example sentences match the book so practice transfers to the quiz.
  *
  * Each word can have multiple `senses` (the quiz tests alternative meanings), plus
@@ -372,9 +373,189 @@
     ]
   };
 
+  var LESSON8 = {
+    lesson: 8,
+    title: "Lesson 8",
+    words: [
+      entry({
+        word: "ancient", emoji: "🏛️", pron: "AYN-chənt",
+        senses: [
+          { pos: "adj", def: "very old; of a long time ago",
+            example: "The ancient city is full of beautiful old buildings." }
+        ],
+        synonyms: ["very old", "age-old", "antique"], antonyms: ["modern", "new"],
+        mnemonic: "Ancient things are from ages and ages ago."
+      }),
+      entry({
+        word: "century", emoji: "🗓️", pron: "SEN-chə-ree",
+        senses: [
+          { pos: "noun", def: "a period of one hundred years",
+            example: "The twenty-first century began on January 1, 2001." }
+        ],
+        synonyms: ["hundred years"], antonyms: [],
+        mnemonic: "A CENTury is 100 years, like 100 CENTs make a dollar."
+      }),
+      entry({
+        word: "chamber", emoji: "🛏️", pron: "CHAYM-bər",
+        senses: [
+          { pos: "noun", def: "a room",
+            example: "The queen always has breakfast in her chamber before she comes downstairs." }
+        ],
+        forms: [
+          { word: "chambers", pos: "noun", def: "an office or group of offices",
+            example: "Lawyers for both sides met in the judge's chambers." }
+        ],
+        synonyms: ["room", "bedroom"], antonyms: [],
+        mnemonic: "The queen's chamber is her royal room."
+      }),
+      entry({
+        word: "descend", emoji: "⬇️", pron: "di-SEND",
+        senses: [
+          { pos: "verb", def: "to go or come down",
+            example: "The plane slowly descended to 2,000 feet." }
+        ],
+        forms: [
+          { word: "descendant", pos: "noun", def: "one who has certain persons as one's parents, grandparents, etc.",
+            example: "The writer Alex Haley was a descendant of Kunta Kinte, who was enslaved and brought to America from West Africa in 1767." }
+        ],
+        synonyms: ["go down", "come down", "drop"], antonyms: ["ascend", "climb", "rise"],
+        mnemonic: "De-SCEND means go DOWN — like descending the stairs."
+      }),
+      entry({
+        word: "entry", emoji: "🚪", pron: "EN-tree",
+        senses: [
+          { pos: "noun", def: "a way in",
+            example: "The thieves gained entry through an unlocked window." },
+          { pos: "noun", def: "each separate item in a diary or list",
+            example: "The next entry in her diary simply said, 'My brother returned home today after a long absence.'" }
+        ],
+        synonyms: ["entrance", "way in"], antonyms: ["exit"],
+        mnemonic: "An entry is where you enter — or one item you enter in a list."
+      }),
+      entry({
+        word: "interior", emoji: "🛋️", pron: "in-TEER-ee-ər",
+        senses: [
+          { pos: "noun", def: "the inside part of something",
+            example: "The sun's interior is about 150,000 times hotter than boiling water." },
+          { pos: "adj", def: "having to do with the inside part",
+            example: "Interior doors do not have to be as strongly made as front or back doors." }
+        ],
+        synonyms: ["inside", "inner part"], antonyms: ["exterior", "outside"],
+        mnemonic: "The interior is the inner part — deep inside."
+      }),
+      entry({
+        word: "intrude", emoji: "🚨", pron: "in-TROOD",
+        senses: [
+          { pos: "verb", def: "to come or go in without permission or welcome",
+            example: "I didn't mean to intrude on you while you were working." }
+        ],
+        forms: [
+          { word: "intrusion", pos: "noun", def: "the act of intruding",
+            example: "'Forgive my intrusion,' she said as she came in without knocking." },
+          { word: "intruder", pos: "noun", def: "one who intrudes",
+            example: "People were so unfriendly that I felt like an intruder at Jeff's party." }
+        ],
+        synonyms: ["barge in", "trespass"], antonyms: [],
+        mnemonic: "It's RUDE to inTRUDE — barging in uninvited."
+      }),
+      entry({
+        word: "locate", emoji: "📍", pron: "LOH-kayt",
+        senses: [
+          { pos: "verb", def: "to find",
+            example: "Marta located the missing books in less than an hour." },
+          { pos: "verb", def: "to put or to be found in a place",
+            example: "We found out they are going to locate a park across the street from our house." }
+        ],
+        forms: [
+          { word: "location", pos: "noun", def: "the place where something can be found",
+            example: "Will you please give me the location of the nearest post office?" }
+        ],
+        synonyms: ["find", "place"], antonyms: ["lose"],
+        mnemonic: "Locate = find the exact location, like a map pin."
+      }),
+      entry({
+        word: "passage", emoji: "📜", pron: "PASS-ij",
+        senses: [
+          { pos: "noun", def: "a part of a written work or piece of music",
+            example: "The final passage of the musical piece brought tears to our eyes." },
+          { pos: "noun", def: "the act or process of passing, as through time or from place to place",
+            example: "I wanted to slow the passage of time so my vacation would not end." },
+          { pos: "noun", def: "a way through which to pass",
+            example: "Leon's room was at the end of a long, dimly lit passage." }
+        ],
+        synonyms: ["excerpt", "corridor", "hallway"], antonyms: [],
+        mnemonic: "A passage is where something passes — words, time, or you down a hall."
+      }),
+      entry({
+        word: "portion", emoji: "🍕", pron: "POR-shən",
+        senses: [
+          { pos: "noun", def: "a part or share of the whole",
+            example: "I got the first portion of my allowance last week." },
+          { pos: "noun", def: "a serving or helping, as of food",
+            example: "My doctor tells me to eat a four-ounce portion of fish or chicken once a day." }
+        ],
+        synonyms: ["part", "share", "serving"], antonyms: ["whole"],
+        mnemonic: "A portion is your part — your slice of the pizza."
+      }),
+      entry({
+        word: "precious", emoji: "💎", pron: "PRESH-əs",
+        senses: [
+          { pos: "adj", def: "very valuable",
+            example: "The necklace was made of diamonds, emeralds, and other precious stones." },
+          { pos: "adj", def: "much loved",
+            example: "She tried in vain to save her precious books from the fire." }
+        ],
+        synonyms: ["valuable", "treasured", "beloved"], antonyms: ["worthless", "cheap"],
+        mnemonic: "Precious gems are prized — worth a lot or loved a lot."
+      }),
+      entry({
+        word: "quarry", emoji: "⛏️", pron: "KWOR-ee",
+        senses: [
+          { pos: "noun", def: "a deep pit from which stone is cut out of the ground",
+            example: "The rock for this building came from a quarry in Vermont." },
+          { pos: "noun", def: "an animal that is being hunted",
+            example: "The hunters gave up the chase when they lost sight of their quarry." }
+        ],
+        synonyms: ["stone pit", "prey"], antonyms: [],
+        mnemonic: "A quarry: a pit where rock is mined — or the prey a hunter chases."
+      }),
+      entry({
+        word: "ramp", emoji: "🛹", pron: "RAMP",
+        senses: [
+          { pos: "noun", def: "a slanted walk or roadway that connects a lower to a higher place",
+            example: "Because of my wheelchair, I'm glad there is a law that says there has to be a ramp for those who cannot use the steps." }
+        ],
+        synonyms: ["slope", "incline"], antonyms: [],
+        mnemonic: "A ramp slants up — roll a wheelchair or a skateboard right up it."
+      }),
+      entry({
+        word: "spacious", emoji: "🏟️", pron: "SPAY-shəs",
+        senses: [
+          { pos: "adj", def: "having lots of room",
+            example: "The spacious kitchen had room for a large round table that seated eight." }
+        ],
+        synonyms: ["roomy", "large", "vast"], antonyms: ["cramped", "tiny", "crowded"],
+        mnemonic: "Spacious = full of space — tons of room."
+      }),
+      entry({
+        word: "surface", emoji: "🌕", pron: "SUR-fəs",
+        senses: [
+          { pos: "noun", def: "the outside layer; the top",
+            example: "The surface of the moon is covered with craters." },
+          { pos: "noun", def: "an outward look or appearance",
+            example: "He seemed cheerful on the surface, but I knew how sad he was inside." },
+          { pos: "verb", def: "to rise to the top of a body of water",
+            example: "The latest submarines can stay underwater for weeks before they need to surface." }
+        ],
+        synonyms: ["top", "outside", "exterior"], antonyms: ["interior", "depths"],
+        mnemonic: "The SUR-FACE is the outer face of something — like the top of water."
+      })
+    ]
+  };
+
   // Registry of lessons. Only lessons with a `words` array are "available" / playable.
   // To add a lesson: define it like LESSON5/LESSON6 and add it here.
-  var LESSONS = { "5": LESSON5, "6": LESSON6 };
+  var LESSONS = { "5": LESSON5, "6": LESSON6, "8": LESSON8 };
 
   function flat() {
     var out = [], seen = {};
