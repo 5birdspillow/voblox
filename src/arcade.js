@@ -266,7 +266,7 @@
     el.innerHTML = headerHTML() +
       '<div class="asec">💾 Save Slots <span class="muted2">— like save files in Zelda!</span></div>' +
       row(1, 0, "Slot 1") + row(2, 1, "Slot 2") + row(3, 2, "Slot 3") + row("auto", 3, "🕐 Auto") +
-      '<div class="shopchest">💡 Saving keeps a full copy of ALL progress (words, Vobux, items, Craft World). Loading brings it back exactly.</div>';
+      '<div class="shopchest">💡 Saving keeps a full copy of ALL progress (words, Vobux, items, Vocraft). Loading brings it back exactly.</div>';
     wireHeader();
     Array.prototype.forEach.call(el.querySelectorAll("[data-ss]"), function (b) {
       b.onclick = function () {

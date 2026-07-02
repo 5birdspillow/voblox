@@ -234,7 +234,8 @@
       { gameId: "towerd", flavor: "tower", wall: 0x9a8ad0, roof: 0x4a3aad },
       { gameId: "obby", flavor: "cloud", wall: 0xbfe3ff, roof: 0x5aa6f0 },
       { tab: "shop", name: "Item Shop", emoji: "🛍️", color: 0xf0a92e, flavor: "awning", wall: 0xffe2a8, roof: 0xf0a92e },
-      { tab: "locker", name: "Wardrobe", emoji: "🧢", color: 0x5aa6f0, flavor: null, wall: 0xcfe0f4, roof: 0x3a6ab0 }
+      { tab: "locker", name: "Wardrobe", emoji: "🧢", color: 0x5aa6f0, flavor: null, wall: 0xcfe0f4, roof: 0x3a6ab0 },
+      { href: "craft.html", name: "Vocraft Mine", emoji: "⛏️", color: 0x6fae3e, flavor: "tower", wall: 0x8a5a3b, roof: 0x57c04a }
     ];
     var R = 18.5;
     DEFS.forEach(function (d, i) {
@@ -444,6 +445,7 @@
   }
   function enterBuilding(b) {
     if (b.def.game) launchGame(b.def.game);
+    else if (b.def.href) location.href = b.def.href;
     else openBackpack(b.def.tab);
   }
   function tryInteract() { if (!nearest) return; if (nearest.kind === "boss") startBoss(WORDS, "boss", "Boss: " + lesson.title); else if (nearest.kind === "game") launchGame(nearest.ref.game); else if (nearest.kind === "building") enterBuilding(nearest.ref); else openGate(nearest.ref); }
@@ -542,7 +544,7 @@
     openOverlay('<div class="card menucard"><h2>☰ Menu — ' + esc(lesson.title) + '</h2>' +
       '<button class="menubtn" id="m_resume">▶ Back to the world</button>' +
       '<button class="menubtn" id="m_arcade" style="background:linear-gradient(#ffd76a,#f0a92e);border-color:#a06a12;color:#3a2a00">🎒 Backpack (quests · locker · shop · saves)</button>' +
-      '<a class="menubtn" href="craft.html" style="background:linear-gradient(#9ad06a,#6fae3e);border-color:#4f7e2a">⛏️ Craft World (build &amp; mine)</a>' +
+      '<a class="menubtn" href="craft.html" style="background:linear-gradient(#9ad06a,#6fae3e);border-color:#4f7e2a">⛏️ Vocraft (build · mine · treasure!)</a>' +
       '<button class="menubtn" id="m_boss">⚔️ Boss Battle (beat the lesson!)</button>' +
       '<button class="menubtn" id="m_review">🔁 Daily Review (mix of words)</button>' +
       '<button class="menubtn" id="m_lessons">🗺️ Choose Lesson</button>' +

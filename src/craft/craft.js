@@ -1,8 +1,10 @@
 /*
- * Voblox — Craft World (voxel sandbox), Phase 1: generate/mine/place/move/save.
+ * Voblox — ⛏️ VOCRAFT (voxel sandbox).
  * Chunked voxel world with face-culled meshing, first-person physics + collision,
  * PC (pointer-lock + WASD) and touch (joystick + look + buttons) controls.
- * Reuses VobloxStore (gems/progress) and (later) VobloxQuestions for word-mining.
+ * Now a full game: diamond tier, treasure chests, slimes + bounce blocks,
+ * sleeping bags, achievements, daily jobs, a Vobux block shop, and Miner rank —
+ * all wired into the shared Vobux/XP economy (VobloxStore/Profile).
  */
 (function () {
   "use strict";
@@ -12,12 +14,12 @@
 
   // ---------- constants ----------
   var CHUNK = 16, WH = 48, SEA = 8, RENDER = ("ontouchstart" in window) ? 3 : 5;
-  var B = { AIR: 0, GRASS: 1, DIRT: 2, STONE: 3, SAND: 4, WATER: 5, LOG: 6, LEAVES: 7, PLANK: 8, GLASS: 9, COBBLE: 10, BRICK: 11, SANDSTONE: 12, WORD: 13, COAL: 14, IRON: 15, GOLD: 16, SNOW: 17, FURNACE: 18, TORCH: 19 };
-  var NAMES = { 1: "Grass", 2: "Dirt", 3: "Stone", 4: "Sand", 6: "Wood", 7: "Leaves", 8: "Planks", 9: "Glass", 10: "Cobble", 11: "Brick", 12: "Sandstone", 14: "Coal", 15: "Iron", 16: "Gold", 17: "Snow", 18: "Furnace", 19: "Torch" };
+  var B = { AIR: 0, GRASS: 1, DIRT: 2, STONE: 3, SAND: 4, WATER: 5, LOG: 6, LEAVES: 7, PLANK: 8, GLASS: 9, COBBLE: 10, BRICK: 11, SANDSTONE: 12, WORD: 13, COAL: 14, IRON: 15, GOLD: 16, SNOW: 17, FURNACE: 18, TORCH: 19, DIAMOND: 20, BOUNCE: 21, CHEST: 22, RAINBOW: 23, GLOW: 24, CANDY: 25, ICE: 26, TNT: 27 };
+  var NAMES = { 1: "Grass", 2: "Dirt", 3: "Stone", 4: "Sand", 6: "Wood", 7: "Leaves", 8: "Planks", 9: "Glass", 10: "Cobble", 11: "Brick", 12: "Sandstone", 14: "Coal", 15: "Iron", 16: "Gold", 17: "Snow", 18: "Furnace", 19: "Torch", 20: "Diamond", 21: "Bounce!", 22: "Treasure", 23: "Rainbow", 24: "Glow", 25: "Candy", 26: "Ice", 27: "TNT" };
   // non-placeable items (ids >= 100)
-  var IT = { STICK: 100, WPICK: 101, SPICK: 102, IPICK: 103, SWORD: 104, FOOD: 105 };
-  var ITNAME = { 100: "Stick", 101: "Wood Pick", 102: "Stone Pick", 103: "Iron Pick", 104: "Sword", 105: "Food" };
-  var ITEMOJI = { 100: "🪵", 101: "⛏️", 102: "⛏️", 103: "⛏️", 104: "🗡️", 105: "🍖" };
+  var IT = { STICK: 100, WPICK: 101, SPICK: 102, IPICK: 103, SWORD: 104, FOOD: 105, DPICK: 106, WOOL: 107, BAG: 108, SLIME: 109, DSWORD: 110 };
+  var ITNAME = { 100: "Stick", 101: "Wood Pick", 102: "Stone Pick", 103: "Iron Pick", 104: "Sword", 105: "Food", 106: "DIAMOND Pick", 107: "Wool", 108: "Sleeping Bag", 109: "Slimeball", 110: "Diamond Sword" };
+  var ITEMOJI = { 100: "🪵", 101: "⛏️", 102: "⛏️", 103: "⛏️", 104: "🗡️", 105: "🍖", 106: "💠", 107: "🧶", 108: "🛏️", 109: "🟢", 110: "⚔️" };
   function transparent(id) { return id === B.AIR || id === B.WATER || id === B.GLASS || id === B.LEAVES; }
   function opaque(id) { return id !== B.AIR && !transparent(id); }
   function solid(id) { return id !== B.AIR && id !== B.WATER; } // collidable
@@ -30,7 +32,12 @@
     10: { all: [0.43, 0.43, 0.46] }, 11: { all: [0.70, 0.33, 0.28] }, 12: { all: [0.90, 0.84, 0.60] },
     13: { all: [1.0, 0.84, 0.20] }, 14: { all: [0.22, 0.22, 0.24] }, 15: { all: [0.66, 0.56, 0.46] },
     16: { all: [0.88, 0.72, 0.26] }, 17: { all: [0.95, 0.97, 1.0] },
-    18: { all: [0.30, 0.30, 0.33] }, 19: { all: [1.0, 0.74, 0.25] }
+    18: { all: [0.30, 0.30, 0.33] }, 19: { all: [1.0, 0.74, 0.25] },
+    20: { all: [0.45, 0.93, 0.95] }, 21: { all: [0.40, 0.85, 0.42] },
+    22: { top: [0.80, 0.62, 0.24], side: [0.55, 0.38, 0.18] },
+    23: { all: [1.0, 1.0, 1.0] }, 24: { all: [1.0, 0.95, 0.55] },
+    25: { all: [0.98, 0.55, 0.75] }, 26: { all: [0.72, 0.90, 1.0] },
+    27: { all: [0.85, 0.24, 0.20] }
   };
   function faceCol(id, kind) { var c = COL[id] || COL[3]; return c[kind] || c.all || c.side || [1, 1, 1]; }
 
@@ -72,7 +79,7 @@
   function addInv(id, n) { inv[id] = (inv[id] || 0) + (n || 1); saveTimer = 1.5; }
   function takeInv(id, n) { if ((inv[id] || 0) < n) return false; inv[id] -= n; if (inv[id] <= 0) delete inv[id]; return true; }
   function hasInv(id, n) { return (inv[id] || 0) >= n; }
-  function pickTier() { return inv[IT.IPICK] ? 3 : inv[IT.SPICK] ? 2 : inv[IT.WPICK] ? 1 : 0; }
+  function pickTier() { return inv[IT.DPICK] ? 4 : inv[IT.IPICK] ? 3 : inv[IT.SPICK] ? 2 : inv[IT.WPICK] ? 1 : 0; }
 
   // ---------- noise / generation ----------
   function hash(x, y, z) { var h = (x | 0) * 374761393 + (y | 0) * 668265263 + (z | 0) * 982451653 + SEED * 1013904223; h = (h ^ (h >>> 13)) >>> 0; h = (h * 1274126177) >>> 0; return ((h ^ (h >>> 16)) >>> 0) / 4294967295; }
@@ -118,7 +125,13 @@
         else if (ly > h - 3) id = desert ? B.SANDSTONE : (h < SEA ? B.SAND : B.DIRT);
         else {
           id = B.STONE;
-          if (ly > 1) { var orr = hash(wx, ly, wz); if (hash(wx, ly + 700, wz) > 0.9975) id = B.WORD; else if (orr > 0.986) id = (ly < 8 && orr > 0.996) ? B.GOLD : B.COAL; else if (orr < 0.013) id = B.IRON; }
+          if (ly > 1) {
+            var orr = hash(wx, ly, wz);
+            if (hash(wx, ly + 700, wz) > 0.9975) id = B.WORD;
+            else if (orr > 0.986) id = (ly < 6 && orr > 0.9986) ? B.DIAMOND : (ly < 8 && orr > 0.996) ? B.GOLD : B.COAL;
+            else if (orr < 0.013) id = B.IRON;
+            else if (ly > 2 && ly < 16 && hash(wx, ly + 1400, wz) > 0.99955) id = B.CHEST; // buried treasure!
+          }
         }
         if (ly > 1 && ly < h - 4 && noise3(wx / 13, ly / 9, wz / 13) > 0.78) id = B.AIR; // caves
         blocks[idx(lx, ly, lz)] = id;
@@ -176,9 +189,14 @@
         var F = FACES[f], nb = getBlock(wx + F.n[0], wy + F.n[1], wz + F.n[2]);
         var drawn = isW ? (nb === B.AIR && F.k === "top") : (!opaque(nb) && !(transparent(id) && nb === id));
         if (!drawn) continue;
-        var glow = (id === B.WORD || id === B.TORCH);
+        var glow = (id === B.WORD || id === B.TORCH || id === B.GLOW || id === B.DIAMOND);
         var col = faceCol(id, F.k), s = isW ? 0.9 : (glow ? 1.0 : shade(F.k));
-        if (!isW && !glow) s *= 0.9 + 0.1 * hash(wx * 2 + 1, wy * 2 + 5, wz * 2 + 9); // subtle per-block variation
+        if (id === B.RAINBOW) { // every rainbow block gets its own bright hue
+          var hu = hash(wx * 3 + 11, wy * 3 + 17, wz * 3 + 23) * 6;
+          var hi = Math.floor(hu), hf = hu - hi;
+          col = [[1, hf, 0], [1 - hf, 1, 0], [0, 1, hf], [0, 1 - hf, 1], [hf, 0, 1], [1, 0, 1 - hf]][hi % 6];
+        }
+        if (!isW && !glow && id !== B.RAINBOW) s *= 0.9 + 0.1 * hash(wx * 2 + 1, wy * 2 + 5, wz * 2 + 9); // subtle per-block variation
         var P = isW ? wp : sp, C = isW ? wc : sc, order = [0, 1, 2, 0, 2, 3];
         for (var o = 0; o < 6; o++) { var vv = F.v[order[o]]; P.push(wx + vv[0], wy + vv[1], wz + vv[2]); C.push(col[0] * s, col[1] * s, col[2] * s); }
       }
@@ -233,7 +251,17 @@
     moveAxis("z", player.vel.z * dt);
     if (moveAxis("y", player.vel.y * dt)) player.vel.y = 0;
     player.onGround = collides(player.pos.x, player.pos.y - 0.08, player.pos.z); // probe just below feet
-    if (player.onGround) { if (player._fellFrom != null) { var fd = player._fellFrom - player.pos.y; if (fd > 4.5) hurtPlayer(Math.min(6, Math.floor(fd - 4))); player._fellFrom = null; } }
+    if (player.onGround) {
+      var under = getBlock(Math.floor(player.pos.x), Math.floor(player.pos.y - 0.4), Math.floor(player.pos.z));
+      if (under === B.BOUNCE) { // jump pad! boing — and no fall damage
+        player.vel.y = 13; player.onGround = false; player._fellFrom = null;
+        sfx(520, 0.1, "sine", 0.06); sfx(780, 0.12, "sine", 0.05);
+      } else if (player._fellFrom != null) {
+        var fd = player._fellFrom - player.pos.y;
+        if (fd > 4.5) hurtPlayer(Math.min(6, Math.floor(fd - 4)));
+        player._fellFrom = null;
+      }
+    }
     else player._fellFrom = (player._fellFrom == null) ? player.pos.y : Math.max(player._fellFrom, player.pos.y);
     // clamp into world vertically
     if (player.pos.y < -8) { player.pos.set(player.pos.x, heightAt(player.pos.x, player.pos.z) + 3, player.pos.z); player.vel.set(0, 0, 0); }
@@ -261,18 +289,46 @@
   function dropFor(id, tier) {
     if (id === B.STONE || id === B.COBBLE || id === B.COAL || id === B.IRON || id === B.BRICK || id === B.SANDSTONE) return tier >= 1 ? (id === B.STONE ? B.COBBLE : id) : null;
     if (id === B.GOLD) return tier >= 3 ? B.GOLD : null;
+    if (id === B.DIAMOND) return tier >= 3 ? B.DIAMOND : null; // iron pick unlocks diamonds
     if (id === B.GRASS || id === B.DIRT) return B.DIRT;
     if (id === B.LEAVES || id === B.WATER) return null;
-    return id; // sand, log, plank, glass, snow, furnace, torch drop themselves
+    return id; // sand, log, plank, glass, snow, furnace, torch, shop blocks drop themselves
+  }
+  function openTreasure(h) {
+    setBlock(h.x, h.y, h.z, B.AIR);
+    stats.chests = (stats.chests || 0) + 1;
+    var roll = Math.random(), msg;
+    if (roll < 0.10) { addInv(B.DIAMOND, 1); msg = "💠 a DIAMOND!!"; }
+    else if (roll < 0.40) { var v = 10 + Math.floor(Math.random() * 16); store.state.gems += v; store.save(); updateHud(); msg = "+" + v + " Vobux!"; }
+    else if (roll < 0.70) { addInv(B.IRON, 3 + Math.floor(Math.random() * 3)); msg = "iron bars!"; }
+    else if (roll < 0.9) { addInv(IT.FOOD, 3); msg = "a picnic! 🍖×3"; }
+    else { addInv(B.GOLD, 2); msg = "gold!"; }
+    toast("🎁 Treasure chest: " + msg);
+    cfetti(); chime(); renderHotbar();
+    bumpJob("chests", 1); checkAch();
   }
   function doMine() {
     if (paused) return;
     var mi = attackTarget(); if (mi != null) { hitMob(mi); return; }
     var h = ray(); if (!h) return;
     if (h.id === B.WORD) { openWordGate(h.x, h.y, h.z); return; }
-    var drop = dropFor(h.id, pickTier()); if (drop) addInv(drop, 1);
+    if (h.id === B.CHEST) { openTreasure(h); return; }
+    var tier = pickTier();
+    var drop = dropFor(h.id, tier);
+    if (drop) {
+      addInv(drop, 1);
+      // the diamond pick sometimes strikes double ore
+      if (tier >= 4 && (drop === B.COAL || drop === B.IRON || drop === B.GOLD || drop === B.DIAMOND) && Math.random() < 0.3) addInv(drop, 1);
+      if (drop === B.DIAMOND) { stats.diamonds = (stats.diamonds || 0) + 1; toast("💠 DIAMOND!"); chime(); }
+      if (drop === B.LOG) { stats.logs = (stats.logs || 0) + 1; bumpJob("logs", 1); }
+    }
+    stats.mined = (stats.mined || 0) + 1;
+    if (h.y < (stats.deepest === undefined ? 99 : stats.deepest)) stats.deepest = h.y;
+    sess.mined++;
+    bumpJob("mine", 1);
     puff(h.x, h.y, h.z, h.id); sfx(170, 0.07, "square", 0.045);
     setBlock(h.x, h.y, h.z, B.AIR); renderHotbar();
+    checkAch();
   }
   function doPlace() {
     if (paused) return;
@@ -281,7 +337,26 @@
     // don't place inside the player
     var fex = player.pos.x, fey = player.pos.y, fez = player.pos.z;
     if (nx === Math.floor(fex) && nz === Math.floor(fez) && (ny === Math.floor(fey) || ny === Math.floor(fey + 1))) return;
-    setBlock(nx, ny, nz, hotbar[sel]); sfx(330, 0.05, "triangle", 0.045);
+    var id = hotbar[sel];
+    setBlock(nx, ny, nz, id); sfx(330, 0.05, "triangle", 0.045);
+    stats.placed = (stats.placed || 0) + 1; sess.placed++;
+    bumpJob("place", 1);
+    if (id === B.TNT) armTNT(nx, ny, nz);
+    checkAch();
+  }
+  // gentle, kid-safe TNT: 2s fuse, small crater, no player damage, keeps crystals/chests
+  function armTNT(x, y, z) {
+    toast("🧨 TNT armed — stand back!");
+    setTimeout(function () {
+      if (getBlock(x, y, z) !== B.TNT) return; // was mined back up
+      for (var dx = -2; dx <= 2; dx++) for (var dy = -2; dy <= 2; dy++) for (var dz = -2; dz <= 2; dz++) {
+        if (dx * dx + dy * dy + dz * dz > 5.2) continue;
+        var bid = getBlock(x + dx, y + dy, z + dz);
+        if (bid !== B.AIR && bid !== B.WATER && bid !== B.WORD && bid !== B.CHEST) setBlock(x + dx, y + dy, z + dz, B.AIR);
+      }
+      puff(x, y, z, B.TNT); puff(x + 1, y, z, B.TNT); puff(x, y + 1, z, B.TNT);
+      sfx(90, 0.4, "sawtooth", 0.09); sfx(60, 0.5, "square", 0.07);
+    }, 2000);
   }
 
   // ---------- word-mining (the learning hook) ----------
@@ -319,7 +394,12 @@
     store.record(q, correct);
     if (q.kind === "mc") Array.prototype.forEach.call(COVB.querySelectorAll(".choice"), function (b, idx) { b.disabled = true; if (q.choices[idx].correct) b.classList.add("right"); else if (b === btn) b.classList.add("wrong"); });
     var head;
-    if (correct) { setBlock(bx, by, bz, B.AIR); store.state.gems += 15; addInv(B.IRON, 2); store.save(); cfetti(); chime(); renderHotbar(); if (!save.firstCrystal) { save.firstCrystal = true; persist(); toast("🏆 First Word Crystal cracked! Iron makes better tools."); } head = '<div class="fb good">✅ Crystal cracked! <span class="gain">+15 💎 &amp; 2 iron ⛏️</span></div>'; }
+    if (correct) {
+      setBlock(bx, by, bz, B.AIR); store.state.gems += 15; addInv(B.IRON, 2); store.save(); cfetti(); chime(); renderHotbar();
+      stats.crystals = (stats.crystals || 0) + 1; sess.crystals++;
+      bumpJob("crystals", 1); checkAch();
+      head = '<div class="fb good">✅ Crystal cracked! <span class="gain">+15 <img class="vbx" src="icons/vobux.png" alt="Vobux"> &amp; 2 iron ⛏️</span></div>';
+    }
     else { head = '<div class="fb bad">❌ The crystal holds — learn the word:</div>'; VQ.speak(q.data.word + ". " + q.data.senses[0].def); }
     COVB.innerHTML = '<div class="gatehead">✨ Word Crystal <span class="x" id="wx">✕</span></div><div class="card qcard">' + head + '<div class="reveal">' + VQ.entryHTML(q.data, { mnem: true }) + '</div><button id="wnext" class="submit big-next">Continue ⏎</button></div>';
     document.getElementById("wx").onclick = closeWordGate; document.getElementById("wnext").onclick = closeWordGate;
@@ -345,6 +425,8 @@
     if (k === " ") { jumpReq = true; e.preventDefault(); }
     if (k === "e") { openCraft(); return; }
     if (k === "f") { eat(); return; }
+    if (k === "q") { openBook(); return; }
+    if (k === "z") { sleep(); return; }
     if (k >= "1" && k <= "9") { var i = +k - 1; if (i < hotbar.length) { sel = i; renderHotbar(); } }
   });
   document.addEventListener("keyup", function (e) { keys[(e.key || "").toLowerCase()] = false; });
@@ -371,6 +453,7 @@
     addBtn("bJump", "⤒", function () { jumpReq = true; });
     addBtn("bCraft", "📦", function () { openCraft(); });
     addBtn("bEat", "🍖", function () { eat(); });
+    addBtn("bBook", "📖", function () { openBook(); });
     canvas.addEventListener("touchstart", function (e) {
       for (var i = 0; i < e.changedTouches.length; i++) { var t = e.changedTouches[i];
         if (t.clientX < window.innerWidth * 0.5 && joyId === null) { joyId = t.identifier; jox = t.clientX; joy0y = t.clientY; joyEl.style.display = "block"; joyEl.style.left = (t.clientX - 64) + "px"; joyEl.style.top = (t.clientY - 64) + "px"; moveNub(0, 0); }
@@ -422,7 +505,11 @@
     { name: "Iron Pickaxe", out: { id: IT.IPICK, n: 1 }, in: [{ id: B.IRON, n: 3 }, { id: IT.STICK, n: 2 }] },
     { name: "Sword", out: { id: IT.SWORD, n: 1 }, in: [{ id: B.PLANK, n: 2 }, { id: IT.STICK, n: 1 }] },
     { name: "Furnace", out: { id: B.FURNACE, n: 1 }, in: [{ id: B.COBBLE, n: 8 }], unlock: true },
-    { name: "Torch ×4", out: { id: B.TORCH, n: 4 }, in: [{ id: B.COAL, n: 1 }, { id: IT.STICK, n: 1 }], unlock: true }
+    { name: "Torch ×4", out: { id: B.TORCH, n: 4 }, in: [{ id: B.COAL, n: 1 }, { id: IT.STICK, n: 1 }], unlock: true },
+    { name: "DIAMOND Pickaxe", out: { id: IT.DPICK, n: 1 }, in: [{ id: B.DIAMOND, n: 3 }, { id: IT.STICK, n: 2 }] },
+    { name: "Diamond Sword", out: { id: IT.DSWORD, n: 1 }, in: [{ id: B.DIAMOND, n: 2 }, { id: IT.STICK, n: 1 }] },
+    { name: "Sleeping Bag", out: { id: IT.BAG, n: 1 }, in: [{ id: IT.WOOL, n: 3 }] },
+    { name: "Bounce Block ×2", out: { id: B.BOUNCE, n: 2 }, in: [{ id: IT.SLIME, n: 2 }, { id: B.PLANK, n: 2 }], unlock: true }
   ];
   function canCraft(r) { return r.in.every(function (ing) { return hasInv(ing.id, ing.n); }); }
   function craft(r) {
@@ -432,6 +519,8 @@
     if (r.unlock && unlocked.indexOf(r.out.id) < 0) { unlocked.push(r.out.id); refreshHotbar(); }
     sfx(440, 0.07, "triangle", 0.05);
     if ((r.out.id === IT.WPICK || r.out.id === IT.SPICK || r.out.id === IT.IPICK) && !save.firstPick) { save.firstPick = true; toast("🏆 Crafted your first pickaxe! Now you can mine ore."); }
+    stats.crafted = (stats.crafted || 0) + 1;
+    checkAch();
     persist(); openCraft();
   }
   function openCraft() {
@@ -460,13 +549,20 @@
   function groundY(x, z, fromY) { var fx = Math.floor(x), fz = Math.floor(z); for (var y = Math.min(WH - 1, Math.floor(fromY)); y >= 0; y--) if (solid(getBlock(fx, y, fz))) return y + 1; return 1; }
   function makeMob(type, x, y, z) {
     var g = new THREE.Group();
-    var col = { pig: 0xe79aa6, cow: 0x6e4a34, sheep: 0xeae6dc, zombie: 0x5a8f4a }[type] || 0xcccccc;
+    var col = { pig: 0xe79aa6, cow: 0x6e4a34, sheep: 0xeae6dc, zombie: 0x5a8f4a, slime: 0x59c94f }[type] || 0xcccccc;
     var M = new THREE.MeshLambertMaterial({ color: col });
     function bx(w, h, d, px, py, pz) { var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M); m.position.set(px, py, pz); g.add(m); }
     if (type === "zombie") { bx(0.6, 1.0, 0.35, 0, 1.05, 0); bx(0.5, 0.5, 0.5, 0, 1.8, 0); bx(0.18, 0.8, 0.18, -0.39, 1.05, 0.22); bx(0.18, 0.8, 0.18, 0.39, 1.05, 0.22); bx(0.2, 0.85, 0.2, -0.17, 0.42, 0); bx(0.2, 0.85, 0.2, 0.17, 0.42, 0); }
+    else if (type === "slime") {
+      var jelly = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.65, 0.85), new THREE.MeshLambertMaterial({ color: col, transparent: true, opacity: 0.85 }));
+      jelly.position.y = 0.36; g.add(jelly); g._jelly = jelly;
+      var eye = new THREE.MeshLambertMaterial({ color: 0x20303a });
+      var e1 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.06), eye); e1.position.set(-0.18, 0.46, 0.44); g.add(e1);
+      var e2 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.06), eye); e2.position.set(0.18, 0.46, 0.44); g.add(e2);
+    }
     else { bx(0.75, 0.6, 1.05, 0, 0.6, 0); bx(0.5, 0.5, 0.5, 0, 0.78, 0.62); [[-0.27, 0.38], [0.27, 0.38], [-0.27, -0.38], [0.27, -0.38]].forEach(function (p) { bx(0.18, 0.42, 0.18, p[0], 0.21, p[1]); }); if (type === "pig") bx(0.2, 0.16, 0.1, 0, 0.74, 0.9); }
     g.position.set(x, y, z); scene.add(g);
-    return { type: type, pos: new THREE.Vector3(x, y, z), vel: 0, dir: Math.random() * 6.28, hp: type === "zombie" ? 6 : 4, group: g, wander: 0, moving: true, atkCd: 0 };
+    return { type: type, pos: new THREE.Vector3(x, y, z), vel: 0, dir: Math.random() * 6.28, hp: type === "zombie" ? 6 : type === "slime" ? 3 : 4, group: g, wander: 0, moving: true, atkCd: 0, hopT: Math.random() * 2 };
   }
   function tryMove(m, dx, dz) { var nx = m.pos.x + dx, nz = m.pos.z + dz, gy = groundY(nx, nz, m.pos.y + 1); if (gy - m.pos.y > 1.3) return; m.pos.x = nx; m.pos.z = nz; }
   function updateMob(m, dt) {
@@ -476,6 +572,12 @@
       var dx = player.pos.x - m.pos.x, dz = player.pos.z - m.pos.z, d = Math.hypot(dx, dz) || 1;
       m.dir = Math.atan2(dx, dz); tryMove(m, (dx / d) * 1.6 * dt, (dz / d) * 1.6 * dt);
       m.atkCd -= dt; if (d < 1.2 && m.atkCd <= 0) { hurtPlayer(1); m.atkCd = 1.1; }
+    } else if (m.type === "slime") {
+      // slimes bounce around; they only travel while airborne
+      m.hopT -= dt;
+      if (m.vel === 0 && m.hopT <= 0) { m.vel = 5.4; m.dir = Math.random() * 6.28; m.hopT = 1.2 + Math.random() * 1.6; sfxQuiet(); }
+      if (m.vel !== 0) tryMove(m, Math.sin(m.dir) * 2.2 * dt, Math.cos(m.dir) * 2.2 * dt);
+      if (m.group._jelly) { var sq = m.vel === 0 ? 1 - Math.max(0, m.hopT - 0.9) * 0.12 : 1.08; m.group._jelly.scale.set(2 - sq, sq, 2 - sq); }
     } else {
       m.wander -= dt; if (m.wander <= 0) { m.dir = Math.random() * 6.28; m.wander = 1.5 + Math.random() * 2.5; m.moving = Math.random() < 0.7; }
       if (m.moving) tryMove(m, Math.sin(m.dir) * 1.1 * dt, Math.cos(m.dir) * 1.1 * dt);
@@ -489,7 +591,7 @@
     if (spawnT <= 0) {
       spawnT = 3;
       var an = 0, zo = 0; mobs.forEach(function (m) { if (m.type === "zombie") zo++; else an++; });
-      if (!isNight() && an < 6) spawnNear(["pig", "cow", "sheep"][Math.floor(Math.random() * 3)], 8, 22);
+      if (!isNight() && an < 6) spawnNear(["pig", "cow", "sheep", "slime"][Math.floor(Math.random() * 4)], 8, 22);
       if (isNight() && zo < 4) spawnNear("zombie", 9, 17);
     }
     for (var i = mobs.length - 1; i >= 0; i--) { var m = mobs[i], dd = Math.hypot(m.pos.x - player.pos.x, m.pos.z - player.pos.z); if (dd > 50 || (m.type === "zombie" && !isNight() && dd > 7)) removeMob(i); }
@@ -500,8 +602,23 @@
     return best;
   }
   function hitMob(i) {
-    var m = mobs[i]; m.hp -= (inv[IT.SWORD] ? 4 : 2); m.group.position.y += 0.1;
-    if (m.hp <= 0) { if (m.type !== "zombie") { addInv(IT.FOOD, 1 + Math.floor(Math.random() * 2)); renderHotbar(); } else { store.state.gems += 3; store.save(); } removeMob(i); }
+    var m = mobs[i]; m.hp -= (inv[IT.DSWORD] ? 7 : inv[IT.SWORD] ? 4 : 2); m.group.position.y += 0.1;
+    if (m.hp <= 0) {
+      if (m.type === "zombie") {
+        store.state.gems += 3; store.save(); updateHud();
+        stats.zkills = (stats.zkills || 0) + 1; sess.kills++;
+        bumpJob("zombies", 1);
+      } else if (m.type === "slime") {
+        addInv(IT.SLIME, 1 + Math.floor(Math.random() * 2));
+        toast("🟢 Slimeball! Craft Bounce Blocks with it!");
+      } else if (m.type === "sheep") {
+        addInv(IT.WOOL, 2); addInv(IT.FOOD, 1);
+        toast("🧶 Wool! 3 wool = a Sleeping Bag.");
+      } else {
+        addInv(IT.FOOD, 1 + Math.floor(Math.random() * 2));
+      }
+      renderHotbar(); removeMob(i); checkAch();
+    }
   }
   function hurtPlayer(n) { if (dead) return; player.health = Math.max(0, player.health - n); survFlash(); sfx(110, 0.18, "sawtooth", 0.07); updateSurvHud(); if (player.health <= 0) die(); }
   function eat() { if (player.hunger >= MAXHUNGER || dead) return; if (takeInv(IT.FOOD, 1)) { player.hunger = Math.min(MAXHUNGER, player.hunger + 3); updateSurvHud(); renderHotbar(); } }
@@ -514,6 +631,176 @@
   function updateSurvHud() { var f = inv[IT.FOOD] || 0; survEl.innerHTML = "❤️ " + player.health + "/" + MAXHP + " &nbsp; 🍖 " + player.hunger + "/" + MAXHUNGER + (f ? ' &nbsp; <span class="eatable">🍗×' + f + " (F)</span>" : ""); }
   function die() { dead = true; paused = true; if (document.pointerLockElement) document.exitPointerLock(); COVB.innerHTML = '<div class="card hero" style="text-align:center"><div class="big-emoji">💫</div><div class="hero-line">You fainted!</div><div class="hero-sub">No worries — you keep everything you collected.</div><button id="resp" class="submit big-next">Wake up ⏎</button></div>'; COV.style.display = "flex"; document.getElementById("resp").onclick = respawn; wordKey = function (e) { if (e.key === "Enter") respawn(); }; }
   function respawn() { dead = false; player.health = MAXHP; player.hunger = Math.max(player.hunger, 5); var gy = groundY(0, 0, WH - 1); player.pos.set(0.5, gy + 1, 0.5); player.vel.set(0, 0, 0); player._fellFrom = null; COV.style.display = "none"; paused = false; wordKey = null; keys = {}; updateSurvHud(); }
+
+  // ---------- VOCRAFT progression: stats, achievements, daily jobs, shop, sleep ----------
+  var P = window.VobloxProfile;
+  var stats = (save.stats = save.stats || {});
+  var ach = (save.ach = save.ach || {});
+  var sess = { mined: 0, placed: 0, crystals: 0, kills: 0, start: Date.now(), ended: false };
+  function sfxQuiet() { sfx(300 + Math.random() * 120, 0.05, "sine", 0.02); }
+
+  var ACH = [
+    { id: "log1", name: "First Timber", emoji: "🪵", pay: 10, cond: function () { return (stats.logs || 0) >= 1; } },
+    { id: "craft1", name: "Handy", emoji: "🛠️", pay: 10, cond: function () { return (stats.crafted || 0) >= 1; } },
+    { id: "wpick", name: "Wood Age", emoji: "⛏️", pay: 10, cond: function () { return pickTier() >= 1; } },
+    { id: "spick", name: "Stone Age", emoji: "⛏️", pay: 15, cond: function () { return pickTier() >= 2; } },
+    { id: "ipick", name: "Iron Age", emoji: "⛏️", pay: 25, cond: function () { return pickTier() >= 3; } },
+    { id: "dpick", name: "DIAMOND AGE!", emoji: "💠", pay: 60, cond: function () { return pickTier() >= 4; } },
+    { id: "mine100", name: "Mole Mode", emoji: "🕳️", pay: 25, cond: function () { return (stats.mined || 0) >= 100; } },
+    { id: "build50", name: "Master Builder", emoji: "🏗️", pay: 25, cond: function () { return (stats.placed || 0) >= 50; } },
+    { id: "crystal1", name: "Word Cracker", emoji: "✨", pay: 20, cond: function () { return (stats.crystals || 0) >= 1; } },
+    { id: "crystal10", name: "Word Wizard", emoji: "🧙", pay: 60, cond: function () { return (stats.crystals || 0) >= 10; } },
+    { id: "deep", name: "Deep Digger", emoji: "⬇️", pay: 20, cond: function () { return stats.deepest !== undefined && stats.deepest <= 6; } },
+    { id: "diamond1", name: "Shiny!!", emoji: "💎", pay: 50, cond: function () { return (stats.diamonds || 0) >= 1; } },
+    { id: "zomb5", name: "Night Guard", emoji: "🧟", pay: 25, cond: function () { return (stats.zkills || 0) >= 5; } },
+    { id: "chest3", name: "Treasure Hunter", emoji: "🎁", pay: 30, cond: function () { return (stats.chests || 0) >= 3; } },
+    { id: "sleep1", name: "Cozy Camper", emoji: "🛏️", pay: 15, cond: function () { return (stats.slept || 0) >= 1; } }
+  ];
+  function checkAch() {
+    for (var i = 0; i < ACH.length; i++) {
+      var a = ACH[i];
+      if (ach[a.id] || !a.cond()) continue;
+      ach[a.id] = true;
+      store.state.gems += a.pay;
+      if (store.addXP) store.addXP(Math.round(a.pay * 0.6));
+      else store.save();
+      toast("🏆 " + a.emoji + " " + a.name + "! +" + a.pay + " Vobux");
+      chime(); cfetti(); updateHud(); persist();
+    }
+  }
+
+  // 3 daily jobs, seeded by the date (fresh every morning)
+  var JOBT = [
+    { kind: "mine", text: "Mine {n} blocks", ns: [30, 50, 80], pay: 25 },
+    { kind: "logs", text: "Chop {n} logs", ns: [6, 10], pay: 25 },
+    { kind: "crystals", text: "Crack {n} Word Crystals", ns: [2, 3], pay: 40 },
+    { kind: "zombies", text: "Defeat {n} zombies", ns: [2, 3], pay: 30 },
+    { kind: "place", text: "Build with {n} blocks", ns: [20, 35], pay: 25 },
+    { kind: "chests", text: "Open {n} treasure chest", ns: [1], pay: 35 }
+  ];
+  function ensureJobs() {
+    var dk = P ? P.dayKey() : "x";
+    if (save.jobs && save.jobs.day === dk) return save.jobs;
+    var rand = P ? P.rng(P.hashStr("vocraft:" + dk)) : Math.random;
+    var picks = JOBT.slice().sort(function () { return rand() - 0.5; }).slice(0, 3);
+    save.jobs = { day: dk, list: picks.map(function (t) { var n = t.ns[Math.floor(rand() * t.ns.length)]; return { kind: t.kind, text: t.text.replace("{n}", n), goal: n, n: 0, pay: t.pay, claimed: false }; }) };
+    persist();
+    return save.jobs;
+  }
+  function bumpJob(kind, amt) {
+    var jobs = ensureJobs();
+    jobs.list.forEach(function (j) { if (j.kind === kind && !j.claimed) j.n = Math.min(j.goal, j.n + (amt || 1)); });
+  }
+  function claimJob(i) {
+    var j = ensureJobs().list[i];
+    if (!j || j.claimed || j.n < j.goal) return;
+    j.claimed = true;
+    store.state.gems += j.pay;
+    if (store.addXP) store.addXP(12); else store.save();
+    toast("✅ Job done! +" + j.pay + " Vobux");
+    chime(); updateHud(); persist(); openBook();
+  }
+
+  // the Vobux block shop — special blocks bought with words-earned Vobux
+  var SHOP = [
+    { id: B.CANDY, name: "Candy Block", price: 100 },
+    { id: B.ICE, name: "Ice Block", price: 100 },
+    { id: B.GLOW, name: "Glow Block", price: 250 },
+    { id: B.TNT, name: "TNT (gentle!)", price: 250 },
+    { id: B.RAINBOW, name: "Rainbow Block", price: 300 }
+  ];
+  function buyBlock(i) {
+    var s2 = SHOP[i];
+    if (unlocked.indexOf(s2.id) >= 0) { toast("Already unlocked — it's in your hotbar!"); return; }
+    if (store.state.gems < s2.price) { toast("Not enough Vobux — crack Word Crystals to earn more!"); return; }
+    store.state.gems -= s2.price; store.save();
+    unlocked.push(s2.id);
+    if (!stats.shopped) stats.shopped = 1;
+    refreshHotbar(); updateHud(); persist();
+    toast("🛍️ " + s2.name + " unlocked — build with it forever!");
+    chime(); openBook();
+  }
+
+  // 📖 the Vocraft Book: jobs, trophies, shop, miner rank
+  function openBook() {
+    if (dead) return;
+    paused = true; if (document.pointerLockElement) document.exitPointerLock();
+    var jobs = ensureJobs();
+    var rank = P && store.game ? P.gameRank(store.game("craft").rankPts) : null;
+    var jobRows = jobs.list.map(function (j, i) {
+      var pct = Math.round(100 * j.n / j.goal);
+      return '<div style="display:flex;align-items:center;gap:8px;background:#f4f8fc;border-radius:10px;padding:7px 10px;margin:5px 0">' +
+        '<div style="flex:1;min-width:0"><b style="font-size:14px">' + j.text + '</b>' +
+        '<div style="height:7px;background:#dde7f0;border-radius:4px;overflow:hidden;margin-top:3px"><div style="width:' + pct + '%;height:100%;background:linear-gradient(90deg,#76d275,#43c34a)"></div></div></div>' +
+        (j.claimed ? '<span style="color:#2f9e44;font-weight:900">✓</span>'
+          : j.n >= j.goal ? '<button class="submit" style="padding:5px 12px" data-job="' + i + '">CLAIM +' + j.pay + '</button>'
+          : '<span style="color:#5a6b7a;font-weight:900;font-size:13px">' + j.n + "/" + j.goal + "</span>") + "</div>";
+    }).join("");
+    var achRows = ACH.map(function (a) {
+      var got = !!ach[a.id];
+      return '<span style="display:inline-block;margin:3px;padding:5px 9px;border-radius:10px;font-size:12px;font-weight:900;' +
+        (got ? "background:#dff5e1;color:#1c7a2e;border:2px solid #7fce8a" : "background:#eef2f7;color:#8a98a8;border:2px solid #dbe5ee") + '">' +
+        a.emoji + " " + a.name + (got ? " ✓" : " · " + a.pay + "V") + "</span>";
+    }).join("");
+    var shopRows = SHOP.map(function (s2, i) {
+      var c = faceCol(s2.id, "side");
+      var owned = unlocked.indexOf(s2.id) >= 0;
+      return '<div style="display:flex;align-items:center;gap:8px;background:#fff;border:2px solid #dbe5ee;border-radius:10px;padding:6px 10px;margin:5px 0">' +
+        '<span style="width:22px;height:22px;border-radius:5px;display:inline-block;background:rgb(' + Math.round(c[0] * 255) + "," + Math.round(c[1] * 255) + "," + Math.round(c[2] * 255) + ')"></span>' +
+        '<b style="flex:1;font-size:14px">' + s2.name + "</b>" +
+        (owned ? '<span style="color:#2f9e44;font-weight:900">✓ unlocked</span>'
+          : '<button class="submit" style="padding:5px 12px" data-shop="' + i + '">' + s2.price + ' <img class="vbx" src="icons/vobux.png" alt="Vobux"></button>') + "</div>";
+    }).join("");
+    COVB.innerHTML = '<div class="gatehead">📖 Vocraft Book <span class="x" id="bk_x">✕</span></div>' +
+      '<div class="card" style="max-height:76vh;overflow:auto">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center"><b>' + (rank ? rank.icon + " " + rank.name + " Miner" : "") + '</b>' +
+      (isNight() && hasInv(IT.BAG, 1) ? '<button class="submit" style="padding:5px 12px" id="bk_sleep">🛏️ Sleep (Z)</button>' : "") +
+      '<span><img class="vbx" src="icons/vobux.png" alt="V"> ' + store.state.gems + "</span></div>" +
+      '<h3 style="margin:10px 0 2px">📋 Daily Jobs</h3>' + jobRows +
+      '<h3 style="margin:12px 0 2px">🏆 Trophies</h3><div>' + achRows + "</div>" +
+      '<h3 style="margin:12px 0 2px">🛍️ Block Shop</h3>' + shopRows +
+      '<div class="help">Earn Vobux by cracking ✨ Word Crystals, finishing jobs, and winning trophies!</div></div>';
+    COV.style.display = "flex";
+    document.getElementById("bk_x").onclick = closeBook;
+    var bs = document.getElementById("bk_sleep"); if (bs) bs.onclick = function () { closeBook(); sleep(); };
+    Array.prototype.forEach.call(COVB.querySelectorAll("[data-job]"), function (b) { b.onclick = function () { claimJob(+b.dataset.job); }; });
+    Array.prototype.forEach.call(COVB.querySelectorAll("[data-shop]"), function (b) { b.onclick = function () { buyBlock(+b.dataset.shop); }; });
+    wordKey = function (e) { if (e.key === "Escape" || (e.key || "").toLowerCase() === "q") closeBook(); };
+  }
+  function closeBook() { COV.style.display = "none"; paused = false; wordKey = null; keys = {}; jumpReq = false; joy.x = 0; joy.y = 0; }
+
+  // 🛏️ sleeping bag: skip the night, wake up healed
+  function sleep() {
+    if (dead || paused) return;
+    if (!hasInv(IT.BAG, 1)) { toast("🛏️ Craft a Sleeping Bag first (3 wool from sheep)!"); return; }
+    if (!isNight()) { toast("☀️ You're not sleepy — it's daytime!"); return; }
+    tod = 0.3; // morning
+    player.health = MAXHP;
+    stats.slept = (stats.slept || 0) + 1;
+    updateSurvHud(); persist();
+    toast("☀️ Good morning! Fully rested.");
+    chime(); checkAch();
+  }
+
+  // session results feed the shared Miner rank + XP when Leo heads back
+  function endSession() {
+    if (sess.ended) return;
+    var activity = sess.mined + sess.placed + sess.crystals * 5 + sess.kills * 3;
+    if (activity < 3 || !store.recordGame) { sess.ended = true; return; }
+    sess.ended = true;
+    store.recordGame("craft", {
+      win: sess.crystals > 0,
+      score: sess.mined + sess.placed,
+      rankPtsDelta: Math.min(12, 2 + Math.floor(sess.mined / 20) + sess.crystals * 2 + sess.kills + Math.floor(sess.placed / 25)),
+      xp: Math.min(60, Math.round(sess.mined / 4 + sess.placed / 5 + sess.crystals * 8 + sess.kills * 3)),
+      gems: 0 // Vobux were paid live (crystals, jobs, trophies, treasure)
+    });
+  }
+  window.addEventListener("beforeunload", endSession);
+  (function hookBack() {
+    var back = document.querySelector('a[href="index.html"]');
+    if (back) back.addEventListener("click", endSession);
+  })();
 
   // ---------- polish: particles, sound, toasts, help ----------
   var particles = [], pfxPool = [], actx = null;
@@ -548,7 +835,7 @@
   function toast(msg) { var t = document.createElement("div"); t.className = "ctoast"; t.textContent = msg; document.body.appendChild(t); requestAnimationFrame(function () { t.style.opacity = "1"; }); setTimeout(function () { t.style.opacity = "0"; setTimeout(function () { t.remove(); }, 400); }, 2400); }
   function showHelp() {
     paused = true;
-    COVB.innerHTML = '<div class="card"><h2>⛏️ Welcome to Craft World!</h2><p><b>Move:</b> on a computer use <b>W A S D</b> and click to look with the mouse. On a tablet, drag the <b>left side</b> to walk and the <b>right side</b> to look.</p><p><b>Mine</b> blocks (left-click / ⛏) and <b>place</b> them (right-click / ▦). <b>Jump</b> with Space / ⤒.</p><p><b>Craft</b> tools with <b>E</b> / 📦 from what you mine, and eat food with <b>F</b> / 🍖.</p><p><b>✨ Look for glowing yellow Word Crystals</b> — answer the word to crack them open for treasure!</p><button id="okh" class="submit big-next">Let’s go! ⏎</button></div>';
+    COVB.innerHTML = '<div class="card"><h2>⛏️ Welcome to VOCRAFT!</h2><p><b>Move:</b> on a computer use <b>W A S D</b> and click to look with the mouse. On a tablet, drag the <b>left side</b> to walk and the <b>right side</b> to look.</p><p><b>Mine</b> blocks (left-click / ⛏) and <b>place</b> them (right-click / ▦). <b>Jump</b> with Space / ⤒. <b>Craft</b> with <b>E</b> / 📦, eat with <b>F</b> / 🍖.</p><p><b>📖 Your Vocraft Book (Q)</b> has daily jobs, trophies, and a Vobux block shop — dig deep for 💠 diamonds and 🎁 buried treasure!</p><p><b>✨ Crack glowing Word Crystals</b> — answer the word for Vobux and iron!</p><button id="okh" class="submit big-next">Let’s go! ⏎</button></div>';
     COV.style.display = "flex";
     function go() { save.craftSeen = true; persist(); COV.style.display = "none"; paused = false; wordKey = null; }
     document.getElementById("okh").onclick = go; wordKey = function (e) { if (e.key === "Enter") go(); };
@@ -559,6 +846,8 @@
     document.getElementById("cgems").innerHTML = '<img class="vbx" src="icons/vobux.png" alt="V"> ' + store.state.gems;
     var p = store.predicted(Content.getLesson(store.state.activeLesson || "5").words);
     document.getElementById("cgrade").textContent = (p >= 90 ? "A" : p >= 80 ? "B" : p + "%");
+    var rc = document.getElementById("crank");
+    if (rc && P && store.game) { var r = P.gameRank(store.game("craft").rankPts); rc.textContent = r.icon + " " + r.name; }
   }
 
   // ---------- loop ----------
@@ -604,6 +893,7 @@
   frame();
   if (location.hash === "#word") setTimeout(function () { openWordGate(0, 5, 0); }, 300); // test hook for the word-mining overlay
   if (location.hash === "#craft") setTimeout(function () { inv[B.LOG] = 4; inv[B.PLANK] = 8; inv[IT.STICK] = 4; inv[B.COBBLE] = 10; inv[B.COAL] = 2; inv[B.IRON] = 3; openCraft(); }, 300); // test hook for crafting screen
-  if (location.hash === "#mob") setTimeout(function () { var px = player.pos.x, pz = player.pos.z; mobs.push(makeMob("pig", px - 1.5, groundY(px - 1.5, pz - 4, WH - 1), pz - 4)); mobs.push(makeMob("zombie", px + 1.6, groundY(px + 1.6, pz - 4, WH - 1), pz - 4)); mobs.forEach(function (m) { m.group.position.copy(m.pos); }); }, 400); // test hook: spawn mobs in view
+  if (location.hash === "#mob") setTimeout(function () { var px = player.pos.x, pz = player.pos.z; mobs.push(makeMob("pig", px - 1.5, groundY(px - 1.5, pz - 4, WH - 1), pz - 4)); mobs.push(makeMob("zombie", px + 1.6, groundY(px + 1.6, pz - 4, WH - 1), pz - 4)); mobs.push(makeMob("slime", px, groundY(px, pz - 5, WH - 1), pz - 5)); mobs.forEach(function (m) { m.group.position.copy(m.pos); }); }, 400); // test hook: spawn mobs in view
+  if (location.hash === "#book") setTimeout(function () { stats.mined = 34; stats.logs = 3; stats.crafted = 1; store.state.gems = Math.max(store.state.gems, 420); ensureJobs(); bumpJob("mine", 34); openBook(); }, 300); // test hook: the Vocraft Book
   if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(function () {});
 })();
