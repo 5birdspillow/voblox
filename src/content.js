@@ -553,9 +553,191 @@
     ]
   };
 
+  var LESSON9 = {
+    lesson: 9,
+    title: "Lesson 9",
+    words: [
+      entry({
+        word: "advantage", emoji: "💪", pron: "ad-VAN-tij",
+        senses: [
+          { pos: "noun", def: "something that is helpful or useful",
+            example: "It is an advantage to be able to speak French when visiting Paris." }
+        ],
+        forms: [
+          { word: "take advantage of", pos: "verb", def: "to make use of; to benefit oneself by treating others unfairly",
+            example: "Martina took advantage of her position as camp leader by giving all the best jobs to her friends." }
+        ],
+        synonyms: ["a plus", "a help", "an edge"], antonyms: ["disadvantage", "drawback"],
+        mnemonic: "An advantage gives you an edge — like a power-up that helps you win."
+      }),
+      entry({
+        word: "astonish", emoji: "😲", pron: "ə-STAHN-ish",
+        senses: [
+          { pos: "verb", def: "to surprise or amaze",
+            example: "It astonished me to discover that my new friend and I were born on the same day in the same town." }
+        ],
+        forms: [
+          { word: "astonishment", pos: "noun", def: "great surprise or amazement",
+            example: "The children watched in astonishment as the magician pulled a rabbit out of a hat." }
+        ],
+        synonyms: ["amaze", "surprise", "stun"], antonyms: ["bore"],
+        mnemonic: "Astonish sounds like 'a-STUN-ish' — so amazing it stuns you!"
+      }),
+      entry({
+        word: "confirm", emoji: "✅", pron: "kən-FURM",
+        senses: [
+          { pos: "verb", def: "to show or prove to be true",
+            example: "Before giving me a library card, the librarian asked me to confirm my street address by showing a copy of my phone bill." },
+          { pos: "verb", def: "to approve or give one's agreement to",
+            example: "The members of Congress vote to confirm the appointment of Supreme Court judges." }
+        ],
+        synonyms: ["prove", "check", "verify"], antonyms: ["deny", "disprove"],
+        mnemonic: "Confirm makes something FIRM and sure — proved true."
+      }),
+      entry({
+        word: "distant", emoji: "🔭", pron: "DIS-tənt",
+        senses: [
+          { pos: "adj", def: "very far away in time",
+            example: "Space travel in the very distant future may involve journeys to the stars." },
+          { pos: "adj", def: "very far away; not near or close by",
+            example: "Marco Polo's travels took him to many distant lands." }
+        ],
+        forms: [
+          { word: "distance", pos: "noun", def: "the length of the space between two places",
+            example: "The distance between Deneen's home and her school was exactly one mile." }
+        ],
+        synonyms: ["far away", "faraway", "remote"], antonyms: ["near", "close", "nearby"],
+        mnemonic: "DISTant things are a big DISTance away."
+      }),
+      entry({
+        word: "founder", emoji: "🏗️", pron: "FOWN-dər",
+        senses: [
+          { pos: "noun", def: "a person who sets up something that lasts",
+            example: "George Washington and Thomas Jefferson are two of the founders of our nation." },
+          { pos: "verb", def: "to sink below the surface of the water",
+            example: "The ship struck a rock and foundered before a rescue team could reach it." }
+        ],
+        synonyms: ["starter", "creator", "maker"], antonyms: [],
+        mnemonic: "A FOUNDer FOUNDs (starts) something big — but a ship that founders goes down."
+      }),
+      entry({
+        word: "hamlet", emoji: "🏘️", pron: "HAM-lət",
+        senses: [
+          { pos: "noun", def: "a small village",
+            example: "A single street ran through the hamlet, which had one church, a general store, and about a hundred houses." }
+        ],
+        synonyms: ["small village", "tiny town"], antonyms: ["city", "big town"],
+        mnemonic: "A hamlet is a tiny village — like a starter village in Minecraft."
+      }),
+      entry({
+        word: "host", emoji: "🎉", pron: "HOHST",
+        senses: [
+          { pos: "noun", def: "a large number",
+            example: "Graceland is visited by hosts of people from all over the world who come to see the house where Elvis Presley lived." },
+          { pos: "noun", def: "one who greets and entertains guests and takes care of their needs at a party or restaurant",
+            example: "The guests said goodbye to their host and thanked him for a lovely New Year's Eve party." }
+        ],
+        synonyms: ["crowd", "a great many", "party-giver"], antonyms: ["few", "guest"],
+        mnemonic: "A host throws the party — and a WHOLE host means a huge crowd came."
+      }),
+      entry({
+        word: "misgiving", emoji: "😟", pron: "mis-GIV-ing",
+        senses: [
+          { pos: "noun", def: "a feeling of doubt, uncertainty, or concern about what may happen in the future",
+            example: "If Ellen had any misgivings about joining the group, she gave no sign of it." }
+        ],
+        synonyms: ["doubt", "worry", "uneasy feeling"], antonyms: ["confidence", "trust"],
+        mnemonic: "A misgiving is that 'something MIGHT go wrong' worry in your tummy."
+      }),
+      entry({
+        word: "parch", emoji: "🌵", pron: "PARCH",
+        senses: [
+          { pos: "verb", def: "to make or become very dry",
+            example: "The sun parched the fields and made the grass turn brown." }
+        ],
+        forms: [
+          { word: "parched", pos: "adj", def: "lacking water; thirsty",
+            example: "We didn't take enough water with us, and we were parched before we came to the end of our walk." }
+        ],
+        synonyms: ["dry out", "bake", "scorch"], antonyms: ["soak", "water"],
+        mnemonic: "Parched land is dry as a desert — like a cactus with no rain."
+      }),
+      entry({
+        word: "prospect", emoji: "🪙", pron: "PRAHS-pekt",
+        senses: [
+          { pos: "noun", def: "something that is waited for, expected, or hoped for",
+            example: "All the hotels were full, and there seemed little prospect of our finding a place to spend the night." },
+          { pos: "verb", def: "to look in the ground for valuable metals like gold and silver",
+            example: "The four men camped alongside the river told us they were prospecting for gold." }
+        ],
+        forms: [
+          { word: "prospector", pos: "noun", def: "a person who explores an area to look for valuable metals",
+            example: "The prospector let out a whoop of joy when he saw some shiny yellow objects lying on the riverbank." }
+        ],
+        synonyms: ["hope", "chance", "outlook"], antonyms: [],
+        mnemonic: "A prospector digs hoping for gold — a prospect is what you hope is coming."
+      }),
+      entry({
+        word: "scarce", emoji: "🕯️", pron: "SKAIRS",
+        senses: [
+          { pos: "adj", def: "in short supply; not plentiful",
+            example: "When gasoline is scarce, the price goes up." }
+        ],
+        forms: [
+          { word: "scarcity", pos: "noun", def: "a shortage",
+            example: "Due to the scarcity of candles in the store when the hurricane struck, customers were allowed only two each." }
+        ],
+        synonyms: ["rare", "hard to find", "in short supply"], antonyms: ["plentiful", "common", "everywhere"],
+        mnemonic: "When something is scarce, it's scarcely (barely) anywhere — like diamonds."
+      }),
+      entry({
+        word: "shrewd", emoji: "🦊", pron: "SHROOD",
+        senses: [
+          { pos: "adj", def: "clever; good at understanding what is needed and acting on it",
+            example: "A shrewd lawyer prepares her client to answer questions she knows the client will be asked in court." }
+        ],
+        synonyms: ["clever", "smart", "sharp"], antonyms: ["foolish", "silly"],
+        mnemonic: "Shrewd like a fox — clever enough to plan the winning move."
+      }),
+      entry({
+        word: "sole", emoji: "1️⃣", pron: "SOHL",
+        senses: [
+          { pos: "adj", def: "being the only one of its kind; belonging to only one person or group",
+            example: "After her husband died, Mrs. Mazoor became the sole owner of the toy store." },
+          { pos: "noun", def: "the bottom surface of the foot or of a shoe or boot",
+            example: "Shoes with leather soles cost more than those made of plastic." },
+          { pos: "noun", def: "a flat fish that is caught and eaten for food",
+            example: "Grilled sole is a popular item on the seafood restaurant's menu." }
+        ],
+        synonyms: ["only", "single", "one and only"], antonyms: ["shared", "many"],
+        mnemonic: "SOLE = the Only one — and also the bottom of your shoe, and a flat fish!"
+      }),
+      entry({
+        word: "torment", emoji: "😖", pron: "TOR-ment",
+        senses: [
+          { pos: "noun", def: "great pain or suffering",
+            example: "I cannot imagine the torment suffered by a wild animal caught in a steel trap." },
+          { pos: "verb", def: "to cause pain or suffering",
+            example: "The thought that she might have been the cause of the accident tormented the driver of the car." }
+        ],
+        synonyms: ["suffering", "agony", "torture"], antonyms: ["comfort", "soothe"],
+        mnemonic: "Torment = TORture that stays on your MENTal mind — big-time suffering."
+      }),
+      entry({
+        word: "typical", emoji: "🏠", pron: "TIP-i-kəl",
+        senses: [
+          { pos: "adj", def: "being like others of its kind",
+            example: "A typical home in this area has three bedrooms, a kitchen, a living room, and one bathroom." }
+        ],
+        synonyms: ["normal", "usual", "ordinary"], antonyms: ["unusual", "rare", "odd"],
+        mnemonic: "Typical = the usual TYPE — nothing surprising about it."
+      })
+    ]
+  };
+
   // Registry of lessons. Only lessons with a `words` array are "available" / playable.
   // To add a lesson: define it like LESSON5/LESSON6 and add it here.
-  var LESSONS = { "5": LESSON5, "6": LESSON6, "8": LESSON8 };
+  var LESSONS = { "5": LESSON5, "6": LESSON6, "8": LESSON8, "9": LESSON9 };
 
   function flat() {
     var out = [], seen = {};
