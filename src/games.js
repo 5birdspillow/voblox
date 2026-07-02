@@ -24,5 +24,7 @@
   add("VobloxTowerD", { id: "towerd", name: "Word Tower Defense", emoji: "🗼", color: 0x9b6dff, hub: true });
   add("VobloxChess", { id: "chess", name: "Chess Club", emoji: "♟️", color: 0xb58863, hub: true });
   add("VobloxBJJ", { id: "bjj", name: "BJJ Dojo", emoji: "🥋", color: 0x4a8ac0, hub: true });
+  add("VobloxChef", { id: "chef", name: "Chef Rush", emoji: "👨‍🍳", color: 0xf0a92e, hub: true });
+  add("VobloxPets", { id: "pets", name: "Pet Paradise", emoji: "🐾", color: 0xff7eb9, hub: true });
   global.VobloxGames = games;
 })(typeof window !== "undefined" ? window : globalThis);

@@ -148,6 +148,9 @@
     var IT = global.VobloxItems;
     function item(id) { return (IT && id && IT.byId[id]) || null; }
     var shirtIt = item(eq.shirt), pantsIt = item(eq.pants), faceIt = item(eq.face), hatIt = item(eq.hat), trailIt = item(eq.trail), petIt = item(eq.pet);
+    // hatched Pet Paradise pets equip as "hatch:<index>" and follow like item buddies
+    var hatch = /^hatch:(\d+)$/.exec(eq.pet || "");
+    var hatchPet = hatch && state.pets && state.pets[+hatch[1]] ? state.pets[+hatch[1]] : null;
     return {
       skin: av.skin || DEFAULT.skin,
       shirt: (shirtIt && shirtIt.color) || av.shirt || DEFAULT.shirt,
@@ -156,7 +159,7 @@
       hat: hatIt ? hatIt.emoji : (av.hat || null),
       held: null,
       trail: trailIt || null,
-      pet: petIt ? petIt.emoji : null
+      pet: hatchPet ? (hatchPet.shiny ? "✨" : "") + hatchPet.emoji : (petIt ? petIt.emoji : null)
     };
   }
 
