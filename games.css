@@ -171,6 +171,47 @@
 .dexs { font-size: 9px; color: #7a8a98; }
 @media (max-width: 560px) { .dexgrid { grid-template-columns: repeat(4, 1fr); } }
 
+/* ---------- Chess Club ---------- */
+.gamewrap.chessclub { background: radial-gradient(120% 90% at 50% 0%, #3a4a5e, #1c2732 75%); overflow: auto; }
+.cc-lobby { display: flex; justify-content: center; padding-top: 54px; }
+.cc-opp { display: flex; justify-content: space-between; align-items: center; width: 100%; margin: 5px 0;
+  background: #f4f8fd; border: 3px solid #b9cde4; border-bottom-width: 5px; border-radius: 12px;
+  padding: 10px 14px; font-family: inherit; font-size: 16px; cursor: pointer; }
+.cc-opp:active { transform: translateY(2px); }
+.cc-oname { font-weight: 900; color: #20303a; }
+.cc-otitle { color: #5a6b7a; font-weight: bold; font-size: 13px; }
+.cc-boardwrap { max-width: 480px; margin: 60px auto 0; padding: 0 10px; text-align: center; }
+.cboard { display: grid; grid-template-columns: repeat(8, 1fr); width: min(92vw, 440px); margin: 8px auto;
+  border: 6px solid #4a3b2a; border-radius: 8px; box-shadow: 0 10px 30px #0006; }
+.csq { aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center;
+  font-size: clamp(22px, 8.6vw, 40px); cursor: pointer; -webkit-user-select: none; user-select: none; line-height: 1; }
+.csq.l { background: #f0d9b5; } .csq.d { background: #b58863; }
+.csq.sel { outline: 3px solid #ffd740; outline-offset: -3px; }
+.csq.tgt { background-image: radial-gradient(circle, #2f9e4488 22%, transparent 24%); }
+.csq.cap { outline: 3px solid #e05252; outline-offset: -3px; }
+.csq.hint { animation: ccpulse 0.8s infinite alternate; }
+@keyframes ccpulse { from { background-color: #ffe14d; } to {} }
+.cc-end { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 20;
+  text-align: center; color: #20303a; padding: 18px 26px !important; }
+.cc-pmsg { color: #fff; font-weight: bold; margin-top: 8px; min-height: 22px; }
+
+/* ---------- BJJ Dojo ---------- */
+.gamewrap.bjj { padding: 0; overflow: hidden; touch-action: none; }
+.gamewrap.bjj canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+.bjcards { position: absolute; left: 0; right: 0; bottom: 0; z-index: 6;
+  padding: 8px 10px calc(env(safe-area-inset-bottom) + 10px); background: linear-gradient(transparent, #000a); }
+.bjpos { text-align: center; color: #fff; font-weight: 900; text-shadow: 0 2px 6px #000; margin-bottom: 6px; }
+.bjfoc { background: #ffe14d; color: #5a4400; border-radius: 8px; padding: 1px 8px; font-size: 12px; }
+.bjrow { display: flex; gap: 8px; justify-content: center; max-width: 640px; margin: 0 auto; }
+.bjcards .bjcard { flex: 1 1 0; min-width: 0; box-sizing: border-box;
+  background: #fff; border: 3px solid #b9cde4; border-bottom-width: 6px; border-radius: 14px;
+  padding: 8px 6px; font-family: inherit; cursor: pointer; text-align: center; }
+.bjcard:active { transform: translateY(2px); }
+.bjemoji { display: block; font-size: 26px; }
+.bjname { display: block; font-weight: 900; font-size: 13px; color: #20303a; min-height: 32px; }
+.bjodds { display: inline-block; background: #2f9e44; color: #fff; border-radius: 8px; padding: 1px 8px; font-weight: 900; font-size: 12px; }
+.bjpts { display: inline-block; background: #ffd740; color: #5a4400; border-radius: 8px; padding: 1px 6px; font-weight: 900; font-size: 11px; margin-left: 4px; }
+
 /* ---------- shared toast (VobloxSfx.toast) ---------- */
 .vtoast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 74px); transform: translateX(-50%);
   z-index: 220; background: #20303aee; color: #fff; font-family: "Trebuchet MS", sans-serif; font-weight: bold;

@@ -22,5 +22,7 @@
   add("VobloxKarts", { id: "karts", name: "Turbo Karts", emoji: "🏎️", color: 0xe8590c, hub: true });
   add("VobloxObby", { id: "obby", name: "Sky Obby", emoji: "🧗", color: 0x8ecbff, hub: true });
   add("VobloxTowerD", { id: "towerd", name: "Word Tower Defense", emoji: "🗼", color: 0x9b6dff, hub: true });
+  add("VobloxChess", { id: "chess", name: "Chess Club", emoji: "♟️", color: 0xb58863, hub: true });
+  add("VobloxBJJ", { id: "bjj", name: "BJJ Dojo", emoji: "🥋", color: 0x4a8ac0, hub: true });
   global.VobloxGames = games;
 })(typeof window !== "undefined" ? window : globalThis);
