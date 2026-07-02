@@ -24,6 +24,23 @@
 .lifeline { background: #ffffff22; color: #fff; border: 2px solid #ffffff55; border-radius: 10px; padding: 8px 14px; font-weight: bold; cursor: pointer; }
 .lifeline:disabled { opacity: .4; }
 @media (max-width: 560px) { .qs-main { flex-direction: column; } .ladder { flex-direction: row; flex-wrap: wrap; flex: none; } .answers { grid-template-columns: 1fr; } }
+.podiums { display: flex; gap: 10px; justify-content: center; max-width: 780px; margin: 0 auto 10px; }
+.pod { flex: 1; max-width: 200px; background: #11254a; border: 3px solid #5a78b0; border-bottom-width: 6px;
+  border-radius: 14px; padding: 8px 6px 6px; text-align: center; position: relative; }
+.pod.mine { border-color: #ffce3a; }
+.pod canvas { display: block; margin: 0 auto; }
+.pod-n { font-weight: 900; font-size: 13px; }
+.pod-r { font-size: 12px; color: #9fb8e0; font-weight: bold; }
+.pod-f { min-height: 20px; font-weight: 900; font-size: 15px; }
+.pod-b { position: absolute; left: 50%; transform: translateX(-50%); bottom: -26px; background: #fff; color: #20303a;
+  border-radius: 10px; padding: 2px 10px; font-size: 12px; font-weight: bold; white-space: nowrap; box-shadow: 0 3px 8px #0005; z-index: 3; }
+.buzzarea { text-align: center; margin-top: 40px; }
+.buzzhint { font-weight: 900; font-size: 20px; margin-bottom: 18px; }
+.buzzbtn { background: radial-gradient(circle at 35% 30%, #ff7a7a, #d92626); color: #fff; border: 6px solid #8a1212;
+  border-radius: 50%; width: 170px; height: 170px; font-family: inherit; font-weight: 900; font-size: 24px;
+  cursor: pointer; box-shadow: 0 10px 24px #0007; animation: buzzpulse 0.9s infinite alternate; }
+.buzzbtn:active { transform: translateY(4px); }
+@keyframes buzzpulse { from { box-shadow: 0 10px 24px #0007; } to { box-shadow: 0 10px 34px #ff525288; } }
 
 /* Memory Match */
 .memory { background: radial-gradient(120% 90% at 50% 0%, #3a2a5e, #160f2b 70%); }
@@ -39,6 +56,14 @@
 .mcard.matched { outline: 3px solid #43c34a; opacity: .85; }
 .mem-msg { text-align: center; font-weight: bold; min-height: 22px; margin-top: 10px; }
 @media (max-width: 560px) { .mgrid { grid-template-columns: repeat(3, 1fr); } .mcard { font-size: 12px; } }
+.mem-vs { display: flex; align-items: center; justify-content: space-between; gap: 8px; max-width: 760px; margin: 0 auto 10px; }
+.mem-side { display: flex; align-items: center; gap: 7px; flex: 1; background: #ffffff14; border: 2px solid transparent;
+  border-radius: 12px; padding: 4px 10px; font-size: 15px; }
+.mem-side.turn { border-color: #ffce3a; background: #ffce3a22; }
+.mem-mid { font-weight: 900; font-size: 13px; color: #ffce3a; text-align: center; }
+.mem-combo { background: #ffce3a; color: #3a2a00; border-radius: 8px; padding: 0 7px; font-weight: 900; font-size: 12px; }
+.mgrid.m16 { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 560px) { .mgrid.m16 { grid-template-columns: repeat(4, 1fr); } .mgrid.m16 .mcard { font-size: 10px; padding: 4px; } }
 
 /* Canvas arcade games (Word Hunt, Word Run) */
 .gamewrap.hunt, .gamewrap.run { padding: 0; overflow: hidden; touch-action: none; }
