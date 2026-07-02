@@ -101,6 +101,48 @@
   function hashStr(s) { var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
   function dayKey(ts) { var d = new Date(ts || Date.now()); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); }
 
+  // ---------- daily quests ----------
+  var QUEST_DEFS = [
+    { id: "answers", text: "Answer {n} word questions", ns: [8, 12, 16], kind: "answers" },
+    { id: "wins", text: "Win {n} arcade matches", ns: [1, 2], kind: "wins" },
+    { id: "games", text: "Play {n} different games", ns: [2, 3], kind: "games" },
+    { id: "gems", text: "Earn {n} gems", ns: [60, 100, 150], kind: "gems" }
+  ];
+  // 3 quests per day, seeded by the date (same on every device)
+  function ensureQuests(state, dk) {
+    dk = dk || dayKey();
+    if (state.quests && state.quests.day === dk && state.quests.list && state.quests.list.length) return state.quests;
+    var rand = rng(hashStr("quests:" + dk));
+    var defs = QUEST_DEFS.slice().sort(function () { return rand() - 0.5; }).slice(0, 3);
+    state.quests = {
+      day: dk,
+      list: defs.map(function (d) {
+        var n = d.ns[Math.floor(rand() * d.ns.length)];
+        return { kind: d.kind, text: d.text.replace("{n}", n), goal: n, n: 0, claimed: false, played: {} };
+      })
+    };
+    return state.quests;
+  }
+  function bumpQuest(state, kind, amount, gameId) {
+    ensureQuests(state);
+    state.quests.list.forEach(function (q) {
+      if (q.kind !== kind || q.claimed) return;
+      if (kind === "games") { if (gameId && !q.played[gameId]) { q.played[gameId] = 1; q.n++; } }
+      else q.n = Math.min(q.goal, q.n + (amount || 1));
+    });
+  }
+  // -> {ok, gems} — a claimed quest pays gems AND a reward chest
+  function claimQuest(state, idx) {
+    ensureQuests(state);
+    var q = state.quests.list[idx];
+    if (!q || q.claimed || q.n < q.goal) return { ok: false };
+    q.claimed = true;
+    var pay = 30;
+    state.gems = (state.gems || 0) + pay;
+    state.chests = (state.chests || 0) + 1;
+    return { ok: true, gems: pay };
+  }
+
   // ---------- Zelda-style save slots ----------
   // Each slot snapshots BOTH saves (word world + craft world) atomically so they never desync.
   function ls() { return P._ls || global.localStorage; }
@@ -164,6 +206,9 @@
     gameStat: gameStat,
     gameRank: gameRank,
     applyGameResult: applyGameResult,
+    ensureQuests: ensureQuests,
+    bumpQuest: bumpQuest,
+    claimQuest: claimQuest,
     botSkillFor: botSkillFor,
     rng: rng,
     hashStr: hashStr,

@@ -111,6 +111,27 @@
   }
 
   // ---------- Games tab ----------
+  function questStrip() {
+    var st = state();
+    var qs = P().ensureQuests(st);
+    var streak = env.store.streak ? env.store.streak() : 0;
+    var rows = qs.list.map(function (q, i) {
+      var pct = Math.round(100 * Math.min(1, q.n / q.goal));
+      var right = q.claimed ? '<span class="qdone">✓ done</span>'
+        : q.n >= q.goal ? '<button class="qclaim" data-q="' + i + '">CLAIM 🎁</button>'
+        : '<span class="qprog">' + q.n + "/" + q.goal + "</span>";
+      return '<div class="qrow"><div class="qtext">' + esc(q.text) + '<div class="qbar"><div class="qfill" style="width:' + pct + '%"></div></div></div>' + right + "</div>";
+    }).join("");
+    return '<div class="asec">📋 Daily Quests' + (streak > 1 ? ' <span class="lvltag">🔥 ' + streak + "-day streak!</span>" : "") + "</div>" + rows;
+  }
+  function wireQuests(el) {
+    Array.prototype.forEach.call(el.querySelectorAll("[data-q]"), function (b) {
+      b.onclick = function () {
+        var r = P().claimQuest(state(), parseInt(b.dataset.q, 10));
+        if (r.ok) { save(); SFX().coin(); SFX().toast("🎁 Quest done! +" + r.gems + " 💎 + a chest!"); render(); }
+      };
+    });
+  }
   function renderGames(el) {
     var st = state();
     var newIds = ROSTER.map(function (r) { return r.id; });
@@ -138,10 +159,11 @@
       '<a class="qcardg" href="craft.html">⛏️ Craft World</a>' +
       '<button class="qcardg" id="q_review">🔁 Daily Review</button>';
 
-    el.innerHTML = headerHTML() +
+    el.innerHTML = headerHTML() + questStrip() +
       '<div class="asec">⭐ Arcade Games</div><div class="ggrid">' + newCards + "</div>" +
       '<div class="asec">⚡ Quick Play</div><div class="qgrid">' + quickCards + "</div>";
     wireHeader();
+    wireQuests(el);
     Array.prototype.forEach.call(el.querySelectorAll("[data-play]"), function (b) {
       b.onclick = function () { var g = findGame(b.dataset.play); if (g) env.launch(g); };
     });

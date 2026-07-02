@@ -242,6 +242,16 @@
 .chestbtn:active { transform: translateY(2px); }
 
 .asec { font-weight: 900; color: #20303a; margin: 10px 2px 8px; font-size: 16px; }
+.qrow { display: flex; align-items: center; gap: 10px; background: #fff; border: 2px solid #dbe5ee;
+  border-radius: 12px; padding: 7px 10px; margin-bottom: 6px; }
+.qtext { flex: 1; min-width: 0; font-weight: bold; font-size: 13px; color: #20303a; }
+.qbar { height: 8px; background: #dde7f0; border-radius: 5px; overflow: hidden; margin-top: 4px; }
+.qfill { height: 100%; background: linear-gradient(90deg, #76d275, #43c34a); }
+.qprog { font-weight: 900; color: #5a6b7a; font-size: 13px; }
+.qdone { font-weight: 900; color: #2f9e44; font-size: 13px; }
+.qclaim { background: linear-gradient(#ffd76a, #f0a92e); border: 3px solid #a06a12; border-bottom-width: 5px;
+  border-radius: 10px; padding: 5px 12px; font-family: inherit; font-weight: 900; font-size: 13px; cursor: pointer; }
+.qclaim:active { transform: translateY(2px); }
 .ggrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
 .gcard { background: #fff; border: 3px solid #cdd8e4; border-bottom-width: 6px; border-radius: 14px;
   padding: 10px 8px; text-align: center; color: #20303a; }

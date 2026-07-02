@@ -91,6 +91,8 @@
       // learning is the main XP source: XP mirrors gems earned per answer
       if (global.VobloxProfile) {
         lvl = global.VobloxProfile.addXP(s, earned);
+        global.VobloxProfile.bumpQuest(s, "answers", 1);
+        global.VobloxProfile.bumpQuest(s, "gems", earned);
         if (lvl.leveledUp && global.VobloxSfx) { global.VobloxSfx.fanfare(); global.VobloxSfx.toast("⭐ LEVEL " + lvl.level + "! +🎁 chest"); }
       }
       if (s.totalCorrect % 5 === 0) { loot = LOOT[Math.floor(Math.random() * LOOT.length)]; s.collection.push(loot); }
@@ -107,6 +109,9 @@
   // once-per-match result: { win, score, rankPtsDelta, xp, gems } -> rank/level changes (+ celebration)
   Store.prototype.recordGame = function (gameId, res) {
     var r = global.VobloxProfile.applyGameResult(this.state, gameId, res);
+    global.VobloxProfile.bumpQuest(this.state, "games", 1, gameId);
+    if (res && res.win) global.VobloxProfile.bumpQuest(this.state, "wins", 1);
+    if (res && res.gems) global.VobloxProfile.bumpQuest(this.state, "gems", res.gems);
     this.save();
     if (global.VobloxSfx) {
       if (r.leveledUp) { global.VobloxSfx.fanfare(); global.VobloxSfx.toast("⭐ LEVEL " + r.level + "! +🎁 chest"); }
