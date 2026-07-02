@@ -94,7 +94,7 @@
           '<span class="cc-oname">' + e.emoji + " " + e.name + ' <span style="color:' + rc.color + ';font-size:12px">' + rc.label + "</span></span>" +
           '<span class="cc-otitle">' + (locked ? "🔒 " + why : e.price + " 💎") + "</span></button>";
       }).join("");
-      card().innerHTML = '<div class="wqcard"><div class="wqtitle">🥚 Hatch an egg! (you have ' + state.gems + ' 💎)</div>' + rows +
+      card().innerHTML = '<div class="wqcard"><div class="wqtitle">🥚 Hatch an egg! (you have ' + state.gems + ' 💎 Vobux)</div>' + rows +
         '<div class="muted2" style="margin-top:6px">✨ Every egg has a 1-in-20 SHINY chance!</div>' +
         '<button class="wqskip" id="ptx">close</button></div>';
       card().style.display = "flex";
@@ -104,7 +104,7 @@
       });
     };
     function hatch(egg) {
-      if (state.gems < egg.price) { big("Not enough gems — answer words to earn more!", "#ff8a8a"); return; }
+      if (state.gems < egg.price) { big("Not enough Vobux — answer words to earn more!", "#ff8a8a"); return; }
       state.gems -= egg.price;
       var sp = egg.pets[Math.floor(Math.random() * egg.pets.length)];
       var shiny = Math.random() < 0.05;

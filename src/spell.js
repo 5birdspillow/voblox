@@ -21,7 +21,7 @@
       target = list[idx]; answer = []; firstTry = true; wordT0 = performance.now();
       var letters = VQ.shuffle(target.word.split(""));
       tiles = letters.map(function (ch, i) { return { ch: ch, used: false, id: i }; });
-      render(isBoss() ? "👑 BOSS WORD — double gems!" : "Tap the letters to spell the word.");
+      render(isBoss() ? "👑 BOSS WORD — double Vobux!" : "Tap the letters to spell the word.");
       VQ.speak(target.word);
     }
     function render(msg, good) {

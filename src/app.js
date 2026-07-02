@@ -178,7 +178,7 @@
         '</div>' +
       '</div>' +
       '<div class="menu">' +
-        btn("play", "▶ Practice", "Earn gems while the game quizzes you") +
+        btn("play", "▶ Practice", "Earn Vobux while the game quizzes you") +
         btn("mock", "📝 Mock Quiz", "A pretend test — see your grade") +
         btn("words", "📖 Word List", "See all the words and hear them") +
         btn("settings", "⚙️ Backup / Settings", "Save or move progress") +
@@ -473,7 +473,7 @@
       '<div class="card hero">' +
         '<div class="big-emoji">' + (p >= 90 ? "🏆" : p >= 80 ? "🎉" : "💪") + '</div>' +
         '<div class="hero-line">All words practiced — you’re predicted to get ' + grade + '</div>' +
-        '<div class="hero-sub">Predicted quiz score: <b>' + p + '%</b> • Gems: ' + state.gems + ' • Best combo: ' + state.bestCombo + '</div>' +
+        '<div class="hero-sub">Predicted quiz score: <b>' + p + '%</b> • Vobux: ' + state.gems + ' • Best combo: ' + state.bestCombo + '</div>' +
       '</div>' +
       '<div class="menu">' +
         btn("mock", "📝 Try the Mock Quiz", "See your real grade") +

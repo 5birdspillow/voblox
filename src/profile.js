@@ -106,7 +106,7 @@
     { id: "answers", text: "Answer {n} word questions", ns: [8, 12, 16], kind: "answers" },
     { id: "wins", text: "Win {n} arcade matches", ns: [1, 2], kind: "wins" },
     { id: "games", text: "Play {n} different games", ns: [2, 3], kind: "games" },
-    { id: "gems", text: "Earn {n} gems", ns: [60, 100, 150], kind: "gems" }
+    { id: "gems", text: "Earn {n} Vobux", ns: [60, 100, 150], kind: "gems" }
   ];
   // 3 quests per day, seeded by the date (same on every device)
   function ensureQuests(state, dk) {

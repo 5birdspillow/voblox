@@ -17,7 +17,7 @@
   html += '<div class="card"><div class="lessonhead"><h2 style="margin:0">Overall</h2>' +
     '<div>' +
     '<span class="stat">' + store.rank().icon + " " + store.rank().name + '</span>' +
-    '<span class="stat">💎 ' + s.gems + '</span>' +
+    '<span class="stat">💎 ' + s.gems + ' Vobux</span>' +
     '<span class="stat">🔥 ' + store.streak() + '-day streak</span>' +
     '</div></div>' +
     '<div class="row2"><span class="stat">✅ ' + s.totalCorrect + ' correct answers</span>' +

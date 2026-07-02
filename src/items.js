@@ -134,7 +134,7 @@
       }
     }
     if ((state.gems || 0) >= (item.price || 0)) return { ok: true, why: "" };
-    return { ok: false, why: (item.price || 0) + " 💎 needed" };
+    return { ok: false, why: (item.price || 0) + " Vobux needed" };
   }
 
   // 6 featured items, seeded by the date — the same shop on every device, all day.
