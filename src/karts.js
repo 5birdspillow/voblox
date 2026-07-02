@@ -24,8 +24,9 @@
   function start(opts) {
     var words = opts.words, store = opts.store;
     var stats = store.game("karts");
-    // cup resume: { cup: 0|1, race: 0..3, pts: [me,b1..b5], botIds: [] }
-    var cup = (opts.resume && stats.resume) ? stats.resume : null;
+    // cup resume: { cup: 0|1, race: 0..3, pts: [me,b1..b5], botIds: [] } — a cup in
+    // progress always continues (finishing one clears it)
+    var cup = stats.resume || null;
     if (!cup) {
       var rivals = Bots.pickOpponents(5, P.botSkillFor(stats.rankPts));
       cup = stats.resume = { cup: (stats.plays % 2), race: 0, pts: [0, 0, 0, 0, 0, 0], botIds: rivals.map(function (b) { return b.id; }) };

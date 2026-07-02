@@ -25,7 +25,8 @@
   function start(opts) {
     var words = opts.words, store = opts.store;
     var stats = store.game("towerd");
-    var save = (opts.resume && stats.resume) ? stats.resume : null;
+    // a defense in progress always resumes (winning/losing clears it)
+    var save = stats.resume || null;
     var mapIdx = save ? save.map : 0;
     // pick the highest unlocked map when starting fresh
     if (!save) { MAPS.forEach(function (m, i) { if (stats.rankPts >= m.at) mapIdx = i; }); }

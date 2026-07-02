@@ -35,8 +35,8 @@
   var camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
   scene.add(new THREE.HemisphereLight(0xffffff, 0x6f9e57, 1.0));
   var sun = new THREE.DirectionalLight(0xfff3d0, 0.85);
-  sun.position.set(26, 42, 18); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
-  var scam = sun.shadow.camera; scam.left = -28; scam.right = 28; scam.top = 28; scam.bottom = -28; scam.near = 1; scam.far = 100;
+  sun.position.set(30, 48, 22); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+  var scam = sun.shadow.camera; scam.left = -36; scam.right = 36; scam.top = 36; scam.bottom = -36; scam.near = 1; scam.far = 130;
   scene.add(sun);
 
   // ---------- helpers ----------
@@ -68,7 +68,7 @@
   function box(w, h, d, color) { var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ color: color })); m.castShadow = true; return m; }
 
   // ---------- ground ----------
-  var HALF = 16;
+  var HALF = 22; // island grew to fit the game districts around the outer ring
   (function buildGround() {
     var n = (HALF * 2 + 1) * (HALF * 2 + 1);
     var mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshLambertMaterial({ color: 0xffffff }), n);
@@ -83,8 +83,9 @@
     }
     mesh.instanceMatrix.needsUpdate = true; if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     scene.add(mesh);
-    var water = new THREE.Mesh(new THREE.BoxGeometry(4, 0.5, 4), new THREE.MeshLambertMaterial({ color: 0x3aa0e6, transparent: true, opacity: 0.85 }));
-    water.position.set(-6.5, -0.15, -6.5); water.receiveShadow = true; scene.add(water);
+    // the pond anchors the fishing district in the south-west corner
+    var water = new THREE.Mesh(new THREE.BoxGeometry(8, 0.5, 8), new THREE.MeshLambertMaterial({ color: 0x3aa0e6, transparent: true, opacity: 0.85 }));
+    water.position.set(-16.5, -0.15, -16.5); water.receiveShadow = true; scene.add(water);
     var wallMat = new THREE.MeshLambertMaterial({ color: 0x9aa0aa });
     [[0, HALF + 0.5], [0, -(HALF + 0.5)]].forEach(function (p) { var w = new THREE.Mesh(new THREE.BoxGeometry(HALF * 2 + 1, 1.2, 1), wallMat); w.position.set(p[0], 0.6, p[1]); w.receiveShadow = true; scene.add(w); });
     [[HALF + 0.5, 0], [-(HALF + 0.5), 0]].forEach(function (p) { var w = new THREE.Mesh(new THREE.BoxGeometry(1, 1.2, HALF * 2 + 1), wallMat); w.position.set(p[0], 0.6, p[1]); w.receiveShadow = true; scene.add(w); });
@@ -100,7 +101,8 @@
   }
   [[3.8, 2.6], [-3.8, 3.4], [3.0, -3.9], [-3.2, -2.6], [-6.6, 6.6],
    [10.5, 2.5], [-10.5, 3.5], [2.5, 10.5], [-3, -10.5], [11, -10], [-11.5, 9.5],
-   [14, 4], [-14, -3], [5.5, 14], [-5.5, -14], [9, 9], [-9, -9]].forEach(function (p) { makeTree(p[0], p[1]); });
+   [14, 4], [-14, -3], [5.5, 14], [-5.5, -14], [9, 9], [-9, -9],
+   [20, 8], [-20, 6], [8, -20], [-6, 20], [16, 16], [16, -16], [-19, 14], [20, -6]].forEach(function (p) { makeTree(p[0], p[1]); });
 
   // ---------- boss totem (center) ----------
   var totem = (function () {
@@ -148,7 +150,7 @@
     clearChests();
     var N = words.length, R = 13;
     for (var i = 0; i < N; i++) { var a = (i / N) * Math.PI * 2; makeChest(words[i].word, words[i], Math.cos(a) * R, Math.sin(a) * R); }
-    obstacles = treeObstacles.concat(chestObstacles).concat([{ x: 0, z: 0, r: 0.9 }]);
+    obstacles = treeObstacles.concat(chestObstacles).concat(buildingObstacles).concat([{ x: 0, z: 0, r: 0.9 }]);
   }
 
   // ---------- mini-game portals ----------
@@ -166,13 +168,148 @@
     return { group: g, game: game };
   }
   function buildPortals() {
-    // arcade-only games (hub:true) don't get a physical portal — 18 rings would crowd the island
+    // quick games keep their classic portal ring; the big arcade games get BUILDINGS (below)
     var games = (window.VobloxGames || []).filter(function (g) { return !g.hub; });
     portals.forEach(function (p) { scene.remove(p.group); });
     portals = [];
     var R = 9.5, N = games.length;
     // ring the portals around the island; the spawn sits near the center so none overlap it
     for (var i = 0; i < N; i++) { var a = (i / Math.max(N, 1)) * Math.PI * 2 + 0.4; portals.push(makePortal(games[i], Math.cos(a) * R, Math.sin(a) * R)); }
+  }
+
+  // ---------- game district buildings (every arcade game lives IN the world) ----------
+  var buildings = [], buildingObstacles = [];
+  function hexStr(n) { return "#" + ("000000" + n.toString(16)).slice(-6); }
+  function makeBuilding(def, x, z) {
+    var g = new THREE.Group();
+    var ang = Math.atan2(-x, -z); // door faces the island center
+    var wallMat = new THREE.MeshLambertMaterial({ color: def.wall });
+    var roofMat = new THREE.MeshLambertMaterial({ color: def.roof });
+    var W2 = 3.6, D = 3.0, Hh = 2.3;
+    var back = new THREE.Mesh(new THREE.BoxGeometry(W2, Hh, 0.3), wallMat); back.position.set(0, Hh / 2, -D / 2); back.castShadow = true; g.add(back);
+    var l = new THREE.Mesh(new THREE.BoxGeometry(0.3, Hh, D), wallMat); l.position.set(-W2 / 2, Hh / 2, 0); l.castShadow = true; g.add(l);
+    var r2 = new THREE.Mesh(new THREE.BoxGeometry(0.3, Hh, D), wallMat); r2.position.set(W2 / 2, Hh / 2, 0); r2.castShadow = true; g.add(r2);
+    var fl = new THREE.Mesh(new THREE.BoxGeometry(1.0, Hh, 0.3), wallMat); fl.position.set(-W2 / 2 + 0.5, Hh / 2, D / 2); g.add(fl);
+    var fr = new THREE.Mesh(new THREE.BoxGeometry(1.0, Hh, 0.3), wallMat); fr.position.set(W2 / 2 - 0.5, Hh / 2, D / 2); g.add(fr);
+    var lintel = new THREE.Mesh(new THREE.BoxGeometry(W2, 0.5, 0.3), wallMat); lintel.position.set(0, Hh - 0.25, D / 2); g.add(lintel);
+    var roof = new THREE.Mesh(new THREE.BoxGeometry(W2 + 0.7, 0.35, D + 0.7), roofMat); roof.position.y = Hh + 0.17; roof.castShadow = true; g.add(roof);
+    var roof2 = new THREE.Mesh(new THREE.BoxGeometry(W2 * 0.62, 0.32, D * 0.62), roofMat); roof2.position.y = Hh + 0.5; g.add(roof2);
+    // glowing doorway = the "portal" feel
+    var door = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.75), new THREE.MeshBasicMaterial({ color: def.color, transparent: true, opacity: 0.45, side: THREE.DoubleSide }));
+    door.position.set(0, 0.9, D / 2 + 0.02); g.add(door); g._door = door;
+    // sign + big emoji
+    var spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex(def.emoji + " " + def.name, hexStr(def.color)), depthWrite: false }));
+    spr.scale.set(3.1, 0.82, 1); spr.position.set(0, Hh + 1.35, 0); g.add(spr);
+    var em = new THREE.Sprite(new THREE.SpriteMaterial({ map: emojiTex(def.emoji), depthWrite: false, transparent: true }));
+    em.scale.set(1.15, 1.15, 1); em.position.set(0, Hh + 0.65, D / 2 - 0.6); g.add(em);
+    // one flavor prop per district
+    switch (def.flavor) {
+      case "goal": var gp = box(0.14, 1.1, 0.14, 0xffffff); gp.position.set(-2.9, 0.55, 0.6); g.add(gp); var gp2 = box(0.14, 1.1, 0.14, 0xffffff); gp2.position.set(-2.9, 0.55, -0.6); g.add(gp2); var bar = box(0.14, 0.14, 1.34, 0xffffff); bar.position.set(-2.9, 1.1, 0); g.add(bar); break;
+      case "arch": var a1 = box(0.24, 2.4, 0.24, 0x222222); a1.position.set(-2.6, 1.2, 0); g.add(a1); var a2 = box(0.24, 2.4, 0.24, 0x222222); a2.position.set(-3.9, 1.2, 0); g.add(a2); var chk = new THREE.Mesh(new THREE.BoxGeometry(1.55, 0.4, 0.3), new THREE.MeshLambertMaterial({ map: (function () { var c = document.createElement("canvas"); c.width = 64; c.height = 16; var xx = c.getContext("2d"); for (var q2 = 0; q2 < 8; q2++) { xx.fillStyle = q2 % 2 ? "#fff" : "#111"; xx.fillRect(q2 * 8, 0, 8, 16); } return new THREE.CanvasTexture(c); })() })); chk.position.set(-3.25, 2.5, 0); g.add(chk); break;
+      case "dock": var pl = box(1.4, 0.16, 4.4, 0x8a5a3b); pl.position.set(0, 0.1, D / 2 + 2.6); g.add(pl); break;
+      case "fence": [[-2.6, 1.2], [-2.6, -1.2], [2.6, 1.2], [2.6, -1.2]].forEach(function (p2) { var f2 = box(0.14, 0.7, 0.14, 0xb08a5a); f2.position.set(p2[0], 0.35, p2[1]); g.add(f2); }); var rail = box(5.2, 0.1, 0.1, 0xb08a5a); rail.position.set(0, 0.62, 1.2); g.add(rail); var rail2 = box(5.2, 0.1, 0.1, 0xb08a5a); rail2.position.set(0, 0.62, -1.2); g.add(rail2); break;
+      case "tower": var t1 = box(1.1, 2.2, 1.1, 0x6a5acd); t1.position.set(-2.7, 1.1, 0); g.add(t1); var t2 = box(1.4, 0.4, 1.4, 0x4a3aad); t2.position.set(-2.7, 2.4, 0); g.add(t2); break;
+      case "cloud": [[1.9, 3.4, 0.9], [2.7, 4.3, -0.4], [3.4, 5.2, 0.5]].forEach(function (p3) { var cl = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.35, 1.2), new THREE.MeshLambertMaterial({ color: 0xffffff })); cl.position.set(p3[0], p3[1], p3[2]); g.add(cl); }); break;
+      case "board": var bd = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.12, 1.6), new THREE.MeshLambertMaterial({ map: (function () { var c = document.createElement("canvas"); c.width = 64; c.height = 64; var xx = c.getContext("2d"); for (var yy = 0; yy < 8; yy++) for (var xq = 0; xq < 8; xq++) { xx.fillStyle = (xq + yy) % 2 ? "#b58863" : "#f0d9b5"; xx.fillRect(xq * 8, yy * 8, 8, 8); } return new THREE.CanvasTexture(c); })() })); bd.position.set(2.9, 0.4, 0.4); g.add(bd); var tbl = box(0.3, 0.4, 0.3, 0x6a4a2e); tbl.position.set(2.9, 0.18, 0.4); g.add(tbl); break;
+      case "awning": var aw = new THREE.Mesh(new THREE.BoxGeometry(W2 + 0.4, 0.14, 1.1), new THREE.MeshLambertMaterial({ color: 0xff5252 })); aw.position.set(0, Hh - 0.4, D / 2 + 0.6); g.add(aw); break;
+    }
+    g.position.set(x, 0, z); g.rotation.y = ang; scene.add(g);
+    // door world-position for proximity checks
+    var doorPos = new THREE.Vector3(0, 0, D / 2 + 1.1).applyAxisAngle(new THREE.Vector3(0, 1, 0), ang).add(g.position);
+    buildingObstacles.push({ x: x, z: z, r: 2.2 });
+    var b = { group: g, def: def, door: doorPos };
+    buildings.push(b);
+    return b;
+  }
+  function buildBuildings() {
+    var DEFS = [
+      { gameId: "pickle", flavor: null, wall: 0x63c78a, roof: 0x2f7d4f },
+      { gameId: "soccer", flavor: "goal", wall: 0x7ec86a, roof: 0x2f6b1f },
+      { gameId: "karts", flavor: "arch", wall: 0xd97b4a, roof: 0x8a3a1a },
+      { gameId: "chef", flavor: "awning", wall: 0xf2dcb8, roof: 0xb3392f },
+      { gameId: "chess", flavor: "board", wall: 0xcaa876, roof: 0x5a3a22 },
+      { gameId: "bjj", flavor: null, wall: 0xe8e2d6, roof: 0xb3392f },
+      { gameId: "pets", flavor: "fence", wall: 0xf0b8d8, roof: 0xb06a9a },
+      { gameId: "fishing", flavor: "dock", wall: 0x7ab8d8, roof: 0x2a6a8a },
+      { gameId: "towerd", flavor: "tower", wall: 0x9a8ad0, roof: 0x4a3aad },
+      { gameId: "obby", flavor: "cloud", wall: 0xbfe3ff, roof: 0x5aa6f0 },
+      { tab: "shop", name: "Item Shop", emoji: "🛍️", color: 0xf0a92e, flavor: "awning", wall: 0xffe2a8, roof: 0xf0a92e },
+      { tab: "locker", name: "Wardrobe", emoji: "🧢", color: 0x5aa6f0, flavor: null, wall: 0xcfe0f4, roof: 0x3a6ab0 }
+    ];
+    var R = 18.5;
+    DEFS.forEach(function (d, i) {
+      if (d.gameId) {
+        var gm = (window.VobloxGames || []).filter(function (x) { return x.id === d.gameId; })[0];
+        if (!gm) return;
+        d.name = gm.name; d.emoji = gm.emoji; d.color = gm.color;
+        d.game = gm;
+      }
+      var a = (i / DEFS.length) * Math.PI * 2 + Math.PI / DEFS.length;
+      var x = Math.cos(a) * R, z = Math.sin(a) * R;
+      if (d.gameId === "fishing") { x = -13.4; z = -13.4; } // the dock sits by the pond
+      makeBuilding(d, x, z);
+    });
+  }
+
+  // ---------- wandering citizens (AI players hanging out in the world) ----------
+  var walkers = [];
+  function makeWalker(bot) {
+    function hexn(h) { return parseInt(String(h).slice(1), 16) || 0xffffff; }
+    var g = new THREE.Group();
+    var pantsMat = new THREE.MeshLambertMaterial({ color: hexn(bot.avatar.pants) });
+    var shirtMat = new THREE.MeshLambertMaterial({ color: hexn(bot.avatar.shirt) });
+    var skinMat = new THREE.MeshLambertMaterial({ color: hexn(bot.avatar.skin) });
+    var faceMat = new THREE.MeshLambertMaterial({ map: faceTex(bot.avatar.skin, bot.avatar.face) });
+    function limb(w, h, d, mat, px, py) { var p = new THREE.Group(); p.position.set(px, py, 0); var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.y = -h / 2; p.add(m); return p; }
+    var s = 0.82; // slightly smaller than Leo
+    var ll = limb(0.34 * s, s, 0.34 * s, pantsMat, -0.22 * s, s), rl = limb(0.34 * s, s, 0.34 * s, pantsMat, 0.22 * s, s);
+    var torso = new THREE.Mesh(new THREE.BoxGeometry(0.9 * s, 1.05 * s, 0.5 * s), shirtMat); torso.position.y = 1.52 * s;
+    var la = limb(0.3 * s, s, 0.3 * s, skinMat, -0.62 * s, 2.02 * s), ra = limb(0.3 * s, s, 0.3 * s, skinMat, 0.62 * s, 2.02 * s);
+    var head = new THREE.Mesh(new THREE.BoxGeometry(0.82 * s, 0.82 * s, 0.82 * s), [skinMat, skinMat, skinMat, skinMat, faceMat, skinMat]); head.position.y = 2.5 * s;
+    var name = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex(bot.name, "#20303acc"), depthWrite: false }));
+    name.scale.set(1.9, 0.5, 1); name.position.y = 3.15 * s; g.add(name);
+    if (bot.avatar.hat) { var hs = new THREE.Sprite(new THREE.SpriteMaterial({ map: emojiTex(bot.avatar.hat), depthWrite: false, transparent: true })); hs.scale.set(0.75, 0.75, 1); hs.position.y = 2.72 * s + 0.28; g.add(hs); }
+    var bub = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex("hi!", "#ffffff"), depthWrite: false, transparent: true }));
+    bub.scale.set(2.0, 0.55, 1); bub.position.y = 3.7 * s; bub.visible = false; g.add(bub);
+    g.add(ll, rl, torso, la, ra, head);
+    var a0 = Math.random() * Math.PI * 2, r0 = 6 + Math.random() * 10;
+    g.position.set(Math.cos(a0) * r0, 0, Math.sin(a0) * r0);
+    scene.add(g);
+    return { group: g, bot: bot, ll: ll, rl: rl, la: la, ra: ra, bub: bub, tx: g.position.x, tz: g.position.z, wait: Math.random() * 3, phase: Math.random() * 6, bubT: 0, greeted: 0 };
+  }
+  function initWalkers() {
+    if (!window.VobloxBots) return;
+    window.VobloxBots.pickOpponents(5, 0.5).forEach(function (b) { walkers.push(makeWalker(b)); });
+  }
+  function updateWalkers(dt, t) {
+    walkers.forEach(function (w) {
+      var g = w.group;
+      var dx = w.tx - g.position.x, dz = w.tz - g.position.z, d = Math.hypot(dx, dz);
+      if (d < 0.4) {
+        w.wait -= dt;
+        w.ll.rotation.x *= 0.8; w.rl.rotation.x *= 0.8; w.la.rotation.x *= 0.8; w.ra.rotation.x *= 0.8;
+        if (w.wait <= 0) {
+          var a = Math.random() * Math.PI * 2, r = 5 + Math.random() * 13;
+          w.tx = Math.cos(a) * r; w.tz = Math.sin(a) * r; w.wait = 1.5 + Math.random() * 4;
+        }
+      } else {
+        var sp = 1.7 * dt;
+        g.position.x += (dx / d) * sp; g.position.z += (dz / d) * sp;
+        g.rotation.y = Math.atan2(dx / d, dz / d);
+        w.phase += dt * 9;
+        var sw = Math.sin(w.phase) * 0.5;
+        w.ll.rotation.x = sw; w.rl.rotation.x = -sw; w.la.rotation.x = -sw; w.ra.rotation.x = sw;
+      }
+      // wave hello when Leo walks close by
+      var pd = Math.hypot(g.position.x - pos.x, g.position.z - pos.z);
+      if (pd < 3.2 && t - w.greeted > 14) {
+        w.greeted = t;
+        w.bub.material.map = labelTex(window.VobloxBots.say(w.bot, Math.random() < 0.5 ? "hi" : "nice"), "#ffffff");
+        w.bub.material.needsUpdate = true;
+        w.bubT = 2.4;
+      }
+      if (w.bubT > 0) { w.bubT -= dt; w.bub.visible = true; } else w.bub.visible = false;
+    });
   }
 
   // ---------- avatar (colors/face/hat come from the equipped Locker items) ----------
@@ -266,6 +403,7 @@
     raycaster.setFromCamera(ndc, camera);
     if (raycaster.intersectObject(totem, true).length && dist2(totem.position) < 18) return startBoss(WORDS, "boss", "Boss: " + lesson.title);
     for (var pj = 0; pj < portals.length; pj++) if (raycaster.intersectObject(portals[pj].group, true).length && dist2(portals[pj].group.position) < 20) return launchGame(portals[pj].game);
+    for (var bj = 0; bj < buildings.length; bj++) if (raycaster.intersectObject(buildings[bj].group, true).length) { if (dist2(buildings[bj].door) < 26) return enterBuilding(buildings[bj]); flash("Walk up to the " + esc(buildings[bj].def.name) + " door!"); return; }
     for (var i = 0; i < chests.length; i++) if (raycaster.intersectObject(chests[i].group, true).length) { if (dist2(chests[i].group.position) < 16) openGate(chests[i]); else flash("Walk closer to that chest!"); return; }
   }
   function dist2(p) { var dx = p.x - pos.x, dz = p.z - pos.z; return dx * dx + dz * dz; }
@@ -293,16 +431,22 @@
     for (var i = 0; i < chests.length; i++) { var d = dist2(chests[i].group.position); if (d < bd) { bd = d; best = chests[i]; kind = "chest"; } }
     var dt2 = dist2(totem.position); if (dt2 < bd) { bd = dt2; best = totem; kind = "boss"; }
     for (var pi = 0; pi < portals.length; pi++) { var pd = dist2(portals[pi].group.position); if (pd < bd) { bd = pd; best = portals[pi]; kind = "game"; } }
+    for (var bi = 0; bi < buildings.length; bi++) { var bdd = dist2(buildings[bi].door); if (bdd < bd) { bd = bdd; best = buildings[bi]; kind = "building"; } }
     nearest = (bd < 5.6) ? { kind: kind, ref: best } : null;
     var prompt = document.getElementById("prompt"), act = document.getElementById("actbtn");
     if (nearest) {
       prompt.style.display = "block"; act.style.display = "block";
       if (nearest.kind === "boss") { prompt.innerHTML = "⚔️ <b>Fight the Boss</b> — press E"; act.textContent = "FIGHT ⚔️"; }
       else if (nearest.kind === "game") { prompt.innerHTML = "🎮 <b>Enter " + esc(nearest.ref.game.name) + "</b> — press E"; act.textContent = "ENTER 🎮"; }
+      else if (nearest.kind === "building") { var bdef = nearest.ref.def; prompt.innerHTML = bdef.emoji + " <b>" + (bdef.game ? "Play " : "Open ") + esc(bdef.name) + "</b> — press E"; act.textContent = bdef.game ? "PLAY " + bdef.emoji : "OPEN " + bdef.emoji; }
       else { prompt.innerHTML = (nearest.ref.ready ? "Review" : "Open") + ": <b>" + nearest.ref.word + "</b> — press E"; act.textContent = (nearest.ref.ready ? "REVIEW ✦" : "OPEN ✦"); }
     } else { prompt.style.display = "none"; act.style.display = "none"; }
   }
-  function tryInteract() { if (!nearest) return; if (nearest.kind === "boss") startBoss(WORDS, "boss", "Boss: " + lesson.title); else if (nearest.kind === "game") launchGame(nearest.ref.game); else openGate(nearest.ref); }
+  function enterBuilding(b) {
+    if (b.def.game) launchGame(b.def.game);
+    else openBackpack(b.def.tab);
+  }
+  function tryInteract() { if (!nearest) return; if (nearest.kind === "boss") startBoss(WORDS, "boss", "Boss: " + lesson.title); else if (nearest.kind === "game") launchGame(nearest.ref.game); else if (nearest.kind === "building") enterBuilding(nearest.ref); else openGate(nearest.ref); }
   function flash(msg) { var p = document.getElementById("prompt"); p.style.display = "block"; p.innerHTML = msg; setTimeout(function () { if (!nearest) p.style.display = "none"; }, 1400); }
 
   function animateChests(dt, t) {
@@ -360,9 +504,10 @@
     window.VobloxBoss.start({ words: words, store: store, mode: mode || "boss", title: title, onExit: gameExit });
   }
   function launchGame(game, xtra) { closeOverlay(); overlayOpen = true; game.start({ words: WORDS, store: store, onExit: gameExit, resume: !!(xtra && xtra.resume) }); }
-  function openArcade() {
+  function openBackpack(tab) {
     window.VobloxArcade.open({
       store: store,
+      tab: tab,
       openOverlay: openOverlay,
       closeOverlay: closeOverlay,
       launch: launchGame,
@@ -396,7 +541,7 @@
     var unlocked = store.state.chessUnlocked || store.predicted(WORDS) >= 90;
     openOverlay('<div class="card menucard"><h2>☰ Menu — ' + esc(lesson.title) + '</h2>' +
       '<button class="menubtn" id="m_resume">▶ Back to the world</button>' +
-      '<button class="menubtn" id="m_arcade" style="background:linear-gradient(#ffd76a,#f0a92e);border-color:#a06a12;color:#3a2a00">🕹️ Voblox Arcade — NEW! (games · locker · shop)</button>' +
+      '<button class="menubtn" id="m_arcade" style="background:linear-gradient(#ffd76a,#f0a92e);border-color:#a06a12;color:#3a2a00">🎒 Backpack (quests · locker · shop · saves)</button>' +
       '<a class="menubtn" href="craft.html" style="background:linear-gradient(#9ad06a,#6fae3e);border-color:#4f7e2a">⛏️ Craft World (build &amp; mine)</a>' +
       '<button class="menubtn" id="m_boss">⚔️ Boss Battle (beat the lesson!)</button>' +
       '<button class="menubtn" id="m_review">🔁 Daily Review (mix of words)</button>' +
@@ -409,7 +554,7 @@
       '<div class="help">Predicted grade for ' + esc(lesson.title) + ': <b>' + gradeText(store.predicted(WORDS)) + '</b></div></div>',
       function (e) { if (e.key === "Escape") closeOverlay(); });
     document.getElementById("m_resume").onclick = closeOverlay;
-    document.getElementById("m_arcade").onclick = openArcade;
+    document.getElementById("m_arcade").onclick = function () { openBackpack("quests"); };
     document.getElementById("m_boss").onclick = function () { startBoss(WORDS, "boss", "Boss: " + lesson.title); };
     document.getElementById("m_review").onclick = startReview;
     document.getElementById("m_lessons").onclick = openLessons;
@@ -446,7 +591,7 @@
     Array.prototype.forEach.call(obox.querySelectorAll(".say"), function (b) { b.onclick = function () { speak(b.dataset.w); }; });
   }
   function openHelp() {
-    openOverlay('<div class="card"><h2>🎮 How to play</h2><p><b>Move:</b> phone/tablet — drag the <b>left side</b> to walk, <b>right side</b> to look. Computer — <b>W A S D</b> + drag the mouse.</p><p><b>Chests</b> = words. Walk up and tap <b>OPEN</b> (or press <b>E</b>) to answer and earn 💎.</p><p><b>⚔️ Boss Battle</b> (the totem in the middle, or the menu) is the fast way to beat a whole lesson — great right before a quiz!</p><button class="submit big-next" id="ok">Got it ⏎</button></div>', function (e) { if (e.key === "Enter") closeOverlay(); });
+    openOverlay('<div class="card"><h2>🎮 How to play</h2><p><b>Move:</b> phone/tablet — drag the <b>left side</b> to walk, <b>right side</b> to look. Computer — <b>W A S D</b> + drag the mouse.</p><p><b>Chests</b> = words. Walk up and tap <b>OPEN</b> (or press <b>E</b>) to answer and earn 💎.</p><p><b>🏘️ The buildings around the island</b> are the big games — soccer stadium, chess club, pet meadow, fishing dock and more. Walk up to a door and press <b>PLAY</b>!</p><p><b>⚔️ Boss Battle</b> (the totem in the middle) is the fast way to beat a whole lesson before a quiz!</p><button class="submit big-next" id="ok">Got it ⏎</button></div>', function (e) { if (e.key === "Enter") closeOverlay(); });
     document.getElementById("ok").onclick = closeOverlay;
   }
 
@@ -525,11 +670,13 @@
   // ---------- loop ----------
   window.addEventListener("resize", function () { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
   var clock = new THREE.Clock(), tAcc = 0;
-  function animate() { requestAnimationFrame(animate); var dt = Math.min(clock.getDelta(), 0.05); tAcc += dt; if (!overlayOpen) updatePlayer(dt); animateChests(dt, tAcc); updateCamera(); renderer.render(scene, camera); }
+  function animate() { requestAnimationFrame(animate); var dt = Math.min(clock.getDelta(), 0.05); tAcc += dt; if (!overlayOpen) updatePlayer(dt); animateChests(dt, tAcc); updateWalkers(dt, tAcc); updateCamera(); renderer.render(scene, camera); }
 
   // ---------- boot ----------
+  buildBuildings();
   buildChests(WORDS);
   buildPortals();
+  initWalkers();
   updateHUD();
   var verEl = document.getElementById("ver"); if (verEl) verEl.textContent = "build " + VOBLOX_VERSION;
   document.getElementById("loading").style.display = "none";
@@ -539,6 +686,6 @@
   else if (location.hash === "#review") startReview();
   else if (location.hash.indexOf("#game=") === 0) { var gid = location.hash.slice(6); var gm = (window.VobloxGames || []).filter(function (x) { return x.id === gid; })[0]; if (gm) launchGame(gm); }
   else if (location.hash === "#chess") openChess();
-  else if (location.hash === "#arcade") openArcade();
+  else if (location.hash === "#arcade") openBackpack("quests");
   if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(function () {});
 })();

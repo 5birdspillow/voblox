@@ -1,9 +1,9 @@
 /*
- * Voblox — the Arcade hub overlay: every game with rank badges + Continue,
- * the Locker (equip skins on a live avatar preview), the daily Shop, Pets,
- * and Zelda-style Save Slots. Rendered into the world's overlay via env.
+ * Voblox — the 🎒 Backpack overlay: Daily Quests, the Locker (equip skins on
+ * a live avatar preview), the daily Shop, Pets, and Zelda-style Save Slots.
+ * Games are NOT launched from here — every game is a building in the 3D world.
  *
- * env: { store, openOverlay(html, keyFn), closeOverlay(), launch(gameDef),
+ * env: { store, tab?, openOverlay(html, keyFn), closeOverlay(), launch(gameDef),
  *        startBoss(), back() }
  */
 (function (global) {
@@ -14,22 +14,9 @@
 
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
 
-  // The full planned roster — cards flip from "coming soon" to playable as each ships.
-  var ROSTER = [
-    { id: "pickle", name: "Pickleball Blitz", emoji: "🏓" },
-    { id: "fishing", name: "Fishing Frenzy", emoji: "🎣" },
-    { id: "soccer", name: "Soccer Strikers", emoji: "⚽" },
-    { id: "karts", name: "Turbo Karts", emoji: "🏎️" },
-    { id: "obby", name: "Sky Obby", emoji: "🧗" },
-    { id: "towerd", name: "Word Tower Defense", emoji: "🗼" },
-    { id: "chess", name: "Chess Club", emoji: "♟️" },
-    { id: "bjj", name: "BJJ Dojo", emoji: "🥋" },
-    { id: "chef", name: "Chef Rush", emoji: "👨‍🍳" },
-    { id: "pets", name: "Pet Paradise", emoji: "🐾" }
-  ];
   var DUPE_GEMS = { common: 40, rare: 120, epic: 300, legendary: 700 };
 
-  var env = null, tab = "games", lockerSlot = "hat", prevRaf = 0;
+  var env = null, tab = "quests", lockerSlot = "hat", prevRaf = 0;
 
   function state() { return env.store.state; }
   function save() { env.store.save(); }
@@ -37,16 +24,16 @@
   function findGame(id) { return games().filter(function (g) { return g.id === id; })[0] || null; }
 
   function open(e) {
-    env = e; tab = "games";
+    env = e; tab = e.tab || "quests";
     shell();
   }
 
   function shell() {
     var html =
-      '<div class="gatehead">🕹️ Voblox Arcade <span class="x" id="ax">✕</span></div>' +
+      '<div class="gatehead">🎒 Backpack <span class="x" id="ax">✕</span></div>' +
       '<div class="card arcadecard">' +
       '<div class="atabs">' +
-      tabBtn("games", "🎮 Games") + tabBtn("locker", "🧍 Locker") + tabBtn("shop", "🛍️ Shop") +
+      tabBtn("quests", "📋 Quests") + tabBtn("locker", "🧍 Locker") + tabBtn("shop", "🛍️ Shop") +
       tabBtn("pets", "🐾 Pets") + tabBtn("slots", "💾 Slots") +
       '</div><div class="abody" id="abody"></div></div>';
     env.openOverlay(html, function (ev) { if (ev.key === "Escape") env.back(); });
@@ -65,7 +52,7 @@
   function render() {
     cancelAnimationFrame(prevRaf);
     var el = document.getElementById("abody"); if (!el) return;
-    if (tab === "games") renderGames(el);
+    if (tab === "quests") renderQuests(el);
     else if (tab === "locker") renderLocker(el);
     else if (tab === "shop") renderShop(el);
     else if (tab === "pets") renderPets(el);
@@ -132,46 +119,21 @@
       };
     });
   }
-  function renderGames(el) {
+  function renderQuests(el) {
     var st = state();
-    var newIds = ROSTER.map(function (r) { return r.id; });
-    var live = games();
-    var quick = live.filter(function (g) { return newIds.indexOf(g.id) === -1; });
-
-    function bigCard(r) {
-      var g = findGame(r.id);
-      var gs = (st.gameStats || {})[r.id];
-      var rank = gs ? P().gameRank(gs.rankPts) : null;
-      var inner = '<div class="gc-emoji">' + r.emoji + '</div><div class="gc-name">' + esc(r.name) + "</div>";
-      if (g) {
-        inner += rank && gs.plays ? '<div class="gc-rank">' + rank.icon + " " + rank.name + (gs.best ? " · best " + gs.best : "") + "</div>" : '<div class="gc-rank gc-new">NEW!</div>';
-        inner += '<div class="gc-row"><button class="gc-play" data-play="' + r.id + '">▶ Play</button>' +
-          (gs && gs.resume ? '<button class="gc-cont" data-cont="' + r.id + '">⏩ Continue</button>' : "") + "</div>";
-        return '<div class="gcard">' + inner + "</div>";
-      }
-      return '<div class="gcard soon">' + inner + '<div class="gc-rank">🔒 Coming soon!</div></div>';
-    }
-    var newCards = ROSTER.map(bigCard).join("");
-    var quickCards = quick.map(function (g) {
-      return '<button class="qcardg" data-play="' + g.id + '">' + g.emoji + " " + esc(g.name) + "</button>";
-    }).join("") +
-      '<button class="qcardg" id="q_boss">⚔️ Boss Battle</button>' +
-      '<a class="qcardg" href="craft.html">⛏️ Craft World</a>' +
-      '<button class="qcardg" id="q_review">🔁 Daily Review</button>';
-
+    // ranks recap: every game the player has touched, with its rank badge
+    var badges = games().map(function (g) {
+      var gs = (st.gameStats || {})[g.id];
+      if (!gs || !gs.plays) return "";
+      var rank = P().gameRank(gs.rankPts);
+      return '<div class="qrow" style="gap:6px"><div class="qtext">' + g.emoji + " " + esc(g.name) +
+        '</div><span class="qprog">' + rank.icon + " " + rank.name + (gs.best ? " · best " + gs.best : "") + "</span></div>";
+    }).join("");
     el.innerHTML = headerHTML() + questStrip() +
-      '<div class="asec">⭐ Arcade Games</div><div class="ggrid">' + newCards + "</div>" +
-      '<div class="asec">⚡ Quick Play</div><div class="qgrid">' + quickCards + "</div>";
+      (badges ? '<div class="asec">🏅 Your game ranks</div>' + badges : "") +
+      '<div class="shopchest" style="margin-top:8px">🏘️ All the games are <b>buildings in the world</b> — walk up to a door and press PLAY! (Word chests, the Boss Totem and the portal ring are out there too.)</div>';
     wireHeader();
     wireQuests(el);
-    Array.prototype.forEach.call(el.querySelectorAll("[data-play]"), function (b) {
-      b.onclick = function () { var g = findGame(b.dataset.play); if (g) env.launch(g); };
-    });
-    Array.prototype.forEach.call(el.querySelectorAll("[data-cont]"), function (b) {
-      b.onclick = function () { var g = findGame(b.dataset.cont); if (g) env.launch(g, { resume: true }); };
-    });
-    var qb = document.getElementById("q_boss"); if (qb) qb.onclick = env.startBoss;
-    var qr = document.getElementById("q_review"); if (qr) qr.onclick = env.startReview || env.startBoss;
   }
 
   // ---------- Locker tab ----------
@@ -333,5 +295,5 @@
     });
   }
 
-  global.VobloxArcade = { open: open, ROSTER: ROSTER };
+  global.VobloxArcade = { open: open };
 })(typeof window !== "undefined" ? window : globalThis);
