@@ -286,19 +286,42 @@
     Array.prototype.forEach.call(btns, function (b) { b.disabled = true; b.style.opacity = "0.4"; });
     setTimeout(function () { Array.prototype.forEach.call(btns, function (b) { b.disabled = false; b.style.opacity = ""; }); }, ms);
   }
+  // parent rescue hatch: 5 quick taps on an overlay title force the exit handler.
+  // Nothing in the game may ever hard-lock — this is the last-resort guarantee.
+  function rescueTap(el, fn) {
+    if (!el) return;
+    var n = 0, t = 0;
+    el.addEventListener("click", function () {
+      var now = Date.now();
+      if (now - t > 1300) n = 0;
+      t = now; n++;
+      if (n >= 5) { n = 0; fn(); }
+    });
+  }
   // After a miss: a "read it" pause with countdown, then a one-tap echo check on the
   // SAME definition before play continues. Passing pays a small reading reward.
+  // Layout contract (the iPhone lesson): the buttons are PINNED at the bottom of a
+  // viewport-capped card and the entry text scrolls — exits can never leave the screen.
   function teachGate(container, data, opts, cb) {
     opts = opts || {};
     var secs = opts.seconds != null ? opts.seconds : (testMode() ? 0 : 4);
     var si = Math.min(opts.senseIdx || 0, data.senses.length - 1);
     var def = data.senses[si].def;
+    container.style.display = "flex"; container.style.flexDirection = "column"; container.style.minHeight = "0";
+    container.style.overflow = "auto"; // NEVER hidden: if pinning can't fit, the card itself scrolls
+    container.style.maxHeight = "calc(100vh - 76px)";
+    container.style.maxHeight = "calc(100dvh - 76px)"; // ignored where unsupported; vh above stays
     var wrap = document.createElement("div");
+    wrap.style.cssText = "display:flex;flex-direction:column;min-height:0;flex:1 1 auto";
     container.appendChild(wrap);
+    var SCROLLBOX = 'style="flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y"';
     function readStep() {
-      wrap.innerHTML = (opts.headHTML || "") + '<div class="reveal">' + entryHTML(data, { mnem: true }) + '</div>' +
-        '<button class="submit" type="button" id="tg_hear" style="display:block;width:100%;margin:0 0 6px;background:linear-gradient(#8ecdf7,#3f8fd8)">🔊 Hear the answer (+2 💎)</button>' +
-        '<button class="submit big-next" type="button" disabled>👀 Read it…</button>';
+      // action buttons wrap side-by-side on short screens (landscape phones) so they fit
+      wrap.innerHTML = (opts.headHTML || "") +
+        '<div class="reveal" ' + SCROLLBOX + ">" + entryHTML(data, { mnem: true }) + "</div>" +
+        '<div style="flex:0 0 auto;padding-top:6px;display:flex;gap:6px;flex-wrap:wrap">' +
+        '<button class="submit" type="button" id="tg_hear" style="flex:1 1 180px;margin:0;background:linear-gradient(#8ecdf7,#3f8fd8)">🔊 Hear the answer (+2 💎)</button>' +
+        '<button class="submit big-next" type="button" style="flex:1 1 180px;margin:0" disabled>👀 Read it…</button></div>';
       var heard = false;
       var hearBtn = wrap.querySelector("#tg_hear");
       hearBtn.onclick = function () { // listening pays, once
@@ -318,8 +341,8 @@
       var pool = (opts.words || []).filter(function (w) { return w.word !== data.word && w.senses; });
       var decoys = sample(pool, 2).map(function (w) { return w.word; });
       var chs = shuffle([data.word].concat(decoys));
-      wrap.innerHTML = '<div class="fb">🔎 Quick check — which word means:<br><b>“' + esc(def) + '”</b></div>' +
-        '<div class="choices">' + chs.map(function (w) { return '<button class="choice" type="button" data-w="' + esc(w) + '">' + esc(w) + "</button>"; }).join("") + "</div>";
+      wrap.innerHTML = '<div style="flex:0 0 auto" class="fb">🔎 Quick check — which word means:<br><b>“' + esc(def) + '”</b></div>' +
+        '<div class="choices" ' + SCROLLBOX + ">" + chs.map(function (w) { return '<button class="choice" type="button" data-w="' + esc(w) + '">' + esc(w) + "</button>"; }).join("") + "</div>";
       Array.prototype.forEach.call(wrap.querySelectorAll(".choice"), function (b) {
         b.onclick = function () {
           if (b.dataset.w === data.word) { wrap.innerHTML = ""; cb(true); }
@@ -356,6 +379,8 @@
     function done(ok, res) { if (fired) return; fired = true; container.style.display = "none"; container.innerHTML = ""; shush(); if (o.cb) o.cb(ok, res, fmt); }
     var say = container.querySelector("#wqsay"); if (say) say.onclick = function () { readQ(q); };
     var skip = container.querySelector("#wqskip"); if (skip) skip.onclick = function () { chargeVobux(store, COSTS.skip); done(null, null); };
+    // last-resort rescue: 5 quick taps on the title always exits (priced like a skip)
+    rescueTap(container.querySelector(".wqtitle"), function () { chargeVobux(store, COSTS.skip); done(null, null); });
     lockChoices(container.querySelectorAll(".wqc"), testMode() ? 0 : COSTS.lockMs);
     Array.prototype.forEach.call(container.querySelectorAll(".wqc"), function (b) {
       b.onclick = function () {
@@ -388,10 +413,14 @@
             btn.onclick = function () { done(false, res); };
             card2.appendChild(btn);
           } else {
+            // drop the question UI so the gate fits small phones (the entry card
+            // repeats the word anyway) — exits must stay on screen
+            var pr = card2.querySelector(".wqprompt"); if (pr) pr.remove();
+            var ch2 = card2.querySelector(".wqchoices"); if (ch2) ch2.remove();
             teachGate(card2, q.data, {
               words: words, senseIdx: q.senseIdx || 0,
               pay: function (n) { payVobux(store, n); },
-              headHTML: '<div class="fb bad">❌ ' + (pen.lost ? "−" + pen.lost + " 💎 " : "") + (pen.streak >= 2 ? "(" + pen.streak + " wrong in a row!) " : "") + "— read the word, then one quick check:</div>"
+              headHTML: '<div class="fb bad" style="flex:0 0 auto">❌ ' + (pen.lost ? "−" + pen.lost + " 💎 " : "") + (pen.streak >= 2 ? "(" + pen.streak + " wrong in a row!) " : "") + "— read the word, then one quick check:</div>"
             }, function () {
               payVobux(store, COSTS.readBack);
               done(false, res);
@@ -410,7 +439,8 @@
     speak: speak, spoken: spoken, readQ: readQ, shush: shush, miniQuiz: miniQuiz,
     teachGate: teachGate, lockChoices: lockChoices, chargeVobux: chargeVobux, payVobux: payVobux,
     markRushed: markRushed, COSTS: COSTS,
-    penalizeWrong: penalizeWrong, clearWrongStreak: clearWrongStreak, maybeWheel: maybeWheel
+    penalizeWrong: penalizeWrong, clearWrongStreak: clearWrongStreak, maybeWheel: maybeWheel,
+    rescueTap: rescueTap
   };
   // stop any speech when the tab/app is hidden (locked screen, app switch, etc.)
   if (typeof document !== "undefined") document.addEventListener("visibilitychange", function () { if (document.hidden) shush(); });

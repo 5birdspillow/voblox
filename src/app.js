@@ -466,12 +466,20 @@
         (state.combo >= 2 ? ' <span class="gain" style="color:#ff9f43">🔥 streak ' + state.combo + " ×" + multNow() + "</span>" : "") + '</div>'
       : '<div class="fb bad">❌ Not quite' + (q._lost ? " (−" + q._lost + " 💎" + (state.wrongStreak >= 2 ? " · " + state.wrongStreak + " wrong in a row!" : "") + ")" : "") + ' — read the word, then one quick check:</div>';
     var lootHTML = loot ? '<div class="loot">🎁 Loot chest! You found ' + loot + ' <span class="muted">(added to your collection)</span></div>' : "";
+    // the iPhone lesson: the card caps to the viewport, the entry text scrolls in the
+    // middle, and the action buttons are pinned at the bottom — always reachable
     show(
-      '<div class="qhead">Practice' + (correct ? '<button id="stop" class="stop">✕ Stop</button>' : "") + '</div>' +
-      '<div class="card qcard">' + head + '<div class="reveal">' + entryHTML(d, { mnem: true }) + '</div>' + lootHTML +
-      '<button id="next" class="submit big-next"' + (correct ? "" : " disabled") + '>Next ⏎</button></div>'
+      '<div class="qhead" id="qh">Practice' + (correct ? '<button id="stop" class="stop">✕ Stop</button>' : "") + '</div>' +
+      '<div class="card qcard" id="gcard" style="display:flex;flex-direction:column;min-height:0;overflow:auto;max-height:calc(100vh - 92px)">' + head +
+      '<div class="reveal" style="flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y">' + entryHTML(d, { mnem: true }) + '</div>' + lootHTML +
+      '<div style="flex:0 0 auto;padding-top:6px;display:flex;gap:6px;flex-wrap:wrap">' +
+      (correct ? "" : '<button id="hear" class="submit" style="flex:1 1 180px;margin:0;background:linear-gradient(#8ecdf7,#3f8fd8)">🔊 Hear the answer (+2 💎)</button>') +
+      '<button id="next" class="submit big-next" style="flex:1 1 180px;margin:0"' + (correct ? "" : " disabled") + '>Next ⏎</button></div></div>'
     );
+    el("gcard").style.maxHeight = "calc(100dvh - 92px)"; // ignored where unsupported
     var stopBtn = el("stop"); if (stopBtn) stopBtn.onclick = function () { save(); goHome(); };
+    // last-resort rescue: 5 quick taps on the header always moves on
+    if (window.VobloxQuestions) window.VobloxQuestions.rescueTap(el("qh"), nextAfterFeedback);
     if (correct) {
       el("next").onclick = nextAfterFeedback;
       setKeys(function (e) { if (e.key === "Enter") nextAfterFeedback(); });
@@ -481,16 +489,12 @@
       // reading gate: countdown, a paid listen button, then a one-tap echo check
       setKeys(function () {});
       var nx = el("next");
-      var hear = document.createElement("button");
-      hear.className = "submit"; hear.type = "button";
-      hear.style.cssText = "display:block;width:100%;margin:0 0 6px;background:linear-gradient(#8ecdf7,#3f8fd8)";
-      hear.textContent = "🔊 Hear the answer (+2 💎)";
+      var hear = el("hear");
       var heard = false;
       hear.onclick = function () {
         speak(d.word + ". " + d.senses[0].def + ". " + (d.senses[0].example || ""));
         if (!heard) { heard = true; state.gems += 2; save(); hear.textContent = "🔊 Heard it! +2 💎 (tap to replay)"; }
       };
-      nx.parentNode.insertBefore(hear, nx);
       var left = 4;
       (function tick() {
         if (left <= 0) { nx.disabled = false; nx.textContent = "Quick check ➜"; nx.onclick = echoCheck; return; }
@@ -726,5 +730,13 @@
   else if (h === "mock") startMock();
   else if (h === "words") renderWords();
   else if (h === "settings") renderSettings();
+  else if (h === "gate") { // test hook: the wrong-answer gate with the LONGEST entry (worst layout case)
+    session = { queue: [], lastFormat: {}, senseCursor: {}, asked: 0 };
+    var big = WORDS[0];
+    WORDS.forEach(function (w) { if (w.senses.length + (w.forms || []).length > big.senses.length + (big.forms || []).length) big = w; });
+    var gq = genQuestion(state.cards[big.word]);
+    gq._born = 0; gq._lost = 5;
+    showFeedback(gq, false, 0, null);
+  }
   else goHome();
 })();

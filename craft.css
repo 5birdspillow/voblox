@@ -68,6 +68,10 @@ html, body.craftbody { margin: 0; height: 100%; overflow: hidden; background: #7
 #bEat { right: calc(env(safe-area-inset-right) + 16px); bottom: calc(env(safe-area-inset-bottom) + 234px);
   width: 60px; height: 60px; font-size: 24px; background: #ffd0a0e0; }
 
+/* the word/craft/book overlay must stay touch-scrollable even though the page
+   sets touch-action:none (otherwise tall cards trap the player on phones) */
+#coverlaybox { touch-action: pan-y; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+
 /* hold-to-mine progress ring around the crosshair */
 #mring { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 46px; height: 46px;
   border-radius: 50%; z-index: 3; pointer-events: none; display: none;

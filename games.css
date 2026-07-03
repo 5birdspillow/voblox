@@ -174,9 +174,13 @@
 
 /* in-game word-power question overlay (VQ.miniQuiz) */
 .gover { position: absolute; inset: 0; z-index: 9; display: flex; align-items: center; justify-content: center;
-  background: #00000088; padding: 14px; }
+  background: #00000088; padding: 10px; overscroll-behavior: contain; }
+/* the card may NEVER outgrow the screen: it caps to the viewport and scrolls inside
+   (games set touch-action:none globally, so pan-y here re-enables touch scrolling) */
 .wqcard { background: #fff; border-radius: 18px; padding: 14px 16px; max-width: 500px; width: 100%;
-  color: #20303a; box-shadow: 0 10px 30px #0006; }
+  color: #20303a; box-shadow: 0 10px 30px #0006;
+  max-height: calc(100vh - 20px); max-height: calc(100dvh - 20px);
+  overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y; overscroll-behavior: contain; }
 .wqtitle { font-weight: 900; font-size: 16px; color: #7a4fd0; margin-bottom: 6px; }
 .wqprompt { font-size: 17px; line-height: 1.35; }
 .wqchoices { display: grid; gap: 8px; margin-top: 10px; }

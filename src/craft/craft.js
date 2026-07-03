@@ -458,6 +458,7 @@
     // (a wrong answer still gets you out — through the reading gate)
     COVB.innerHTML = '<div class="gatehead">✨ Word Crystal!</div><div class="card qcard"><div class="prompt">' + q.promptHTML + ' <button class="replay" type="button" title="Read again">🔊</button></div>' + body + '</div>';
     COV.style.display = "flex";
+    VQ.rescueTap(COVB.querySelector(".gatehead"), function () { VQ.chargeVobux(store, VQ.COSTS.skip); closeWordGate(); }); // 5-tap parent rescue (priced like a skip)
     window._lastQ = q; // test hooks peek at this
     var rep = COVB.querySelector(".replay"); if (rep) rep.onclick = function () { VQ.readQ(q); };
     q._born = Date.now(); q._ready = false;
@@ -497,6 +498,7 @@
       var pen = VQ.penalizeWrong(store);
       COVB.innerHTML = '<div class="gatehead">✨ Word Crystal</div><div class="card qcard" id="wgate"></div>';
       wordKey = null;
+      VQ.rescueTap(COVB.querySelector(".gatehead"), function () { VQ.chargeVobux(store, VQ.COSTS.skip); closeWordGate(); });
       VQ.teachGate(document.getElementById("wgate"), q.data, {
         words: Content.getLesson(store.state.activeLesson || "5").words,
         senseIdx: q.senseIdx || 0,
