@@ -216,6 +216,70 @@
     if (!store || !store.state || Date.now() - bornMs >= 2500) return;
     store.state.fastWrong = (store.state.fastWrong || 0) + 1;
   }
+  // escalating penalty: each wrong-in-a-row costs more (5, 8, 11, 14, 17, 20 cap);
+  // any correct answer anywhere resets the streak
+  function penalizeWrong(store) {
+    if (!store || !store.state) return { lost: 0, streak: 1 };
+    var st = store.state;
+    st.wrongStreak = (st.wrongStreak || 0) + 1;
+    var want = Math.min(20, COSTS.wrong + 3 * (st.wrongStreak - 1));
+    var lost = Math.min(want, st.gems || 0);
+    st.gems = (st.gems || 0) - lost;
+    st.vobuxLost = (st.vobuxLost || 0) + lost;
+    if (store.save) store.save();
+    return { lost: lost, want: want, streak: st.wrongStreak };
+  }
+  function clearWrongStreak(store) { if (store && store.state) store.state.wrongStreak = 0; }
+  // 🎡 the Vobux Wheel: a rare little jackpot on correct answers (pure upside)
+  var WHEEL = [
+    { label: "+5", pay: 5, w: 30, c: "#69b7f0" }, { label: "+8", pay: 8, w: 22, c: "#76d275" },
+    { label: "+10", pay: 10, w: 16, c: "#ffd23f" }, { label: "+12", pay: 12, w: 10, c: "#f79ad3" },
+    { label: "+15", pay: 15, w: 8, c: "#9d8df1" }, { label: "+20", pay: 20, w: 6, c: "#5fd7c9" },
+    { label: "+30", pay: 30, w: 5, c: "#ff9f43" }, { label: "💰75", pay: 75, w: 3, c: "#ff6b6b" }
+  ];
+  function maybeWheel(opts) {
+    opts = opts || {};
+    var chance = opts.chance == null ? 0.15 : opts.chance;
+    if ((testMode() && !opts.force) || Math.random() >= chance) { if (opts.onSkip) opts.onSkip(); return false; }
+    // weighted prize pick
+    var total = WHEEL.reduce(function (a, s) { return a + s.w; }, 0), roll = Math.random() * total, idx = 0;
+    for (var i = 0; i < WHEEL.length; i++) { roll -= WHEEL[i].w; if (roll <= 0) { idx = i; break; } }
+    var prize = WHEEL[idx], seg = 360 / WHEEL.length;
+    var ov = document.createElement("div");
+    ov.style.cssText = "position:fixed;inset:0;z-index:95;background:rgba(10,16,28,.72);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Trebuchet MS',sans-serif";
+    var grad = WHEEL.map(function (s, i) { return s.c + " " + (i * seg) + "deg " + ((i + 1) * seg) + "deg"; }).join(",");
+    ov.innerHTML =
+      '<div style="color:#ffd23f;font-weight:900;font-size:22px;text-shadow:0 2px 8px #000;margin-bottom:8px">🎡 BONUS SPIN!</div>' +
+      '<div style="position:relative;width:250px;height:250px">' +
+      '<div id="vwheel" style="width:250px;height:250px;border-radius:50%;border:8px solid #fff;box-shadow:0 8px 30px #000a;background:conic-gradient(' + grad + ')">' +
+      WHEEL.map(function (s, i) {
+        var a = (i + 0.5) * seg;
+        return '<div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(' + a + 'deg) translateY(-86px) rotate(90deg);font-weight:900;font-size:15px;color:#1c2330;text-shadow:0 1px 0 #fff9">' + s.label + "</div>";
+      }).join("") + "</div>" +
+      '<div style="position:absolute;left:50%;top:-14px;transform:translateX(-50%);font-size:30px;text-shadow:0 2px 4px #000">🔻</div></div>' +
+      '<div id="vwres" style="min-height:44px;margin-top:12px;color:#fff;font-weight:900;font-size:20px"></div>';
+    document.body.appendChild(ov);
+    var wheel = ov.querySelector("#vwheel");
+    // land the chosen segment's center under the pointer (pointer = top = 0deg)
+    var final = 5 * 360 + (360 - (idx + 0.5) * seg);
+    wheel.style.transition = "transform 3s cubic-bezier(.12,.8,.2,1)";
+    requestAnimationFrame(function () { requestAnimationFrame(function () { wheel.style.transform = "rotate(" + final + "deg)"; }); });
+    if (global.VobloxSfx) { var tk = 0; var tick = setInterval(function () { global.VobloxSfx.tone && global.VobloxSfx.tone(300 + (tk++ % 5) * 60, 0.03, 0.03); }, 140); setTimeout(function () { clearInterval(tick); }, 2900); }
+    var closed = false;
+    function finish() {
+      if (closed) return; closed = true;
+      ov.remove();
+      if (opts.onDone) opts.onDone(prize);
+    }
+    setTimeout(function () {
+      if (opts.pay) opts.pay(prize.pay);
+      ov.querySelector("#vwres").innerHTML = "🎉 " + prize.label + ' Vobux! <button style="margin-left:10px;padding:8px 20px;border-radius:12px;border:3px solid #0004;border-bottom-width:6px;background:linear-gradient(#9be15d,#4fb944);font-weight:900;font-size:17px;cursor:pointer" id="vwok">COLLECT</button>';
+      if (global.VobloxSfx && global.VobloxSfx.fanfare) global.VobloxSfx.fanfare();
+      ov.querySelector("#vwok").onclick = finish;
+      setTimeout(finish, 4500); // auto-collect so gameplay never stalls
+    }, 3150);
+    return true;
+  }
   // lock answer buttons briefly while the question is read — kills reflex-clicking
   function lockChoices(btns, ms) {
     if (!ms) return;
@@ -233,8 +297,15 @@
     container.appendChild(wrap);
     function readStep() {
       wrap.innerHTML = (opts.headHTML || "") + '<div class="reveal">' + entryHTML(data, { mnem: true }) + '</div>' +
+        '<button class="submit" type="button" id="tg_hear" style="display:block;width:100%;margin:0 0 6px;background:linear-gradient(#8ecdf7,#3f8fd8)">🔊 Hear the answer (+2 💎)</button>' +
         '<button class="submit big-next" type="button" disabled>👀 Read it…</button>';
-      speak(data.word + ". " + def);
+      var heard = false;
+      var hearBtn = wrap.querySelector("#tg_hear");
+      hearBtn.onclick = function () { // listening pays, once
+        var ex = data.senses[si].example || "";
+        speak(data.word + ". " + def + ". " + ex);
+        if (!heard) { heard = true; if (opts.pay) opts.pay(2); hearBtn.textContent = "🔊 Heard it! +2 💎 (tap to replay)"; }
+      };
       var btn = wrap.querySelector("button.big-next");
       var left = secs;
       (function tick() {
@@ -263,11 +334,14 @@
   // into `container` (a .gover element), records via store, teaches on a miss, then
   // calls cb(correct, res). Multiple-choice only, so it never stalls the action.
   var MINI_FORMATS = ["word2def", "cloze_mc", "def2word_mc", "synonym", "antonym"];
+  var lastMiniWord = null; // never ask the same word twice in a row, across all games
   function miniQuiz(container, words, store, o) {
     o = o || {};
     var Engine = global.VobloxEngine;
     var cards = words.map(function (w) { return store.state.cards[w.word]; }).filter(Boolean);
-    var card = (Engine.selectDue && Engine.selectDue(cards, Date.now())) || cards[Math.floor(Math.random() * cards.length)];
+    var card = (Engine.selectDue && Engine.selectDue(cards, Date.now(), lastMiniWord)) || cards[Math.floor(Math.random() * cards.length)];
+    if (card.word === lastMiniWord && cards.length > 1) card = cards.filter(function (c) { return c.word !== lastMiniWord; })[Math.floor(Math.random() * (cards.length - 1))];
+    lastMiniWord = card.word;
     var data = words.filter(function (w) { return w.word === card.word; })[0];
     var fmt = Engine.pickFormat(card, data, o.lastFormat || null, MINI_FORMATS);
     var q = gen(card, words, { format: fmt });
@@ -291,10 +365,21 @@
         });
         var sk2 = container.querySelector("#wqskip"); if (sk2) sk2.remove(); // no skipping out of a wrong answer
         var res = store.record(q, ok);
-        if (ok) { setTimeout(function () { done(true, res); }, 620); }
+        if (ok) {
+          clearWrongStreak(store);
+          if (res && res.streak >= 2 && res.mult > 1) { // show the streak heat
+            var st2 = document.createElement("div"); st2.className = "wqtitle"; st2.style.color = "#ff9f43";
+            st2.textContent = "🔥 streak " + res.streak + " — ×" + res.mult + " Vobux!";
+            container.querySelector(".wqcard").appendChild(st2);
+          }
+          setTimeout(function () {
+            var spun = maybeWheel({ chance: 0.15, pay: function (n) { payVobux(store, n); }, onDone: function () { done(true, res); } });
+            if (!spun) done(true, res);
+          }, 620);
+        }
         else {
           markRushed(store, born);
-          var lost = chargeVobux(store, COSTS.wrong);
+          var pen = penalizeWrong(store);
           var card2 = container.querySelector(".wqcard");
           if (testMode()) { // harness fast-path: legacy dismiss (the gate has its own spec)
             var teach = document.createElement("div"); teach.className = "wqteach"; teach.innerHTML = entryHTML(q.data, { mnem: true });
@@ -305,7 +390,8 @@
           } else {
             teachGate(card2, q.data, {
               words: words, senseIdx: q.senseIdx || 0,
-              headHTML: '<div class="fb bad">❌ ' + (lost ? "−" + lost + " 💎 — " : "") + "read the word, then one quick check:</div>"
+              pay: function (n) { payVobux(store, n); },
+              headHTML: '<div class="fb bad">❌ ' + (pen.lost ? "−" + pen.lost + " 💎 " : "") + (pen.streak >= 2 ? "(" + pen.streak + " wrong in a row!) " : "") + "— read the word, then one quick check:</div>"
             }, function () {
               payVobux(store, COSTS.readBack);
               done(false, res);
@@ -323,7 +409,8 @@
     clozeFor: clozeFor, wordData: wordData, gen: gen, checkText: checkText, entryHTML: entryHTML,
     speak: speak, spoken: spoken, readQ: readQ, shush: shush, miniQuiz: miniQuiz,
     teachGate: teachGate, lockChoices: lockChoices, chargeVobux: chargeVobux, payVobux: payVobux,
-    markRushed: markRushed, COSTS: COSTS
+    markRushed: markRushed, COSTS: COSTS,
+    penalizeWrong: penalizeWrong, clearWrongStreak: clearWrongStreak, maybeWheel: maybeWheel
   };
   // stop any speech when the tab/app is hidden (locked screen, app switch, etc.)
   if (typeof document !== "undefined") document.addEventListener("visibilitychange", function () { if (document.hidden) shush(); });

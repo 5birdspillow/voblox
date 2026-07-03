@@ -77,16 +77,19 @@
     return n;
   };
 
-  // record a graded answer; returns { earned, loot, leveledUp, level }
+  // record a graded answer; returns { earned, loot, leveledUp, level, streak, mult }
   Store.prototype.record = function (q, correct) {
     var s = this.state;
     Engine.grade(s.cards[q.word], q.format, correct, Date.now());
-    var earned = 0, loot = null, lvl = null;
+    var earned = 0, loot = null, lvl = null, mult = 1;
     if (correct) {
       s.combo += 1; if (s.combo > s.bestCombo) s.bestCombo = s.combo;
       s.totalCorrect += 1;
+      s.wrongStreak = 0;
       var base = q.kind === "text" ? (q.format === "audio_spell" ? 25 : 20) : 10;
-      earned = base + Math.min(Math.max(s.combo - 1, 0) * 2, 20);
+      // streak multiplier: every correct in a row raises the stakes (+10% each, ×2 max)
+      mult = Math.round((1 + 0.1 * Math.min(Math.max(s.combo - 1, 0), 10)) * 10) / 10;
+      earned = Math.round(base * mult);
       s.gems += earned;
       // learning is the main XP source: XP mirrors gems earned per answer
       if (global.VobloxProfile) {
@@ -98,7 +101,7 @@
       if (s.totalCorrect % 5 === 0) { loot = LOOT[Math.floor(Math.random() * LOOT.length)]; s.collection.push(loot); }
     } else { s.combo = 0; }
     this.save();
-    return { earned: earned, loot: loot, leveledUp: !!(lvl && lvl.leveledUp), level: lvl ? lvl.level : undefined };
+    return { earned: earned, loot: loot, leveledUp: !!(lvl && lvl.leveledUp), level: lvl ? lvl.level : undefined, streak: s.combo, mult: mult };
   };
 
   // ---- profile expansion helpers (thin wrappers over the pure VobloxProfile fns) ----

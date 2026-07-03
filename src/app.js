@@ -334,6 +334,8 @@
   function askQuestion() {
     if (predicted() >= 100 || session.queue.length === 0) return endSession();
     var word = session.queue.shift();
+    if (word === session.lastAsked && session.queue.length) { session.queue.push(word); word = session.queue.shift(); } // never the same word twice in a row
+    session.lastAsked = word;
     var card = state.cards[word];
     var q = genQuestion(card);
     session.current = q;
@@ -425,14 +427,17 @@
       state.combo += 1;
       if (state.combo > state.bestCombo) state.bestCombo = state.combo;
       state.totalCorrect += 1;
+      state.wrongStreak = 0;
       earned = gemsFor(q);
       state.gems += earned;
       loot = maybeLoot();
       burst(correct);
     } else {
       state.combo = 0;
-      // wrong answers cost Vobux (guessing isn't free anymore)
-      q._lost = Math.min(5, state.gems || 0);
+      // wrong answers cost Vobux — and each wrong-in-a-row costs more (5, 8, 11… 20 cap)
+      state.wrongStreak = (state.wrongStreak || 0) + 1;
+      var want = Math.min(20, 5 + 3 * (state.wrongStreak - 1));
+      q._lost = Math.min(want, state.gems || 0);
       state.gems = (state.gems || 0) - q._lost;
       state.vobuxLost = (state.vobuxLost || 0) + q._lost;
       if (Date.now() - (q._born || 0) < 2500) state.fastWrong = (state.fastWrong || 0) + 1;
@@ -441,10 +446,10 @@
     showFeedback(q, correct, earned, loot);
   }
 
+  function multNow() { return Math.round((1 + 0.1 * Math.min(Math.max(state.combo - 1, 0), 10)) * 10) / 10; }
   function gemsFor(q) {
     var base = q.kind === "text" ? (q.format === Engine.FORMATS.AUDIO_SPELL ? 25 : 20) : 10;
-    var bonus = Math.min(Math.max(state.combo - 1, 0) * 2, 20);
-    return base + bonus;
+    return Math.round(base * multNow()); // streak multiplier: +10% per correct-in-a-row, ×2 cap
   }
   function maybeLoot() {
     if (state.totalCorrect > 0 && state.totalCorrect % 5 === 0) {
@@ -457,8 +462,9 @@
     var d = q.data;
     var head = correct
       ? '<div class="fb good">✅ ' + pick(["Nice!", "Yes!", "Boom!", "Correct!", "You got it!"]) +
-        (earned ? ' <span class="gain">+' + earned + ' 💎</span>' : "") + '</div>'
-      : '<div class="fb bad">❌ Not quite' + (q._lost ? " (−" + q._lost + " 💎)" : "") + ' — read the word, then one quick check:</div>';
+        (earned ? ' <span class="gain">+' + earned + ' 💎</span>' : "") +
+        (state.combo >= 2 ? ' <span class="gain" style="color:#ff9f43">🔥 streak ' + state.combo + " ×" + multNow() + "</span>" : "") + '</div>'
+      : '<div class="fb bad">❌ Not quite' + (q._lost ? " (−" + q._lost + " 💎" + (state.wrongStreak >= 2 ? " · " + state.wrongStreak + " wrong in a row!" : "") + ")" : "") + ' — read the word, then one quick check:</div>';
     var lootHTML = loot ? '<div class="loot">🎁 Loot chest! You found ' + loot + ' <span class="muted">(added to your collection)</span></div>' : "";
     show(
       '<div class="qhead">Practice' + (correct ? '<button id="stop" class="stop">✕ Stop</button>' : "") + '</div>' +
@@ -469,12 +475,23 @@
     if (correct) {
       el("next").onclick = nextAfterFeedback;
       setKeys(function (e) { if (e.key === "Enter") nextAfterFeedback(); });
+      // ~15% of correct answers spin the Vobux wheel (pure bonus)
+      if (window.VobloxQuestions) window.VobloxQuestions.maybeWheel({ chance: 0.15, pay: function (n) { state.gems += n; save(); } });
     } else {
-      // reading gate: a short countdown while the entry is read aloud, then a
-      // one-tap echo check on the definition. Passing pays a little back.
-      speak(d.word + ". " + d.senses[0].def);
+      // reading gate: countdown, a paid listen button, then a one-tap echo check
       setKeys(function () {});
-      var nx = el("next"), left = 4;
+      var nx = el("next");
+      var hear = document.createElement("button");
+      hear.className = "submit"; hear.type = "button";
+      hear.style.cssText = "display:block;width:100%;margin:0 0 6px;background:linear-gradient(#8ecdf7,#3f8fd8)";
+      hear.textContent = "🔊 Hear the answer (+2 💎)";
+      var heard = false;
+      hear.onclick = function () {
+        speak(d.word + ". " + d.senses[0].def + ". " + (d.senses[0].example || ""));
+        if (!heard) { heard = true; state.gems += 2; save(); hear.textContent = "🔊 Heard it! +2 💎 (tap to replay)"; }
+      };
+      nx.parentNode.insertBefore(hear, nx);
+      var left = 4;
       (function tick() {
         if (left <= 0) { nx.disabled = false; nx.textContent = "Quick check ➜"; nx.onclick = echoCheck; return; }
         nx.textContent = "👀 Read it… " + left;

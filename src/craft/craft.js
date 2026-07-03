@@ -476,27 +476,32 @@
     }
   }
   function answerWord(bx, by, bz, q, correct, btn) {
-    store.record(q, correct);
+    var res = store.record(q, correct);
     if (q.kind === "mc") Array.prototype.forEach.call(COVB.querySelectorAll(".choice"), function (b, idx) { b.disabled = true; if (q.choices[idx].correct) b.classList.add("right"); else if (b === btn) b.classList.add("wrong"); });
     if (correct) {
-      setBlock(bx, by, bz, B.AIR); store.state.gems += 15; addInv(B.IRON, 2); store.save(); cfetti(); chime(); renderHotbar();
+      VQ.clearWrongStreak(store);
+      var mult = (res && res.mult) || 1;
+      var bonus = Math.round(15 * mult); // crystal bonus rides the streak multiplier too
+      setBlock(bx, by, bz, B.AIR); store.state.gems += bonus; addInv(B.IRON, 2); store.save(); cfetti(); chime(); renderHotbar();
       stats.crystals = (stats.crystals || 0) + 1; sess.crystals++;
       bumpJob("crystals", 1); checkAch();
-      var head = '<div class="fb good">✅ Crystal cracked! <span class="gain">+15 <img class="vbx" src="icons/vobux.png" alt="Vobux"> &amp; 2 iron ⛏️</span></div>';
+      var streakTag = (res && res.streak >= 2 && mult > 1) ? ' <span style="color:#ff9f43;font-weight:900">🔥 streak ' + res.streak + " ×" + mult + "</span>" : "";
+      var head = '<div class="fb good">✅ Crystal cracked! <span class="gain">+' + bonus + ' <img class="vbx" src="icons/vobux.png" alt="Vobux"> &amp; 2 iron ⛏️</span>' + streakTag + "</div>";
       COVB.innerHTML = '<div class="gatehead">✨ Word Crystal</div><div class="card qcard">' + head + '<div class="reveal">' + VQ.entryHTML(q.data, { mnem: true }) + '</div><button id="wnext" class="submit big-next">Continue ⏎</button></div>';
       document.getElementById("wnext").onclick = closeWordGate;
       wordKey = function (e) { if (e.key === "Enter") closeWordGate(); };
+      VQ.maybeWheel({ chance: 0.15, pay: function (n) { store.state.gems += n; store.save(); }, onDone: function () { updateHud(); } });
     } else {
-      // guessing costs Vobux, and the only way out is reading + a quick check
+      // guessing costs Vobux (more each wrong-in-a-row) — reading is the way out
       VQ.markRushed(store, q._born || 0);
-      var lost = VQ.chargeVobux(store, VQ.COSTS.wrong);
-      VQ.speak(q.data.word + ". " + q.data.senses[0].def);
+      var pen = VQ.penalizeWrong(store);
       COVB.innerHTML = '<div class="gatehead">✨ Word Crystal</div><div class="card qcard" id="wgate"></div>';
       wordKey = null;
       VQ.teachGate(document.getElementById("wgate"), q.data, {
         words: Content.getLesson(store.state.activeLesson || "5").words,
         senseIdx: q.senseIdx || 0,
-        headHTML: '<div class="fb bad">❌ The crystal holds' + (lost ? " (−" + lost + ' <img class="vbx" src="icons/vobux.png" alt="Vobux">)' : "") + " — learn the word:</div>"
+        pay: function (n) { VQ.payVobux(store, n); updateHud(); },
+        headHTML: '<div class="fb bad">❌ The crystal holds' + (pen.lost ? " (−" + pen.lost + ' <img class="vbx" src="icons/vobux.png" alt="Vobux">' + (pen.streak >= 2 ? " · " + pen.streak + " wrong in a row!" : "") + ")" : "") + " — learn the word:</div>"
       }, function () {
         VQ.payVobux(store, VQ.COSTS.readBack);
         toast("📖 Nice reading! +" + VQ.COSTS.readBack + " Vobux");
@@ -1314,5 +1319,6 @@
     player.pos.set(pcx * CHUNK + 7.5, 4.2, pcz * CHUNK + 7.5); player.vel.set(0, 0, 0); player.yaw = 2.4; player.pitch = -0.15;
   }, 500);
   if (location.hash === "#book") setTimeout(function () { stats.mined = 34; stats.logs = 3; stats.crafted = 1; store.state.gems = Math.max(store.state.gems, 420); ensureJobs(); bumpJob("mine", 34); openBook(); }, 300); // test hook: the Vocraft Book
+  if (location.hash === "#wheel") setTimeout(function () { VQ.maybeWheel({ chance: 1, force: true, pay: function (n) { store.state.gems += n; store.save(); }, onDone: function () { updateHud(); toast("wheel done"); } }); }, 500); // test hook: the Vobux wheel
   if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(function () {});
 })();
