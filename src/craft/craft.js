@@ -454,14 +454,21 @@
     var body = q.kind === "mc"
       ? '<div class="choices">' + q.choices.map(function (ch, i) { return '<button class="choice" data-i="' + i + '"><span class="num">' + (i + 1) + '</span>' + VQ.esc(ch.label) + '</button>'; }).join("") + '</div>'
       : '<div class="typebox"><input id="wans" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="type here…"><button id="wsub" class="submit">Enter ⏎</button><div id="whint" class="hint"></div></div>';
-    COVB.innerHTML = '<div class="gatehead">✨ Word Crystal! <span class="x" id="wx">✕</span></div><div class="card qcard"><div class="prompt">' + q.promptHTML + ' <button class="replay" type="button" title="Read again">🔊</button></div>' + body + '</div>';
+    // no ✕ here on purpose: you chose to mine the crystal, so the word gets answered
+    // (a wrong answer still gets you out — through the reading gate)
+    COVB.innerHTML = '<div class="gatehead">✨ Word Crystal!</div><div class="card qcard"><div class="prompt">' + q.promptHTML + ' <button class="replay" type="button" title="Read again">🔊</button></div>' + body + '</div>';
     COV.style.display = "flex";
-    document.getElementById("wx").onclick = closeWordGate;
+    window._lastQ = q; // test hooks peek at this
     var rep = COVB.querySelector(".replay"); if (rep) rep.onclick = function () { VQ.readQ(q); };
+    q._born = Date.now(); q._ready = false;
     if (q.kind === "mc") {
-      Array.prototype.forEach.call(COVB.querySelectorAll(".choice"), function (b) { b.onclick = function () { answerWord(bx, by, bz, q, !!q.choices[+b.dataset.i].correct, b); }; });
-      wordKey = function (e) { var n = parseInt(e.key, 10); if (n >= 1 && n <= q.choices.length) answerWord(bx, by, bz, q, !!q.choices[n - 1].correct); };
+      var btns = COVB.querySelectorAll(".choice");
+      Array.prototype.forEach.call(btns, function (b) { b.onclick = function () { answerWord(bx, by, bz, q, !!q.choices[+b.dataset.i].correct, b); }; });
+      VQ.lockChoices(btns, VQ.COSTS.lockMs);
+      setTimeout(function () { q._ready = true; }, VQ.COSTS.lockMs);
+      wordKey = function (e) { if (!q._ready) return; var n = parseInt(e.key, 10); if (n >= 1 && n <= q.choices.length) answerWord(bx, by, bz, q, !!q.choices[n - 1].correct); };
     } else {
+      q._ready = true;
       var inp = document.getElementById("wans"); if (inp && !("ontouchstart" in window)) inp.focus();
       var sub = function () { var r = VQ.checkText(q, inp.value); if (r === "empty") return; if (r === "near" && !q._r) { q._r = true; document.getElementById("whint").textContent = "So close — check the spelling!"; inp.select(); return; } answerWord(bx, by, bz, q, r === "correct"); };
       document.getElementById("wsub").onclick = sub;
@@ -471,17 +478,32 @@
   function answerWord(bx, by, bz, q, correct, btn) {
     store.record(q, correct);
     if (q.kind === "mc") Array.prototype.forEach.call(COVB.querySelectorAll(".choice"), function (b, idx) { b.disabled = true; if (q.choices[idx].correct) b.classList.add("right"); else if (b === btn) b.classList.add("wrong"); });
-    var head;
     if (correct) {
       setBlock(bx, by, bz, B.AIR); store.state.gems += 15; addInv(B.IRON, 2); store.save(); cfetti(); chime(); renderHotbar();
       stats.crystals = (stats.crystals || 0) + 1; sess.crystals++;
       bumpJob("crystals", 1); checkAch();
-      head = '<div class="fb good">✅ Crystal cracked! <span class="gain">+15 <img class="vbx" src="icons/vobux.png" alt="Vobux"> &amp; 2 iron ⛏️</span></div>';
+      var head = '<div class="fb good">✅ Crystal cracked! <span class="gain">+15 <img class="vbx" src="icons/vobux.png" alt="Vobux"> &amp; 2 iron ⛏️</span></div>';
+      COVB.innerHTML = '<div class="gatehead">✨ Word Crystal</div><div class="card qcard">' + head + '<div class="reveal">' + VQ.entryHTML(q.data, { mnem: true }) + '</div><button id="wnext" class="submit big-next">Continue ⏎</button></div>';
+      document.getElementById("wnext").onclick = closeWordGate;
+      wordKey = function (e) { if (e.key === "Enter") closeWordGate(); };
+    } else {
+      // guessing costs Vobux, and the only way out is reading + a quick check
+      VQ.markRushed(store, q._born || 0);
+      var lost = VQ.chargeVobux(store, VQ.COSTS.wrong);
+      VQ.speak(q.data.word + ". " + q.data.senses[0].def);
+      COVB.innerHTML = '<div class="gatehead">✨ Word Crystal</div><div class="card qcard" id="wgate"></div>';
+      wordKey = null;
+      VQ.teachGate(document.getElementById("wgate"), q.data, {
+        words: Content.getLesson(store.state.activeLesson || "5").words,
+        senseIdx: q.senseIdx || 0,
+        headHTML: '<div class="fb bad">❌ The crystal holds' + (lost ? " (−" + lost + ' <img class="vbx" src="icons/vobux.png" alt="Vobux">)' : "") + " — learn the word:</div>"
+      }, function () {
+        VQ.payVobux(store, VQ.COSTS.readBack);
+        toast("📖 Nice reading! +" + VQ.COSTS.readBack + " Vobux");
+        updateHud();
+        closeWordGate();
+      });
     }
-    else { head = '<div class="fb bad">❌ The crystal holds — learn the word:</div>'; VQ.speak(q.data.word + ". " + q.data.senses[0].def); }
-    COVB.innerHTML = '<div class="gatehead">✨ Word Crystal <span class="x" id="wx">✕</span></div><div class="card qcard">' + head + '<div class="reveal">' + VQ.entryHTML(q.data, { mnem: true }) + '</div><button id="wnext" class="submit big-next">Continue ⏎</button></div>';
-    document.getElementById("wx").onclick = closeWordGate; document.getElementById("wnext").onclick = closeWordGate;
-    wordKey = function (e) { if (e.key === "Enter") closeWordGate(); };
     updateHud();
   }
   function closeWordGate() { VQ.shush(); COV.style.display = "none"; paused = false; wordKey = null; keys = {}; jumpReq = false; joy.x = 0; joy.y = 0; }
@@ -1247,7 +1269,15 @@
       toast("MOVE TEST: " + results.join(" "));
     }); }); }); });
   }, 600);
-  if (location.hash === "#word") setTimeout(function () { openWordGate(0, 5, 0); }, 300); // test hook for the word-mining overlay
+  if (location.hash === "#word") setTimeout(function () { // test hook: word gate + wrong-answer reading gate demo
+    openWordGate(0, 5, 0);
+    setTimeout(function () { // deliberately answer WRONG to show the gate
+      var q = window._lastQ; if (!q || q.kind !== "mc") return;
+      var wrongIdx = -1; q.choices.forEach(function (c, i) { if (!c.correct && wrongIdx < 0) wrongIdx = i; });
+      var b = COVB.querySelectorAll(".choice")[wrongIdx]; if (b && !b.disabled) b.click();
+    }, 2000);
+    setTimeout(function () { var g = COVB.querySelector("#wgate button.big-next"); if (g && !g.disabled) g.click(); }, 8000);
+  }, 300);
   if (location.hash === "#craft") setTimeout(function () { inv[B.LOG] = 4; inv[B.PLANK] = 8; inv[IT.STICK] = 4; inv[B.COBBLE] = 10; inv[B.COAL] = 2; inv[B.IRON] = 3; inv[IT.WOOL] = 2; inv[IT.APPLE] = 1; inv[B.GOLD] = 1; openCraft(); setTimeout(function () { var card = COVB.querySelector(".card"); if (card) COVB.scrollTop = COVB.scrollHeight; window.scrollTo(0, 0); var rec = COVB.querySelectorAll(".crecipe"); if (rec.length) rec[rec.length - 1].scrollIntoView(false); }, 300); }, 300); // test hook for crafting screen (scrolled to the new recipes)
   if (location.hash === "#mob") setTimeout(function () { var px = player.pos.x, pz = player.pos.z; player.pos.y = groundY(px, pz, WH - 1) + 2; ["pig", "zombie", "slime", "boomy", "bones", "wolf", "dog"].forEach(function (t2, i2) { var mx = px - 4.5 + i2 * 1.5, mz = pz - 5; mobs.push(makeMob(t2, mx, groundY(mx, mz, WH - 1) + 0.5, mz)); }); mobs.forEach(function (m) { m.group.position.copy(m.pos); }); }, 400); // test hook: the whole zoo in view
   if (location.hash === "#bow") setTimeout(function () { // test hook: arrows fly and hit

@@ -193,6 +193,72 @@
   function readQ(q) { speak(spoken(q)); }
   function shush() { try { if ("speechSynthesis" in global) global.speechSynthesis.cancel(); } catch (e) {} }
 
+  // ---- guess guard: the economics of answering ----
+  // Wrong answers cost Vobux; escaping costs Vobux; reading pays a little back.
+  // (Correct answers pay 10-45, so the numbers sting without wiping anyone out.)
+  var COSTS = { wrong: 5, skip: 2, readBack: 2, lockMs: 1200 };
+  function testMode() { return !!global.__VOBLOX_TEST__; }
+  function chargeVobux(store, n) {
+    if (!store || !store.state) return 0;
+    var take = Math.min(n, store.state.gems || 0);
+    store.state.gems = (store.state.gems || 0) - take;
+    store.state.vobuxLost = (store.state.vobuxLost || 0) + take;
+    if (store.save) store.save();
+    return take;
+  }
+  function payVobux(store, n) {
+    if (!store || !store.state) return;
+    store.state.gems = (store.state.gems || 0) + n;
+    if (store.save) store.save();
+  }
+  function markRushed(store, bornMs) {
+    // an answer inside 2.5s of the question appearing is a guess, not a read
+    if (!store || !store.state || Date.now() - bornMs >= 2500) return;
+    store.state.fastWrong = (store.state.fastWrong || 0) + 1;
+  }
+  // lock answer buttons briefly while the question is read — kills reflex-clicking
+  function lockChoices(btns, ms) {
+    if (!ms) return;
+    Array.prototype.forEach.call(btns, function (b) { b.disabled = true; b.style.opacity = "0.4"; });
+    setTimeout(function () { Array.prototype.forEach.call(btns, function (b) { b.disabled = false; b.style.opacity = ""; }); }, ms);
+  }
+  // After a miss: a "read it" pause with countdown, then a one-tap echo check on the
+  // SAME definition before play continues. Passing pays a small reading reward.
+  function teachGate(container, data, opts, cb) {
+    opts = opts || {};
+    var secs = opts.seconds != null ? opts.seconds : (testMode() ? 0 : 4);
+    var si = Math.min(opts.senseIdx || 0, data.senses.length - 1);
+    var def = data.senses[si].def;
+    var wrap = document.createElement("div");
+    container.appendChild(wrap);
+    function readStep() {
+      wrap.innerHTML = (opts.headHTML || "") + '<div class="reveal">' + entryHTML(data, { mnem: true }) + '</div>' +
+        '<button class="submit big-next" type="button" disabled>👀 Read it…</button>';
+      speak(data.word + ". " + def);
+      var btn = wrap.querySelector("button.big-next");
+      var left = secs;
+      (function tick() {
+        if (left <= 0) { btn.disabled = false; btn.textContent = "Quick check ➜"; btn.onclick = echoStep; return; }
+        btn.textContent = "👀 Read it… " + left;
+        left--; setTimeout(tick, 1000);
+      })();
+    }
+    function echoStep() {
+      var pool = (opts.words || []).filter(function (w) { return w.word !== data.word && w.senses; });
+      var decoys = sample(pool, 2).map(function (w) { return w.word; });
+      var chs = shuffle([data.word].concat(decoys));
+      wrap.innerHTML = '<div class="fb">🔎 Quick check — which word means:<br><b>“' + esc(def) + '”</b></div>' +
+        '<div class="choices">' + chs.map(function (w) { return '<button class="choice" type="button" data-w="' + esc(w) + '">' + esc(w) + "</button>"; }).join("") + "</div>";
+      Array.prototype.forEach.call(wrap.querySelectorAll(".choice"), function (b) {
+        b.onclick = function () {
+          if (b.dataset.w === data.word) { wrap.innerHTML = ""; cb(true); }
+          else { b.disabled = true; b.classList.add("wrong"); speak(data.word + ". " + def); }
+        };
+      });
+    }
+    readStep();
+  }
+
   // In-game "word power" mini-quiz used by the arcade games: renders an MC question
   // into `container` (a .gover element), records via store, teaches on a miss, then
   // calls cb(correct, res). Multiple-choice only, so it never stalls the action.
@@ -208,28 +274,43 @@
     container.innerHTML = '<div class="wqcard"><div class="wqtitle">' + (o.title || "⚡ Word Power!") + '</div>' +
       '<div class="wqprompt">' + q.promptHTML + ' <button class="replay" id="wqsay" type="button">🔊</button></div>' +
       '<div class="wqchoices">' + q.choices.map(function (ch, i) { return '<button class="wqc" data-i="' + i + '">' + esc(ch.label) + "</button>"; }).join("") + "</div>" +
-      (o.skippable ? '<button class="wqskip" id="wqskip" type="button">skip</button>' : "") + "</div>";
+      (o.skippable ? '<button class="wqskip" id="wqskip" type="button">skip (−' + COSTS.skip + ' 💎)</button>' : "") + "</div>";
     container.style.display = "flex";
     readQ(q);
+    var born = Date.now();
     var fired = false; // a delayed correct-answer close must not double-fire after a skip
     function done(ok, res) { if (fired) return; fired = true; container.style.display = "none"; container.innerHTML = ""; shush(); if (o.cb) o.cb(ok, res, fmt); }
     var say = container.querySelector("#wqsay"); if (say) say.onclick = function () { readQ(q); };
-    var skip = container.querySelector("#wqskip"); if (skip) skip.onclick = function () { done(null, null); };
+    var skip = container.querySelector("#wqskip"); if (skip) skip.onclick = function () { chargeVobux(store, COSTS.skip); done(null, null); };
+    lockChoices(container.querySelectorAll(".wqc"), testMode() ? 0 : COSTS.lockMs);
     Array.prototype.forEach.call(container.querySelectorAll(".wqc"), function (b) {
       b.onclick = function () {
         var ok = !!q.choices[parseInt(b.dataset.i, 10)].correct;
         Array.prototype.forEach.call(container.querySelectorAll(".wqc"), function (bb, idx) {
           bb.disabled = true; if (q.choices[idx].correct) bb.classList.add("right"); else if (bb === b) bb.classList.add("wrong");
         });
+        var sk2 = container.querySelector("#wqskip"); if (sk2) sk2.remove(); // no skipping out of a wrong answer
         var res = store.record(q, ok);
         if (ok) { setTimeout(function () { done(true, res); }, 620); }
         else {
+          markRushed(store, born);
+          var lost = chargeVobux(store, COSTS.wrong);
           var card2 = container.querySelector(".wqcard");
-          var teach = document.createElement("div"); teach.className = "wqteach"; teach.innerHTML = entryHTML(q.data, { mnem: true });
-          card2.appendChild(teach);
-          var btn = document.createElement("button"); btn.className = "wqskip"; btn.type = "button"; btn.textContent = "Got it";
-          btn.onclick = function () { done(false, res); };
-          card2.appendChild(btn);
+          if (testMode()) { // harness fast-path: legacy dismiss (the gate has its own spec)
+            var teach = document.createElement("div"); teach.className = "wqteach"; teach.innerHTML = entryHTML(q.data, { mnem: true });
+            card2.appendChild(teach);
+            var btn = document.createElement("button"); btn.className = "wqskip"; btn.type = "button"; btn.textContent = "Got it";
+            btn.onclick = function () { done(false, res); };
+            card2.appendChild(btn);
+          } else {
+            teachGate(card2, q.data, {
+              words: words, senseIdx: q.senseIdx || 0,
+              headHTML: '<div class="fb bad">❌ ' + (lost ? "−" + lost + " 💎 — " : "") + "read the word, then one quick check:</div>"
+            }, function () {
+              payVobux(store, COSTS.readBack);
+              done(false, res);
+            });
+          }
         }
       };
     });
@@ -240,7 +321,9 @@
     pick: pick, shuffle: shuffle, sample: sample, uniq: uniq, norm: norm, esc: esc,
     boldWord: boldWord, lev: lev, meaningClue: meaningClue, makeCloze: makeCloze,
     clozeFor: clozeFor, wordData: wordData, gen: gen, checkText: checkText, entryHTML: entryHTML,
-    speak: speak, spoken: spoken, readQ: readQ, shush: shush, miniQuiz: miniQuiz
+    speak: speak, spoken: spoken, readQ: readQ, shush: shush, miniQuiz: miniQuiz,
+    teachGate: teachGate, lockChoices: lockChoices, chargeVobux: chargeVobux, payVobux: payVobux,
+    markRushed: markRushed, COSTS: COSTS
   };
   // stop any speech when the tab/app is hidden (locked screen, app switch, etc.)
   if (typeof document !== "undefined") document.addEventListener("visibilitychange", function () { if (document.hidden) shush(); });

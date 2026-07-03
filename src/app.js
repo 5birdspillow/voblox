@@ -361,14 +361,25 @@
         (opt && opt.stop ? '<button id="stop" class="stop">✕ Stop</button>' : "") + '</div>' +
       '<div class="card qcard"><div class="prompt">' + q.promptHTML + '</div>' + body + '</div>'
     );
-    var stop = el("stop"); if (stop) stop.onclick = function () { save(); goHome(); };
+    q._born = Date.now(); q._ready = q.kind !== "mc";
+    var stop = el("stop");
+    if (stop) stop.onclick = function () {
+      // stopping mid-question is fine, but the word counts as "not known yet"
+      // so it comes back sooner (otherwise Stop becomes a free skip button)
+      Engine.grade(state.cards[q.word], q.format, false, Date.now());
+      save(); goHome();
+    };
     var replay = document.querySelector(".replay");
     if (replay) replay.onclick = function () { if (q.audio) speak(q.audio); };
 
     if (q.kind === "mc") {
       var btns = Array.prototype.slice.call(document.querySelectorAll(".choice"));
       btns.forEach(function (b) { b.onclick = function () { answerMC(q, parseInt(b.dataset.i, 10)); }; });
+      // brief lock while the question gets read — no reflex-guessing
+      btns.forEach(function (b) { b.disabled = true; b.style.opacity = "0.4"; });
+      setTimeout(function () { q._ready = true; btns.forEach(function (b) { b.disabled = false; b.style.opacity = ""; }); }, 1200);
       setKeys(function (e) {
+        if (!q._ready) return;
         var n = parseInt(e.key, 10);
         if (n >= 1 && n <= q.choices.length) answerMC(q, n - 1);
       });
@@ -420,6 +431,11 @@
       burst(correct);
     } else {
       state.combo = 0;
+      // wrong answers cost Vobux (guessing isn't free anymore)
+      q._lost = Math.min(5, state.gems || 0);
+      state.gems = (state.gems || 0) - q._lost;
+      state.vobuxLost = (state.vobuxLost || 0) + q._lost;
+      if (Date.now() - (q._born || 0) < 2500) state.fastWrong = (state.fastWrong || 0) + 1;
     }
     save();
     showFeedback(q, correct, earned, loot);
@@ -442,16 +458,53 @@
     var head = correct
       ? '<div class="fb good">✅ ' + pick(["Nice!", "Yes!", "Boom!", "Correct!", "You got it!"]) +
         (earned ? ' <span class="gain">+' + earned + ' 💎</span>' : "") + '</div>'
-      : '<div class="fb bad">❌ Not quite — here’s the word:</div>';
+      : '<div class="fb bad">❌ Not quite' + (q._lost ? " (−" + q._lost + " 💎)" : "") + ' — read the word, then one quick check:</div>';
     var lootHTML = loot ? '<div class="loot">🎁 Loot chest! You found ' + loot + ' <span class="muted">(added to your collection)</span></div>' : "";
     show(
-      '<div class="qhead">Practice<button id="stop" class="stop">✕ Stop</button></div>' +
+      '<div class="qhead">Practice' + (correct ? '<button id="stop" class="stop">✕ Stop</button>' : "") + '</div>' +
       '<div class="card qcard">' + head + '<div class="reveal">' + entryHTML(d, { mnem: true }) + '</div>' + lootHTML +
-      '<button id="next" class="submit big-next">Next ⏎</button></div>'
+      '<button id="next" class="submit big-next"' + (correct ? "" : " disabled") + '>Next ⏎</button></div>'
     );
-    el("stop").onclick = function () { save(); goHome(); };
-    el("next").onclick = nextAfterFeedback;
-    setKeys(function (e) { if (e.key === "Enter") nextAfterFeedback(); });
+    var stopBtn = el("stop"); if (stopBtn) stopBtn.onclick = function () { save(); goHome(); };
+    if (correct) {
+      el("next").onclick = nextAfterFeedback;
+      setKeys(function (e) { if (e.key === "Enter") nextAfterFeedback(); });
+    } else {
+      // reading gate: a short countdown while the entry is read aloud, then a
+      // one-tap echo check on the definition. Passing pays a little back.
+      speak(d.word + ". " + d.senses[0].def);
+      setKeys(function () {});
+      var nx = el("next"), left = 4;
+      (function tick() {
+        if (left <= 0) { nx.disabled = false; nx.textContent = "Quick check ➜"; nx.onclick = echoCheck; return; }
+        nx.textContent = "👀 Read it… " + left;
+        left--; setTimeout(tick, 1000);
+      })();
+      function echoCheck() {
+        var def = d.senses[0].def;
+        var decoys = shuffle(WORDS.filter(function (w) { return w.word !== d.word; })).slice(0, 2).map(function (w) { return w.word; });
+        var chs = shuffle([d.word].concat(decoys));
+        show(
+          '<div class="qhead">Practice</div>' +
+          '<div class="card qcard"><div class="fb">🔎 Quick check — which word means:<br><b>“' + esc(def) + '”</b></div>' +
+          '<div class="choices">' + chs.map(function (w, i) { return '<button class="choice" data-w="' + esc(w) + '"><span class="num">' + (i + 1) + '</span>' + esc(w) + '</button>'; }).join("") + '</div></div>'
+        );
+        document.querySelectorAll(".choice").forEach(function (b) {
+          b.onclick = function () {
+            if (b.dataset.w === d.word) {
+              state.gems += 2; save();
+              burst(true);
+              nextAfterFeedback();
+            } else { b.disabled = true; b.classList.add("wrong"); speak(d.word + ". " + def); }
+          };
+        });
+        setKeys(function (e) {
+          var n = parseInt(e.key, 10);
+          var bs = document.querySelectorAll(".choice");
+          if (n >= 1 && n <= bs.length && !bs[n - 1].disabled) bs[n - 1].click();
+        });
+      }
+    }
 
     // schedule the word's next appearance in this session
     var card = state.cards[q.word];

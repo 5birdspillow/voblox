@@ -23,7 +23,9 @@
     '<div class="row2"><span class="stat">✅ ' + s.totalCorrect + ' correct answers</span>' +
     '<span class="stat">🏅 best combo ' + (s.bestCombo || 0) + '</span>' +
     '<span class="stat">📚 ' + masteredAll + ' words long-term mastered</span>' +
-    '<span class="stat">🕒 last played: ' + esc(lastPlayed()) + '</span></div></div>';
+    '<span class="stat">🕒 last played: ' + esc(lastPlayed()) + '</span>' +
+    '<span class="stat" title="wrong answers given within 2.5s — a guessing signal">⚡ ' + (s.fastWrong || 0) + ' rushed guesses</span>' +
+    '<span class="stat" title="Vobux lost to wrong answers and skips">💸 ' + (s.vobuxLost || 0) + ' Vobux lost</span></div></div>';
 
   if (!avail.length) html += '<div class="card">No lessons loaded yet.</div>';
 
