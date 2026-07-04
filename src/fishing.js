@@ -1,10 +1,11 @@
 /*
  * Voblox arcade game — 🎣 Fishing Frenzy.
  * Cast (tap to lock the power meter), wait for the "❗", tap to hook, then HOLD
- * to keep the bobber inside the fish zone until the catch bar fills. 40 species
- * across 4 waters (higher ranks unlock wilder waters), a Fishdex collection log,
- * word questions to hook the epic/legendary ones, and 3-minute tournaments
- * against AI anglers. Fish sell for gems at the end of the session.
+ * to keep the bobber inside the fish zone until the catch bar fills. 61 species
+ * across 6 waters (ranks unlock the first four; the Lava Lagoon and Space Sea
+ * unlock by FISHDEX count), a Fishdex collection log, word questions to hook
+ * the epic/legendary ones, 🪱 WORD BAIT (answer a word → next bite guaranteed
+ * rare-or-better), and 3-minute tournaments against AI anglers.
  */
 (function (global) {
   var VQ = global.VobloxQuestions, AV = global.VobloxAvatar, Bots = global.VobloxBots, P = global.VobloxProfile;
@@ -34,10 +35,26 @@
       S("starfish", "Wishing Star", "⭐", "common", 8, 15), S("bat", "Lake Bat (?!)", "🦇", "rare", 15, 30),
       S("ghost", "Ghost Fish", "👻", "rare", 20, 45), S("crystal", "Crystal Crab", "💠", "rare", 15, 35),
       S("rainboweel", "Rainbow Eel", "🌈", "epic", 60, 130), S("phoenix", "Phoenix Fish", "🔥", "epic", 50, 110),
-      S("gemturtle", "Gem Turtle", "🐢", "epic", 40, 90), S("dragon", "Water Dragon", "🐉", "legendary", 150, 300)] }
+      S("gemturtle", "Gem Turtle", "🐢", "epic", 40, 90), S("dragon", "Water Dragon", "🐉", "legendary", 150, 300)] },
+    // the two frontier waters unlock by FISHDEX progress (species caught), not rank —
+    // collecting is the thing Leo loves, so collecting is the key
+    { id: "lagoon", name: "Lava Lagoon", emoji: "🌋", dexAt: 18, sky: ["#ffb47a", "#ffe3c2"], water: ["#e0662f", "#b23a1a"], fish: [
+      S("magmin", "Magma Minnow", "🐟", "common", 8, 16), S("toasty", "Toasty Tetra", "🐠", "common", 8, 18),
+      S("cindersnail", "Cinder Snail", "🐌", "common", 5, 12), S("steamfrog", "Steam Frog", "🐸", "common", 8, 15),
+      S("cococrab", "Coco Crab", "🦀", "common", 10, 22), S("embereel", "Ember Eel", "🪱", "rare", 30, 70),
+      S("obsbass", "Obsidian Bass", "🐟", "rare", 35, 75), S("firepuffer", "Fire Puffer", "🐡", "rare", 18, 40),
+      S("lavashark", "Lava Shark", "🦈", "epic", 90, 190), S("pyroray", "Pyro Ray", "🔥", "epic", 60, 130),
+      S("volcking", "VOLCANO KING", "🌋", "legendary", 150, 320)] },
+    { id: "space", name: "Space Sea", emoji: "🪐", dexAt: 30, sky: ["#1a1440", "#3a2a70"], water: ["#241a58", "#120c30"], fish: [
+      S("astromin", "Astro Minnow", "✨", "common", 6, 14), S("starsard", "Star Sardine", "⭐", "common", 8, 16),
+      S("moonsnail", "Moon Snail", "🌙", "common", 5, 12), S("cometguppy", "Comet Guppy", "☄️", "common", 7, 15),
+      S("nebjelly", "Nebula Jelly", "🪼", "rare", 20, 45), S("rocketfish", "Rocket Fish", "🚀", "rare", 25, 55),
+      S("aliencrab", "Alien Crab", "👽", "rare", 18, 40), S("ufoturtle", "UFO Turtle", "🛸", "epic", 70, 150),
+      S("blackblob", "Black Hole Blob", "🕳️", "epic", 50, 120), S("galaxywhale", "GALAXY WHALE", "🐋", "legendary", 220, 450)] }
   ];
   var RVAL = { common: 6, rare: 18, epic: 45, legendary: 120 };
-  var RWEIGHT = { common: 62, rare: 26, epic: 9.5, legendary: 2.5 };
+  // generous odds: he plays for the Fishdex, so let the good ones bite
+  var RWEIGHT = { common: 48, rare: 32, epic: 15, legendary: 5 };
   var ZONE_H = { common: 0.30, rare: 0.24, epic: 0.19, legendary: 0.155 };
   var NEED_S = { common: 2.6, rare: 3.6, epic: 4.8, legendary: 6.2 };
 
@@ -57,6 +74,7 @@
       '<div class="gmsg" id="fbig"></div>' +
       '<div class="gover" id="fq" style="display:none"></div>' +
       '<div class="gover" id="fcard" style="display:none"></div>' +
+      '<button class="wtab" id="fbait" type="button">🪱 Word Bait</button>' +
       '<div class="runhint" id="fhint">Tap to cast!</div>';
     document.body.appendChild(wrap);
     var cv = wrap.querySelector("#fcv"), ctx = cv.getContext("2d");
@@ -80,18 +98,24 @@
 
     var msgEl = document.getElementById("fmsg"), bigEl = document.getElementById("fbig"), hintEl = document.getElementById("fhint");
     function big(m, col) { bigEl.textContent = m; bigEl.style.color = col || "#fff"; bigEl.style.opacity = "1"; setTimeout(function () { bigEl.style.opacity = "0"; }, 950); }
+    function dexCount() { return Object.keys(stats.dex).length; }
+    function waterLocked(w) { return w.dexAt ? dexCount() < w.dexAt : stats.rankPts < (w.at || 0); }
+    function lockLabel(w) { return w.dexAt ? "🔒 Dex " + dexCount() + "/" + w.dexAt : "🔒 " + P.gameRank(w.at).name; }
     function hud() {
       document.getElementById("fgems").textContent = "💰 " + sessionGems;
       var wEl = document.getElementById("fwaters");
       wEl.innerHTML = WATERS.map(function (w) {
-        var locked = stats.rankPts < w.at;
+        var locked = waterLocked(w);
         return '<button class="wtab' + (w === water ? " on" : "") + (locked ? " locked" : "") + '" data-w="' + w.id + '">' +
-          w.emoji + " " + (locked ? "🔒 " + P.gameRank(w.at).name : w.name) + "</button>";
+          w.emoji + " " + (locked ? lockLabel(w) : w.name) + "</button>";
       }).join("");
       Array.prototype.forEach.call(wEl.querySelectorAll(".wtab"), function (b) {
         b.onclick = function () {
           var w = WATERS.filter(function (x) { return x.id === b.dataset.w; })[0];
-          if (stats.rankPts < w.at) { big("🔒 Reach " + P.gameRank(w.at).name + " rank to fish here!", "#ffd740"); return; }
+          if (waterLocked(w)) {
+            big(w.dexAt ? "🔒 Catch " + w.dexAt + " different species to fish here! (" + dexCount() + " so far)" : "🔒 Reach " + P.gameRank(w.at).name + " rank to fish here!", "#ffd740");
+            return;
+          }
           water = w; state = "idle"; bobber = null; fish = null; hintEl.textContent = "Tap to cast!";
           msgEl.innerHTML = w.emoji + " <b>" + w.name + "</b>";
         };
@@ -99,11 +123,26 @@
     }
 
     // ---- fish picking ----
+    var baited = false;
+    function baitLabel() {
+      var b = document.getElementById("fbait");
+      if (!b) return;
+      b.textContent = baited ? "🪱✨ BAITED!" : "🪱 Word Bait";
+      b.classList.toggle("on", baited);
+    }
     function pickFish() {
-      var roll = Math.random() * 100, rarity = "common";
-      if (roll < RWEIGHT.legendary + castPow * 1.5) rarity = "legendary";
-      else if (roll < RWEIGHT.legendary + RWEIGHT.epic + castPow * 3) rarity = "epic";
-      else if (roll < RWEIGHT.legendary + RWEIGHT.epic + RWEIGHT.rare + castPow * 5) rarity = "rare";
+      var rarity = "common";
+      if (baited) {
+        // word bait guarantees rare-or-better on this bite
+        baited = false; baitLabel();
+        var r2 = Math.random() * 100;
+        rarity = r2 < 12 + castPow * 3 ? "legendary" : r2 < 45 + castPow * 5 ? "epic" : "rare";
+      } else {
+        var roll = Math.random() * 100;
+        if (roll < RWEIGHT.legendary + castPow * 1.5) rarity = "legendary";
+        else if (roll < RWEIGHT.legendary + RWEIGHT.epic + castPow * 3) rarity = "epic";
+        else if (roll < RWEIGHT.legendary + RWEIGHT.epic + RWEIGHT.rare + castPow * 5) rarity = "rare";
+      }
       var pool = water.fish.filter(function (f) { return f.rarity === rarity; });
       var sp = pool[Math.floor(Math.random() * pool.length)] || water.fish[0];
       var size = Math.round(sp.min + Math.random() * (sp.max - sp.min) * (0.6 + castPow * 0.4));
@@ -197,6 +236,32 @@
       fc.style.display = "flex";
       document.getElementById("fok").onclick = function () { fc.style.display = "none"; fc.innerHTML = ""; };
     };
+
+    // ---- 🪱 Word Bait: answer a word, and the next bite is GUARANTEED rare-or-better ----
+    document.getElementById("fbait").onclick = function () {
+      if (baited) { big("Already baited — cast!", "#ffe14d"); return; }
+      if (state !== "idle") { big("Finish this cast first!", "#ffd740"); return; }
+      state = "question";
+      VQ.miniQuiz(document.getElementById("fq"), words, store, {
+        title: "🪱 Word Bait! Answer to lure something BIG…",
+        lastFormat: lastFmt,
+        cb: function (ok, res, fmt) {
+          lastFmt = fmt;
+          state = "idle";
+          if (ok) {
+            baited = true; baitLabel();
+            big("🪱✨ The water is bubbling…", "#69f0ae");
+            hintEl.textContent = "Cast now — something BIG is coming!";
+            if (sfx) sfx.chime();
+            if (juice) juice.burst(W / 2, WY, "#69f0ae", 12);
+          } else {
+            big("The fish weren't impressed…", "#ff8a8a");
+            hintEl.textContent = "Tap to cast!";
+          }
+        }
+      });
+    };
+    baitLabel();
 
     // ---- tournament ----
     document.getElementById("ftour").onclick = function () {
