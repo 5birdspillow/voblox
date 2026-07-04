@@ -86,6 +86,41 @@
   function endlessPlan() {
     return { rows: [0, 1, 2, 3, 4], spawns: [], endless: true, unlock: [], intro: "Survive as long as you can. The horde never ends…" };
   }
+  // 📖 Almanac bios — silly, collectible, and each hides a Secret Word quiz
+  var BIOS = {
+    "b:blaster": "Fires the alphabet at 300 letters per minute. Hates the letter Q (too fancy).",
+    "b:dict": "Knows every word ever. Drips ink when it feels appreciated.",
+    "b:wall": "A 4,000-page encyclopedia set. Zombies chip a tooth on volume K.",
+    "b:freeze": "Lists 41 words for cold. Reading it gives zombies brain-freeze.",
+    "b:catapult": "Launches jumbo crayons. The red ones somehow hurt the most.",
+    "b:bomb": "One typo and BOOM. Grammar is serious business.",
+    "b:magnet": "Collects helmets, tablets, and loose change. Mostly helmets.",
+    "b:spell": "Speaks words so powerful the lane lights up. Handle with care.",
+    "z:basic": "Walked into the library by accident. Still scrolling.",
+    "z:speedy": "Late for nothing, hurrying anyway. Battery at 3 percent.",
+    "z:bucket": "Wears a helmet because books keep hitting him. Smart, honestly.",
+    "z:shield": "Uses a tablet as a shield. The screen is cracked. He does not care.",
+    "z:scooter": "Doom-scrolls WHILE scooting. A menace to shelves everywhere.",
+    "z:balloon": "Floats over walls, holding a balloon and 19 unread group chats.",
+    "z:couch": "Brought his own couch. Throws pillows. Zero steps today.",
+    "z:splitter": "A robot that multitasks so hard it becomes two robots.",
+    "z:mini": "Half a robot. Twice the attitude.",
+    "z:miniboss": "SIR HELMET took knighthood classes online. Certificate pending.",
+    "z:boss": "THE DOOMSCROLLER. He IS the algorithm. Beat him with words."
+  };
+  // 🏭 Bindery upgrades — bought with 📜 Pages (earned from stars & the Almanac)
+  var UPG = {
+    blaster: [{ t: "+2 letter dmg", d: { dmg: 2 } }, { t: "+2 more", d: { dmg: 2 } }],
+    dict: [{ t: "+8 ink per drip", d: { drip: 8 } }, { t: "drips faster", d: { dripCd: -1.7 } }],
+    wall: [{ t: "+120 hp", d: { hp: 120 } }, { t: "+140 hp", d: { hp: 140 } }],
+    freeze: [{ t: "+2 dmg", d: { dmg: 2 } }, { t: "+2 more", d: { dmg: 2 } }],
+    catapult: [{ t: "+5 splash dmg", d: { dmg: 5 } }, { t: "+4 more", d: { dmg: 4 } }],
+    bomb: [{ t: "bigger boom", d: { boomR: 0.5 } }, { t: "HUGE boom", d: { boomR: 0.6 } }],
+    magnet: [{ t: "steals 2s faster", d: { stripCd: -2 } }, { t: "2s faster still", d: { stripCd: -2 } }],
+    spell: [{ t: "+3 beam dmg", d: { dmg: 3 } }, { t: "+3 more", d: { dmg: 3 } }]
+  };
+  var UPG_COST = [3, 6];
+
   // 📗 Normal / 📙 Hard / 📕 NIGHTMARE — Nightmare is tuned to beat GROWN-UPS
   var TIERS = {
     1: { name: "Normal", emoji: "📗", hpMul: 1, spdMul: 1, dropEvery: 9, extra: 0, inkStart: 75, gemMul: 1 },
@@ -116,6 +151,14 @@
     var words = opts.words, store = opts.store;
     var stats = store.game("books");
     if (!stats.lvl) stats.lvl = 1; // highest unlocked level (stats.best is the platform BEST SCORE - do not collide)
+    stats.pages = stats.pages || 0; stats.seen = stats.seen || {}; stats.up = stats.up || {}; stats.quizDone = stats.quizDone || {};
+    // a book's REAL stats = base + Bindery upgrades
+    function bdef(k) {
+      var base = BOOKS[k], lv = stats.up[k] || 0, out = {};
+      for (var f in base) out[f] = base[f];
+      for (var i = 0; i < lv && UPG[k]; i++) { var dd2 = (UPG[k][i] || {}).d || {}; for (var f2 in dd2) out[f2] = (out[f2] || 0) + dd2[f2]; }
+      return out;
+    }
     var wrap = document.createElement("div"); wrap.className = "gamewrap books";
     wrap.innerHTML =
       '<canvas id="bkcv"></canvas>' +
@@ -210,7 +253,9 @@
           '<span class="ebs">' + ["First Shelf", "Five Rooms", "Helmet Heads", "Tablet Shields", "THE BOSS"][n - 1] + "</span></button>";
       }).join("");
       var endlessBtn = '<button class="embtn study" style="min-width:150px' + (stats.beatBoss ? "" : ";opacity:.45") + '" id="bk_endless">' +
-        '<span class="ebl">🌙 Midnight Library</span><span class="ebs">' + (stats.beatBoss ? ("endless! best: wave " + (stats.endlessBest || 0)) : "beat THE BOSS to unlock") + "</span></button>";
+        '<span class="ebl">🌙 Midnight Library</span><span class="ebs">' + (stats.beatBoss ? ("endless! best: wave " + (stats.endlessBest || 0)) : "beat THE BOSS to unlock") + "</span></button>" +
+        '<button class="embtn" style="min-width:110px" id="bk_almanac"><span class="ebl">📖 Almanac</span><span class="ebs">' + Object.keys(stats.seen).length + "/" + (Object.keys(BOOKS).length + Object.keys(ZOMBIES).length) + ' found</span></button>' +
+        '<button class="embtn" style="min-width:110px" id="bk_bindery"><span class="ebl">🏭 Bindery</span><span class="ebs">📜 ' + (stats.pages || 0) + " Pages</span></button>";
       end.innerHTML = '<div class="wqcard" style="text-align:center;max-width:580px"><div style="font-size:40px">📚🧟</div>' +
         '<div class="wqtitle" style="font-size:20px">Books vs Zombies</div>' +
         '<div style="margin:4px 0 10px;color:#5a6b7a;font-weight:bold">The Brain-Rot horde is at the doors. Knowledge is the only weapon.</div>' +
@@ -226,6 +271,100 @@
       });
       var eb = document.getElementById("bk_endless");
       if (eb) eb.onclick = function () { if (stats.beatBoss) beginLevel(6); else big("🔒 Beat THE BOSS first!", "#ffd740"); };
+      var ab = document.getElementById("bk_almanac"); if (ab) ab.onclick = showAlmanac;
+      var bb = document.getElementById("bk_bindery"); if (bb) bb.onclick = showBindery;
+    }
+    // 📖 THE ALMANAC — every book & zombie, silly bios, and a Secret Word quiz each
+    function showAlmanac() {
+      var end = document.getElementById("bkend");
+      function entryChip(key, emoji, name) {
+        var seen = !!stats.seen[key];
+        return '<button class="lchip" style="font-size:13px' + (seen ? "" : ";opacity:.5") + '" data-alm="' + key + '">' +
+          (seen ? emoji + " " + name + (stats.quizDone[key] ? " ✓" : " 📖") : "❓ ???") + "</button>";
+      }
+      var bookChips = Object.keys(BOOKS).map(function (k) { return entryChip("b:" + k, BOOKS[k].emoji, BOOKS[k].name); }).join("");
+      var zChips = Object.keys(ZOMBIES).map(function (k) { return entryChip("z:" + k, ZOMBIES[k].emoji, ZOMBIES[k].name); }).join("");
+      var total = Object.keys(BOOKS).length + Object.keys(ZOMBIES).length;
+      var found = Object.keys(stats.seen).length;
+      end.innerHTML = '<div class="wqcard" style="max-height:82vh;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y">' +
+        '<div class="wqtitle">📖 The Almanac — ' + found + "/" + total + ' discovered</div>' +
+        '<div style="font-size:12px;color:#5a6b7a;margin-bottom:4px">Tap an entry · 📖 = its Secret Word quiz still pays +5 Vobux & +1 📜</div>' +
+        '<h4 style="margin:6px 0 2px">Your Books</h4><div class="lchips">' + bookChips + "</div>" +
+        '<h4 style="margin:8px 0 2px">The Brain-Rot Horde</h4><div class="lchips">' + zChips + "</div>" +
+        '<button class="wqskip" id="alm_back" type="button">back</button></div>';
+      end.style.display = "flex";
+      document.getElementById("alm_back").onclick = showSelect;
+      Array.prototype.forEach.call(end.querySelectorAll("[data-alm]"), function (b) {
+        b.onclick = function () { if (stats.seen[b.dataset.alm]) showAlmEntry(b.dataset.alm); else big("Find it in battle first!", "#ffd740"); };
+      });
+    }
+    function showAlmEntry(key) {
+      var isBook = key.indexOf("b:") === 0, id = key.slice(2);
+      var d = isBook ? BOOKS[id] : ZOMBIES[id];
+      var statLine = isBook
+        ? (d.dmg ? "dmg " + bdef(id).dmg : d.drip ? "+" + bdef(id).drip + " ink/" + bdef(id).dripCd + "s" : d.hp >= 300 ? "hp " + bdef(id).hp : "special") + " · cost " + d.cost
+        : "hp " + d.hp + " · speed " + d.speed + (d.dps ? " · bite " + d.dps : "");
+      var end = document.getElementById("bkend");
+      end.innerHTML = '<div class="wqcard" style="text-align:center"><div style="font-size:52px">' + d.emoji + '</div>' +
+        '<div class="wqtitle">' + d.name + '</div>' +
+        '<div style="font-size:12px;color:#5a6b7a;margin:2px 0">' + statLine + '</div>' +
+        '<div style="margin:8px 0;font-style:italic">“' + (BIOS[key] || "A mysterious figure of the library.") + '”</div>' +
+        (stats.quizDone[key] ? '<div style="color:#2f9e44;font-weight:900">✓ Secret Word solved</div>'
+          : '<button class="submit" id="alm_quiz" type="button">🔎 Secret Word quiz (+5 Vobux, +1 📜)</button>') +
+        '<br><button class="wqskip" id="alm_back2" type="button">back</button></div>';
+      end.style.display = "flex";
+      document.getElementById("alm_back2").onclick = showAlmanac;
+      var qb = document.getElementById("alm_quiz");
+      if (qb) qb.onclick = function () { almanacQuiz(key); };
+    }
+    function almanacQuiz(key) {
+      cv._lastQ = VQ.miniQuiz(document.getElementById("bkq"), words, store, {
+        title: "🔎 Secret Word of " + (key.indexOf("b:") === 0 ? BOOKS[key.slice(2)].name : ZOMBIES[key.slice(2)].name) + "!",
+        lastFormat: lastFmt,
+        cb: function (ok, res, fmt) {
+          lastFmt = fmt;
+          if (ok) {
+            stats.quizDone[key] = 1;
+            stats.pages = (stats.pages || 0) + 1;
+            store.state.gems += 5;
+            store.save();
+            big("🔎 Secret solved! +5 Vobux, +1 📜", "#69f0ae");
+          }
+          showAlmEntry(key);
+        }
+      });
+    }
+    // 🏭 THE BINDERY — permanent book upgrades, paid in 📜 Pages
+    function showBindery() {
+      var end = document.getElementById("bkend");
+      var rows = Object.keys(BOOKS).map(function (k) {
+        var lv = stats.up[k] || 0;
+        var next = UPG[k] && UPG[k][lv];
+        var pips = "●".repeat(lv) + "○".repeat(2 - lv);
+        return '<div style="display:flex;align-items:center;gap:8px;background:#f4f8fc;border-radius:10px;padding:6px 10px;margin:4px 0">' +
+          '<span style="font-size:22px">' + BOOKS[k].emoji + '</span>' +
+          '<div style="flex:1;text-align:left"><b style="font-size:13px">' + BOOKS[k].name + " " + pips + "</b>" +
+          '<div style="font-size:11px;color:#5a6b7a">' + (next ? "next: " + next.t : "fully bound!") + "</div></div>" +
+          (next ? '<button class="submit" style="padding:5px 10px;font-size:13px" data-up="' + k + '">' + UPG_COST[lv] + " 📜</button>" : '<span style="color:#2f9e44;font-weight:900">MAX</span>') + "</div>";
+      }).join("");
+      end.innerHTML = '<div class="wqcard" style="max-height:82vh;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y">' +
+        '<div class="wqtitle">🏭 The Bindery — 📜 ' + (stats.pages || 0) + ' Pages</div>' +
+        '<div style="font-size:12px;color:#5a6b7a;margin-bottom:4px">Earn Pages from NEW stars, tier clears, and Almanac secrets. Upgrades are forever.</div>' +
+        rows + '<button class="wqskip" id="bind_back" type="button">back</button></div>';
+      end.style.display = "flex";
+      document.getElementById("bind_back").onclick = showSelect;
+      Array.prototype.forEach.call(end.querySelectorAll("[data-up]"), function (b) {
+        b.onclick = function () {
+          var k = b.dataset.up, lv = stats.up[k] || 0, cost = UPG_COST[lv];
+          if ((stats.pages || 0) < cost) { big("Not enough 📜 Pages — earn stars & Almanac secrets!", "#ffd740"); return; }
+          stats.pages -= cost;
+          stats.up[k] = lv + 1;
+          store.save();
+          big("🏭 " + BOOKS[k].name + " upgraded: " + UPG[k][lv].t + "!", "#9be15d");
+          if (sfx && sfx.fanfare) sfx.fanfare();
+          showBindery();
+        };
+      });
     }
     // once a level is beaten, replay it HARDER — Nightmare is tuned to beat grown-ups
     function showTierPick(n) {
@@ -300,17 +439,19 @@
       if (won && level >= stats.lvl && level < 5) { stats.lvl = level + 1; store.save(); }
       if (won && level === 5) { stats.beatBoss = true; store.save(); }
       // ⭐ per-tier star challenges: win / keep every book cart / unleash 2+ Power Words
-      var earned = 0;
+      var earned = 0, newPages = 0;
       if (won && !endless) {
         earned = 1 + (carts.every(function (ct) { return !ct.used && !ct.rolling; }) ? 1 : 0) + (pwUsed >= 2 ? 1 : 0);
         stats.starsT = stats.starsT || {};
         var key = level + ":" + tier;
-        if (earned > (stats.starsT[key] || 0)) { stats.starsT[key] = earned; }
+        var prevStars = stats.starsT[key] || 0;
+        if (earned > prevStars) { stats.starsT[key] = earned; newPages += earned - prevStars; } // 📜 1 Page per NEW star
         stats.tierDone = stats.tierDone || {};
-        if (tier > (stats.tierDone[level] || 0)) stats.tierDone[level] = tier;
+        if (tier > (stats.tierDone[level] || 0)) { stats.tierDone[level] = tier; newPages += 2; } // first tier clear
         // legacy field keeps old saves meaningful
         stats.stars = stats.stars || {};
         if (tier === 1 && earned > (stats.stars[level] || 0)) stats.stars[level] = earned;
+        if (newPages > 0) stats.pages = (stats.pages || 0) + newPages;
         store.save();
       }
       if (endless && endWave > (stats.endlessBest || 0)) { stats.endlessBest = endWave; store.save(); }
@@ -321,6 +462,7 @@
       var starRow = (won && !endless) ? '<div style="font-size:26px;margin:2px 0">' + "⭐".repeat(earned) + "☆".repeat(3 - earned) + '</div>' +
         '<div style="font-size:11px;color:#5a6b7a">win · keep all carts · use 2+ ⚡ Power Words</div>' : "";
       var payRow = '<div style="margin:6px 0;font-weight:900;color:#2f9e44;font-size:17px">+' + rw.gems + ' <img class="vbx" src="icons/vobux.png" alt="Vobux"> · +' + rw.xp + " XP" +
+        (newPages > 0 ? ' · <span style="color:#b06a00">+' + newPages + " 📜</span>" : "") +
         (rw.studyBonus ? ' <span style="color:#7a4fd0;font-size:12px">(incl. 📖 study bonus +' + rw.studyBonus + ")</span>" : "") + "</div>";
       end.innerHTML = '<div class="wqcard" style="text-align:center"><div style="font-size:44px">' + (won ? "🏆" : endless ? "🌙" : "🧟") + '</div>' +
         '<div class="wqtitle" style="font-size:20px">' + title + "</div>" + starRow + payRow +
@@ -389,7 +531,8 @@
       return { r: r, c: c };
     }
     function place(k, r, c) {
-      var def = BOOKS[k];
+      var def = bdef(k);
+      stats.seen["b:" + k] = 1;
       plants[r][c] = { k: k, hp: def.hp, maxHp: def.hp, cd: 1 + Math.random(), drip: def.dripCd || 0, r: r, c: c, flash: 0 };
       ink -= def.cost; selected = null;
       if (juice) juice.burst(X(tileX(c), tileY(r)), Y(tileX(c), tileY(r)), "#9be15d", 10);
@@ -403,7 +546,7 @@
       if (!selected || over || paused) return;
       if (plan.rows.indexOf(r) < 0) { big("That reading room is closed!", "#ffd740"); return; }
       if (plants[r][c]) { big("A book already lives there!", "#ffd740"); return; }
-      var k = selected, def = BOOKS[k];
+      var k = selected, def = bdef(k);
       if (ink < def.cost) { big("Not enough ink!", "#ffd740"); return; }
       if (def.word) { // 📜 Spell Book: speak the word of power to place it
         paused = true;
@@ -434,6 +577,7 @@
     // ---------- combat ----------
     function spawnZombie(type, row) {
       var def = ZOMBIES[type];
+      stats.seen["z:" + type] = 1;
       var T = TIERS[tier] || TIERS[1];
       zombies.push({ type: type, row: row, x: MWv + 30, hp: Math.round(def.hp * T.hpMul), maxHp: Math.round(def.hp * T.hpMul), speed: def.speed * T.spdMul, dps: def.dps, chill: 0, groan: Math.random() * 6 });
       if (def.big) { big("📺 " + def.name + " HAS ENTERED THE LIBRARY!", "#c9b6ff"); if (sfx && sfx.buzz) sfx.buzz(); }
@@ -506,7 +650,7 @@
       // plants act
       for (var r = 0; r < ROWS; r++) for (var c = 0; c < COLS; c++) {
         var p = plants[r][c]; if (!p) continue;
-        var def = BOOKS[p.k];
+        var def = bdef(p.k);
         p.flash = Math.max(0, p.flash - dt);
         if (def.drip) { p.drip -= dt; if (p.drip <= 0) { p.drip = def.dripCd; ink += def.drip; hud(); if (juice) juice.text(X(tileX(c), tileY(r) - 30), Y(tileX(c), tileY(r) - 30), "+" + def.drip + "🖋", "#8ecdf7"); } }
         if (def.dmg) {
@@ -764,7 +908,7 @@
     }
     // ⚡ POWER WORDS: earned by answering (ink rush), spent by tapping a book
     function superCharge(r, c) {
-      var p = plants[r][c], def = BOOKS[p.k];
+      var p = plants[r][c], def = bdef(p.k);
       if (def.boom) { big("💥 The bomb IS the power — just place it!", "#ffd740"); return; }
       pw--; pwUsed++;
       var bx = tileX(c), by = tileY(r);
@@ -830,7 +974,12 @@
       clearSpawns: function () { spawnIdx = plan.spawns.length; },
       charge: function (n) { pw = Math.min(2, pw + n); hud(); },
       power: function (r, c) { superCharge(r, c); },
-      tapLogical: tapLogical
+      tapLogical: tapLogical,
+      bdef: bdef,
+      pages: function (n) { stats.pages = (stats.pages || 0) + n; },
+      upgrade: function (k) { var lv = stats.up[k] || 0; if (stats.pages >= UPG_COST[lv]) { stats.pages -= UPG_COST[lv]; stats.up[k] = lv + 1; return true; } return false; },
+      almanac: function () { return { seen: stats.seen, quizDone: stats.quizDone, pages: stats.pages }; },
+      almanacQuiz: almanacQuiz
     };
 
     hud();
