@@ -23,6 +23,7 @@
   var state = _saved || freshState();
   if (!state.activeLesson) state.activeLesson = LESSON_ID;
   ensureCards();
+  window.__VOBLOX_VOICE = (state.profile && state.profile.voice) || null; // per-player voice settings
 
   var session = null; // practice session
   var mock = null;     // mock quiz
@@ -90,10 +91,12 @@
   function speak(text) {
     try {
       if (!("speechSynthesis" in window)) return;
+      var cfg = (window.VobloxQuestions && window.VobloxQuestions.voiceConfig) ? window.VobloxQuestions.voiceConfig() : { rate: 0.9, pitch: 1, name: null };
       var u = new SpeechSynthesisUtterance(text);
-      u.rate = 0.9;
+      u.rate = cfg.rate; u.pitch = cfg.pitch;
       var voices = window.speechSynthesis.getVoices();
-      var v = voices.filter(function (x) { return /en[-_]?US/i.test(x.lang); })[0] ||
+      var v = (cfg.name && voices.filter(function (x) { return x.name === cfg.name; })[0]) ||
+              voices.filter(function (x) { return /en[-_]?US/i.test(x.lang); })[0] ||
               voices.filter(function (x) { return /^en/i.test(x.lang); })[0];
       if (v) u.voice = v;
       window.speechSynthesis.cancel();

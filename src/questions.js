@@ -190,12 +190,26 @@
     }
     return t;
   }
+  // Per-player voice settings live on the save (profile.voice) — pages copy them
+  // into window.__VOBLOX_VOICE at boot, and the Style panel updates it live.
+  function voiceConfig() {
+    var V = global.__VOBLOX_VOICE || {};
+    return {
+      name: V.name || null,
+      rate: (V.rate >= 0.5 && V.rate <= 2) ? V.rate : 0.92,
+      pitch: (V.pitch >= 0.3 && V.pitch <= 2) ? V.pitch : 1
+    };
+  }
   function speak(text) {
     try {
       if (!text || !("speechSynthesis" in global)) return;
-      var u = new SpeechSynthesisUtterance(text); u.rate = 0.92;
+      var cfg = voiceConfig();
+      var u = new SpeechSynthesisUtterance(text);
+      u.rate = cfg.rate; u.pitch = cfg.pitch;
       var voices = speechSynthesis.getVoices() || [];
-      var v = voices.filter(function (x) { return /en[-_]?US/i.test(x.lang); })[0] || voices.filter(function (x) { return /^en/i.test(x.lang); })[0];
+      var v = null;
+      if (cfg.name) v = voices.filter(function (x) { return x.name === cfg.name; })[0];
+      if (!v) v = voices.filter(function (x) { return /en[-_]?US/i.test(x.lang); })[0] || voices.filter(function (x) { return /^en/i.test(x.lang); })[0];
       if (v) u.voice = v;
       speechSynthesis.cancel(); speechSynthesis.speak(u);
     } catch (e) {}
@@ -450,7 +464,7 @@
     teachGate: teachGate, lockChoices: lockChoices, chargeVobux: chargeVobux, payVobux: payVobux,
     markRushed: markRushed, COSTS: COSTS,
     penalizeWrong: penalizeWrong, clearWrongStreak: clearWrongStreak, maybeWheel: maybeWheel,
-    rescueTap: rescueTap
+    rescueTap: rescueTap, voiceConfig: voiceConfig
   };
   // stop any speech when the tab/app is hidden (locked screen, app switch, etc.)
   if (typeof document !== "undefined") document.addEventListener("visibilitychange", function () { if (document.hidden) shush(); });

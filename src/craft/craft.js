@@ -81,6 +81,7 @@
   function persist() { try { localStorage.setItem(SAVE, JSON.stringify(save)); } catch (e) {} }
 
   var store = new StoreAPI.Store(Content.allWords());
+  window.__VOBLOX_VOICE = (store.state.profile && store.state.profile.voice) || null; // per-player voice settings
   var inv = (save.inv = save.inv || {}); // collected materials {id:count}
   var unlocked = (save.unlocked = save.unlocked || []); // crafted placeable block ids added to hotbar
   function addInv(id, n) { inv[id] = (inv[id] || 0) + (n || 1); saveTimer = 1.5; }

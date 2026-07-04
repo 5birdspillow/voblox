@@ -15,6 +15,7 @@
     window.VobloxProfile.players.applyPending(store.state, function () { store.save(); });
     window.VobloxProfile.players.list((store.state.profile && store.state.profile.name) || "Leo");
   }
+  window.__VOBLOX_VOICE = (store.state.profile && store.state.profile.voice) || null; // per-player voice settings
   var available = Content.availableLessons();
   var activeLesson = String(store.state.activeLesson || (available[0] ? available[0].lesson : 5));
   if (!Content.getLesson(activeLesson)) activeLesson = String(available[0] ? available[0].lesson : 5);
@@ -496,7 +497,7 @@
   var overlay = document.getElementById("overlay"), obox = document.getElementById("overlaybox"), overlayKey = null;
   function openOverlay(html, keyFn) { obox.innerHTML = html; overlay.style.display = "flex"; overlayOpen = true; overlayKey = keyFn || null; }
   function closeOverlay() { VQ.shush(); overlay.style.display = "none"; overlayOpen = false; overlayKey = null; keys = {}; }
-  function speak(text) { try { if (!("speechSynthesis" in window)) return; var u = new SpeechSynthesisUtterance(text); u.rate = 0.9; var v = (speechSynthesis.getVoices() || []).filter(function (x) { return /en[-_]?US/i.test(x.lang); })[0]; if (v) u.voice = v; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) {} }
+  function speak(text) { try { if (!("speechSynthesis" in window)) return; var cfg = (window.VobloxQuestions && window.VobloxQuestions.voiceConfig) ? window.VobloxQuestions.voiceConfig() : { rate: 0.9, pitch: 1, name: null }; var u = new SpeechSynthesisUtterance(text); u.rate = cfg.rate; u.pitch = cfg.pitch; var vs = speechSynthesis.getVoices() || []; var v = (cfg.name && vs.filter(function (x) { return x.name === cfg.name; })[0]) || vs.filter(function (x) { return /en[-_]?US/i.test(x.lang); })[0]; if (v) u.voice = v; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) {} }
 
   // ---- vocab gate ----
   function openGate(chest) {
@@ -541,10 +542,11 @@
     window.VobloxBoss.start({ words: words, store: store, mode: mode || "boss", title: title, onExit: gameExit });
   }
   function launchGame(game, xtra) { closeOverlay(); overlayOpen = true; game.start({ words: WORDS, store: store, onExit: gameExit, resume: !!(xtra && xtra.resume) }); }
-  function openBackpack(tab) {
+  function openBackpack(tab, lockerSlot) {
     window.VobloxArcade.open({
       store: store,
       tab: tab,
+      lockerSlot: lockerSlot,
       openOverlay: openOverlay,
       closeOverlay: closeOverlay,
       launch: launchGame,
@@ -784,6 +786,8 @@
     if (window.VobloxAvatar) avatar.applyConfig(window.VobloxAvatar.resolve(store.state));
   }
   else if (location.hash === "#players") openPlayers(); // test hook: the players overlay
+  else if (location.hash === "#locker") openBackpack("locker"); // test hook: the locker
+  else if (location.hash === "#style") openBackpack("locker", "style"); // test hook: Style panel (hair + voice)
   else if (location.hash.indexOf("#enter=") === 0) { // test hook: walk in through a building's DOOR (the path that once froze)
     var wantId = location.hash.slice(7);
     var bTarget = buildings.filter(function (b) { return b.def && (b.def.gameId === wantId || b.def.tab === wantId); })[0];

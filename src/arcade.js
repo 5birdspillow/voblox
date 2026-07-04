@@ -25,6 +25,7 @@
 
   function open(e) {
     env = e; tab = e.tab || "quests";
+    if (e.lockerSlot) lockerSlot = e.lockerSlot;
     shell();
   }
 
@@ -161,6 +162,15 @@
           (cur === col ? "outline:3px solid #ffce3a;" : "") + '" title="' + col + '"></button>';
       }).join("");
     }
+    var vc = st.profile.voice = st.profile.voice || {};
+    var enVoices = [];
+    try { enVoices = (window.speechSynthesis ? speechSynthesis.getVoices() : []).filter(function (v) { return /^en/i.test(v.lang); }); } catch (e) {}
+    var voiceOpts = '<option value="">Auto (best on this device)</option>' + enVoices.map(function (v) {
+      return '<option value="' + esc(v.name) + '"' + (vc.name === v.name ? " selected" : "") + ">" + esc(v.name.replace(/^Microsoft |^Google /, "")) + "</option>";
+    }).join("");
+    var SPEEDS = [{ r: 0.75, l: "🐢 Slow" }, { r: 0.92, l: "🙂 Normal" }, { r: 1.1, l: "🐇 Fast" }];
+    var FUNS = [{ p: 1, l: "🎙️ Normal" }, { p: 1.7, l: "🐿️ Chipmunk" }, { p: 0.6, l: "🐻 Giant" }];
+    var curRate = vc.rate || 0.92, curPitch = vc.pitch || 1;
     el.innerHTML = headerHTML() +
       '<div class="lockerwrap"><div class="lockerleft"><canvas id="lockerprev" width="170" height="220"></canvas>' +
       '<div class="lname">' + esc(st.profile.name) + "</div></div>" +
@@ -168,12 +178,36 @@
       '<h3 style="margin:8px 0 4px">💇 Hair</h3><div class="lchips">' + hairRows + "</div>" +
       '<h3 style="margin:10px 0 4px">🎨 Hair color</h3><div class="lchips">' + swatches(HAIRCOLORS, av.hairColor || "#6b4a2f", "hc") + "</div>" +
       '<h3 style="margin:10px 0 4px">🧑 Skin</h3><div class="lchips">' + swatches(SKINS, av.skin || "#ffcc88", "sk") + "</div>" +
-      '<div class="shopchest">Free forever — this is who YOU are, not stuff you buy. 💛</div></div></div>';
+      '<h3 style="margin:10px 0 4px">🔊 Voice</h3>' +
+      '<div class="lchips"><select id="vcsel" style="font:inherit;padding:6px 8px;border-radius:9px;border:2px solid #cdd8e4;max-width:230px">' + voiceOpts + "</select>" +
+      '<button class="lchip" id="vctest">▶️ Hear it</button></div>' +
+      '<div class="lchips">' + SPEEDS.map(function (s) { return '<button class="lchip' + (Math.abs(curRate - s.r) < 0.01 ? " on" : "") + '" data-vr="' + s.r + '">' + s.l + "</button>"; }).join("") + "</div>" +
+      '<div class="lchips">' + FUNS.map(function (f) { return '<button class="lchip' + (Math.abs(curPitch - f.p) < 0.01 ? " on" : "") + '" data-vp="' + f.p + '">' + f.l + "</button>"; }).join("") + "</div>" +
+      '<div class="shopchest">Free forever — this is who YOU are, not stuff you buy. 💛<br>' +
+      '<span style="font-size:11px">Tip for grown-ups: download nicer voices in Settings → Accessibility → Spoken Content → Voices, then pick them here.</span></div></div></div>';
     wireHeader();
+    function saveVoice() {
+      st.profile.voice = vc; save();
+      window.__VOBLOX_VOICE = vc; // live pages speak with it immediately
+    }
     Array.prototype.forEach.call(el.querySelectorAll("[data-ls]"), function (b) { b.onclick = function () { lockerSlot = b.dataset.ls; render(); }; });
     Array.prototype.forEach.call(el.querySelectorAll("[data-hair]"), function (b) { b.onclick = function () { av.hair = b.dataset.hair; save(); SFX().pop(); if (env.onEquip) env.onEquip(); render(); }; });
     Array.prototype.forEach.call(el.querySelectorAll("[data-hc]"), function (b) { b.onclick = function () { av.hairColor = b.dataset.hc; save(); SFX().pop(); if (env.onEquip) env.onEquip(); render(); }; });
     Array.prototype.forEach.call(el.querySelectorAll("[data-sk]"), function (b) { b.onclick = function () { av.skin = b.dataset.sk; save(); SFX().pop(); if (env.onEquip) env.onEquip(); render(); }; });
+    var sel = el.querySelector("#vcsel");
+    if (sel) sel.onchange = function () { vc.name = sel.value || null; saveVoice(); };
+    Array.prototype.forEach.call(el.querySelectorAll("[data-vr]"), function (b) { b.onclick = function () { vc.rate = +b.dataset.vr; saveVoice(); render(); }; });
+    Array.prototype.forEach.call(el.querySelectorAll("[data-vp]"), function (b) { b.onclick = function () { vc.pitch = +b.dataset.vp; saveVoice(); render(); }; });
+    var vt = el.querySelector("#vctest");
+    if (vt) vt.onclick = function () {
+      saveVoice();
+      if (window.VobloxQuestions) window.VobloxQuestions.speak("Hello " + (st.profile.name || "friend") + "! Ready to learn some awesome words?");
+    };
+    // voices load async on some devices — refresh the list once they arrive
+    if (window.speechSynthesis && !enVoices.length && !renderStyle._vw) {
+      renderStyle._vw = true;
+      speechSynthesis.addEventListener("voiceschanged", function () { if (lockerSlot === "style" && tab === "locker") render(); }, { once: true });
+    }
     startPreview();
   }
   function startPreview() {
