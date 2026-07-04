@@ -487,7 +487,8 @@
       stats.crystals = (stats.crystals || 0) + 1; sess.crystals++;
       bumpJob("crystals", 1); checkAch();
       var streakTag = (res && res.streak >= 2 && mult > 1) ? ' <span style="color:#ff9f43;font-weight:900">🔥 streak ' + res.streak + " ×" + mult + "</span>" : "";
-      var head = '<div class="fb good">✅ Crystal cracked! <span class="gain">+' + bonus + ' <img class="vbx" src="icons/vobux.png" alt="Vobux"> &amp; 2 iron ⛏️</span>' + streakTag + "</div>";
+      var spellTag = q._spellFix ? ' <span style="color:#3a8de0;font-weight:900">✏️ spelled: ' + VQ.esc(q._spellFix) + "</span>" : "";
+      var head = '<div class="fb good">✅ Crystal cracked! <span class="gain">+' + bonus + ' <img class="vbx" src="icons/vobux.png" alt="Vobux"> &amp; 2 iron ⛏️</span>' + streakTag + spellTag + "</div>";
       COVB.innerHTML = '<div class="gatehead">✨ Word Crystal</div><div class="card qcard">' + head + '<div class="reveal">' + VQ.entryHTML(q.data, { mnem: true }) + '</div><button id="wnext" class="submit big-next">Continue ⏎</button></div>';
       document.getElementById("wnext").onclick = closeWordGate;
       wordKey = function (e) { if (e.key === "Enter") closeWordGate(); };

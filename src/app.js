@@ -415,8 +415,17 @@
     var val = norm(input.value);
     if (!val) return;
     if (q.answers.indexOf(val) >= 0) { input.disabled = true; return grade(q, true); }
+    // forgiving spelling: same first letter + close = full credit (meaning > orthography)
+    for (var fi = 0; fi < q.answers.length; fi++) {
+      var fa = q.answers[fi];
+      if (fa.length >= 4 && val.charAt(0) === fa.charAt(0) && lev(val, fa) <= (fa.length >= 6 ? 2 : 1)) {
+        q._spellFix = fa;
+        input.disabled = true;
+        return grade(q, true);
+      }
+    }
     // near miss -> one gentle retry
-    var near = q.answers.some(function (a) { return a.length >= 4 && lev(val, a) === 1; });
+    var near = q.answers.some(function (a) { return a.length >= 4 && lev(val, a) <= 2; });
     if (q.hintAllowed && !q._retried && near) {
       q._retried = true;
       el("hint").textContent = "So close — check the spelling and try once more!";
@@ -471,6 +480,7 @@
     var head = correct
       ? '<div class="fb good">✅ ' + pick(["Nice!", "Yes!", "Boom!", "Correct!", "You got it!"]) +
         (earned ? ' <span class="gain">+' + earned + ' 💎</span>' : "") +
+        (q._spellFix ? ' <span class="gain" style="color:#3a8de0">✏️ spelled: ' + esc(q._spellFix) + '</span>' : "") +
         (state.combo >= 2 ? ' <span class="gain" style="color:#ff9f43">🔥 streak ' + state.combo + " ×" + multNow() + "</span>" : "") + '</div>'
       : '<div class="fb bad">❌ Not quite' + (q._lost ? " (−" + q._lost + " 💎" + (state.wrongStreak >= 2 ? " · " + state.wrongStreak + " wrong in a row!" : "") + ")" : "") + ' — read the word, then one quick check:</div>';
     var lootHTML = loot ? '<div class="loot">🎁 Loot chest! You found ' + loot + ' <span class="muted">(added to your collection)</span></div>' : "";

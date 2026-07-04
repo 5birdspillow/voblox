@@ -26,12 +26,15 @@
   };
 
   // Which formats are allowed at each Leitner box. Higher box = harder recall.
+  // NOTE: spelling is deliberately NOT part of mastery — the school quiz tests
+  // MEANING. Typed formats accept close spellings (see checkText), and the
+  // hear-it-spell-it format lives only in the opt-in Spell Quest game.
   const TIERS = {
     0: [FORMATS.WORD2DEF, FORMATS.CLOZE_MC, FORMATS.AUDIO_PICK],
     1: [FORMATS.DEF2WORD_MC, FORMATS.SYNONYM, FORMATS.ANTONYM],
     2: [FORMATS.CLOZE_TYPE],
     3: [FORMATS.DEF2WORD_TYPE],
-    4: [FORMATS.AUDIO_SPELL],
+    4: [FORMATS.DEF2WORD_TYPE, FORMATS.CLOZE_TYPE],
     5: [FORMATS.CLOZE_TYPE, FORMATS.DEF2WORD_TYPE]
   };
 

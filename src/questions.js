@@ -136,7 +136,17 @@
     var val = norm(value);
     if (!val) return "empty";
     if (q.answers.indexOf(val) >= 0) return "correct";
-    var near = q.answers.some(function (a) { return a.length >= 4 && lev(val, a) === 1; });
+    // Forgiving spelling: knowing the WORD is what counts (school quizzes test
+    // meaning, not orthography). Same first letter + a close edit distance =
+    // full credit, with the right spelling shown as a friendly tip.
+    for (var i = 0; i < q.answers.length; i++) {
+      var a = q.answers[i];
+      if (a.length >= 4 && val.charAt(0) === a.charAt(0) && lev(val, a) <= (a.length >= 6 ? 2 : 1)) {
+        q._spellFix = a;
+        return "correct";
+      }
+    }
+    var near = q.answers.some(function (a) { return a.length >= 4 && lev(val, a) <= 2; });
     return near ? "near" : "wrong";
   }
 
