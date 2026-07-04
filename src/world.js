@@ -241,7 +241,7 @@
       { tab: "shop", name: "Item Shop", emoji: "🛍️", color: 0xf0a92e, flavor: "awning", wall: 0xffe2a8, roof: 0xf0a92e },
       { tab: "locker", name: "Wardrobe", emoji: "🧢", color: 0x5aa6f0, flavor: null, wall: 0xcfe0f4, roof: 0x3a6ab0 },
       { href: "craft.html", name: "Vocraft Mine", emoji: "⛏️", color: 0x6fae3e, flavor: "tower", wall: 0x8a5a3b, roof: 0x57c04a },
-      { game: "empire", name: "Word Empire", emoji: "🏰", color: 0x8a6ad0, flavor: "tower", wall: 0xd8ccf4, roof: 0x6b5ac0 }
+      { gameId: "empire", flavor: "tower", wall: 0xd8ccf4, roof: 0x6b5ac0 }
     ];
     var R = 18.5;
     DEFS.forEach(function (d, i) {
@@ -474,9 +474,14 @@
     } else { prompt.style.display = "none"; act.style.display = "none"; }
   }
   function enterBuilding(b) {
-    if (b.def.game) launchGame(b.def.game);
+    var g = b.def.game;
+    // defensive: a def may carry an id string — resolve it, and NEVER throw into
+    // the world loop (an unresolvable game froze the whole island once)
+    if (typeof g === "string") g = (window.VobloxGames || []).filter(function (x) { return x.id === g; })[0];
+    if (g && g.start) launchGame(g);
     else if (b.def.href) location.href = b.def.href;
-    else openBackpack(b.def.tab);
+    else if (b.def.tab) openBackpack(b.def.tab);
+    else flash("🚧 This building isn't open yet!");
   }
   function tryInteract() { if (!nearest) return; if (nearest.kind === "boss") startBoss(WORDS, "boss", "Boss: " + lesson.title); else if (nearest.kind === "game") launchGame(nearest.ref.game); else if (nearest.kind === "building") enterBuilding(nearest.ref); else openGate(nearest.ref); }
   function flash(msg) { var p = document.getElementById("prompt"); p.style.display = "block"; p.innerHTML = msg; setTimeout(function () { if (!nearest) p.style.display = "none"; }, 1400); }
@@ -779,5 +784,10 @@
     if (window.VobloxAvatar) avatar.applyConfig(window.VobloxAvatar.resolve(store.state));
   }
   else if (location.hash === "#players") openPlayers(); // test hook: the players overlay
+  else if (location.hash.indexOf("#enter=") === 0) { // test hook: walk in through a building's DOOR (the path that once froze)
+    var wantId = location.hash.slice(7);
+    var bTarget = buildings.filter(function (b) { return b.def && (b.def.gameId === wantId || b.def.tab === wantId); })[0];
+    if (bTarget) setTimeout(function () { enterBuilding(bTarget); }, 600);
+  }
   if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(function () {});
 })();
