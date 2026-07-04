@@ -20,14 +20,22 @@
     dict: { name: "Dictionary", emoji: "📖", cost: 50, hp: 90, drip: 25, dripCd: 8.5, lvl: 1, tip: "makes ink" },
     wall: { name: "Book Wall", emoji: "📚", cost: 50, hp: 340, lvl: 2, tip: "very thick reading" },
     freeze: { name: "Freeze Thesaurus", emoji: "❄️", cost: 175, hp: 90, dmg: 5, cd: 1.25, slow: true, lvl: 3, tip: "chills zombies" },
+    catapult: { name: "Crayon Catapult", emoji: "🖍️", cost: 150, hp: 90, dmg: 15, cd: 2.6, lob: true, lvl: 3, tip: "splash lobs" },
     bomb: { name: "Grammar Bomb", emoji: "💥", cost: 150, hp: 60, boom: true, lvl: 4, tip: "BOOM! one use" },
+    magnet: { name: "Magnet Bookmark", emoji: "🧲", cost: 125, hp: 80, strip: true, stripCd: 7, lvl: 4, tip: "steals helmets" },
     spell: { name: "Spell Book", emoji: "📜", cost: 200, hp: 90, dmg: 11, cd: 1.1, pierce: true, word: true, lvl: 5, tip: "word-powered beam" }
   };
   var ZOMBIES = {
     basic: { name: "Scroller", emoji: "🧟", hp: 60, speed: 10, dps: 13 },
     speedy: { name: "Speed-Scroller", emoji: "🧟‍♀️", hp: 42, speed: 17, dps: 12 },
-    bucket: { name: "Helmet Head", emoji: "🪖", hp: 175, speed: 8.5, dps: 14 },
-    shield: { name: "Tablet Shield", emoji: "🛡️", hp: 260, speed: 7.5, dps: 15 },
+    bucket: { name: "Helmet Head", emoji: "🪖", hp: 175, speed: 8.5, dps: 14, armored: true },
+    shield: { name: "Tablet Shield", emoji: "🛡️", hp: 260, speed: 7.5, dps: 15, armored: true },
+    scooter: { name: "Scooter Scroller", emoji: "🛴", hp: 35, speed: 26, dps: 0, crash: 60 },
+    balloon: { name: "Balloon Scroller", emoji: "🎈", hp: 50, speed: 12, dps: 12, fly: true },
+    couch: { name: "Couch Potato", emoji: "🛋️", hp: 140, speed: 6, dps: 10, ranged: true },
+    splitter: { name: "Bot Splitter", emoji: "🤖", hp: 90, speed: 11, dps: 12, split: true },
+    mini: { name: "Mini Bot", emoji: "🤖", hp: 25, speed: 15, dps: 8, small: true },
+    miniboss: { name: "SIR HELMET", emoji: "🪖", hp: 420, speed: 6.5, dps: 22, big: true, armored: true },
     boss: { name: "THE DOOMSCROLLER", emoji: "📺", hp: 950, speed: 5.5, dps: 45, big: true }
   };
   // level design: which rows are open, the spawn timeline, and what unlocks
@@ -44,27 +52,39 @@
       L.unlock = ["wall"];
       [12, 24, 36, 46, 56, 64, 72, 82, 92, 100].forEach(function (t, i) { L.spawns.push(wave(t, i % 3 === 2 ? "speedy" : "basic", R(L.rows))); });
     } else if (n === 3) {
-      L.rows = [0, 1, 2, 3, 4]; L.intro = "Helmet Heads incoming. Freeze them before they chew the shelves!";
-      L.unlock = ["freeze"];
+      L.rows = [0, 1, 2, 3, 4]; L.intro = "Helmet Heads and Scooters! Freeze them — and meet the 🖍️ Catapult.";
+      L.unlock = ["freeze", "catapult"];
       [10, 20, 30, 40, 48, 56, 64, 72, 80, 88].forEach(function (t, i) { L.spawns.push(wave(t, i % 4 === 3 ? "bucket" : i % 3 === 2 ? "speedy" : "basic", R(L.rows))); });
+      [58, 84].forEach(function (t) { L.spawns.push(wave(t, "scooter", R(L.rows))); });
       [104, 104, 106, 108].forEach(function (t) { L.spawns.push(wave(t, "basic", R(L.rows))); });
+      L.spawns.push(wave(112, "miniboss", 2));
       L.huge = [102];
     } else if (n === 4) {
-      L.rows = [0, 1, 2, 3, 4]; L.intro = "Tablet Shields! It takes serious firepower — or a Grammar Bomb.";
-      L.unlock = ["bomb"];
+      L.rows = [0, 1, 2, 3, 4]; L.intro = "Tablet Shields and Balloons! The 🧲 Magnet steals their armor…";
+      L.unlock = ["bomb", "magnet"];
       [10, 18, 26, 34, 42, 50, 58, 66, 74, 82, 90, 98].forEach(function (t, i) { L.spawns.push(wave(t, i % 5 === 4 ? "shield" : i % 4 === 3 ? "bucket" : i % 3 === 2 ? "speedy" : "basic", R(L.rows))); });
+      [45, 70].forEach(function (t) { L.spawns.push(wave(t, "balloon", R(L.rows))); });
+      L.spawns.push(wave(88, "couch", R(L.rows)));
       [112, 112, 114, 114, 116, 118].forEach(function (t, i) { L.spawns.push(wave(t, i % 2 ? "bucket" : "basic", R(L.rows))); });
+      L.spawns.push(wave(122, "miniboss", 1));
       L.huge = [110];
     } else {
       L.rows = [0, 1, 2, 3, 4]; L.intro = "THE DOOMSCROLLER is here. Place the 📜 Spell Book — words beat screens!";
       L.unlock = ["spell"];
       [10, 18, 26, 34, 40, 46, 52, 58, 64, 70, 76, 82, 88, 94].forEach(function (t, i) { L.spawns.push(wave(t, ["basic", "speedy", "bucket", "shield"][i % 4], R(L.rows))); });
+      [50, 72].forEach(function (t) { L.spawns.push(wave(t, "splitter", R(L.rows))); });
+      L.spawns.push(wave(85, "balloon", R(L.rows)));
+      L.spawns.push(wave(98, "couch", R(L.rows)));
       L.spawns.push(wave(108, "boss", 2));
       [116, 118, 120, 122].forEach(function (t, i) { L.spawns.push(wave(t, i % 2 ? "speedy" : "bucket", R(L.rows))); });
       L.huge = [106];
     }
     L.spawns.sort(function (a, b) { return a.t - b.t; });
     return L;
+  }
+  // 🌙 Midnight Library: endless survival — waves forever, faster and meaner
+  function endlessPlan() {
+    return { rows: [0, 1, 2, 3, 4], spawns: [], endless: true, unlock: [], intro: "Survive as long as you can. The horde never ends…" };
   }
 
   function start(opts) {
@@ -83,32 +103,46 @@
       '<div id="bkbar"></div>';
     document.body.appendChild(wrap);
     var cv = wrap.querySelector("#bkcv"), ctx = cv.getContext("2d");
-    var W, H, S, OX, OY, portrait = false, compact = false;
-    // responsive grid metrics: on phones the lawn goes EDGE TO EDGE with wide
-    // PvZ-mobile tiles (logical width expands to fill; zombie/shot speeds rescale)
+    var W, H, S, OX, OY, compact = false, vertical = false;
+    // responsive grid metrics. TWO orientations, ONE logic space:
+    //  - landscape: lanes run left→right (zombies walk left), classic PvZ
+    //  - portrait ("vertical"): the battlefield TRANSPOSES — lanes are columns,
+    //    zombies descend from the top, carts guard the bottom. Same logic,
+    //    different screen mapping (X/Y below). No more rotate-your-phone gate.
     var MWv = MW, GXv = 118, GYv = 96, CWv = 92, CHv = 88, SPD = 1;
-    var rot = document.createElement("div"); rot.className = "rotgate"; rot.innerHTML = "🔄<br>Turn your phone sideways,<br>Librarian!"; wrap.appendChild(rot);
     function resize() {
       W = cv.width = wrap.clientWidth; H = cv.height = wrap.clientHeight;
-      compact = H < 480 || W < 900;
+      vertical = H > W;
+      compact = Math.min(W, H) < 520 || Math.max(W, H) < 900;
       wrap.classList.toggle("compact", compact);
-      var reserve = compact ? 86 : 132; // real HUD + build-bar heights
-      S = (H - reserve) / MH;
-      if (!compact) S = Math.min(S, W / MW);
-      MWv = Math.max(MW, Math.floor(W / S) - 4); // fill the physical width
-      GXv = compact ? 66 : 118; GYv = compact ? 10 : 96;
-      CWv = (MWv - GXv - 16) / COLS;
-      // on phones, ONLY the open lanes render — a 3-lane level gets huge full-height rows
       var rowsN = (compact && plan) ? Math.max(3, plan.rows.length) : ROWS;
+      GYv = compact ? 10 : (vertical ? 14 : 96);
       CHv = (MH - GYv - 8) / rowsN;
-      SPD = CWv / 92; // keep crossing-time balance no matter how wide the tiles get
-      OX = Math.max(0, (W - MWv * S) / 2);
-      OY = compact ? 40 : Math.max(36, (H - reserve - MH * S) / 2 + 36);
-      portrait = W < H && W < 700;
-      rot.style.display = portrait ? "flex" : "none";
+      if (vertical) {
+        // lanes across the WIDTH, depth down the HEIGHT
+        var reserveV = compact ? 96 : 140;
+        S = (W - 8) / MH;
+        MWv = Math.max(760, Math.floor((H - reserveV) / S) - 4);
+        GXv = 54;
+        OX = Math.max(0, (W - MH * S) / 2);
+        OY = 44;
+      } else {
+        var reserve = compact ? 86 : 132;
+        S = (H - reserve) / MH;
+        if (!compact) S = Math.min(S, W / MW);
+        MWv = Math.max(MW, Math.floor(W / S) - 4);
+        GXv = compact ? 66 : 118;
+        OX = Math.max(0, (W - MWv * S) / 2);
+        OY = compact ? 40 : Math.max(36, (H - reserve - MH * S) / 2 + 36);
+      }
+      CWv = (MWv - GXv - 16) / COLS;
+      SPD = CWv / 92; // crossing-time balance no matter the tile size
     }
     resize(); window.addEventListener("resize", resize);
-    function px(x) { return OX + x * S; } function py(y) { return OY + y * S; } function pz(n) { return n * S; }
+    // point transform: logical (x = depth toward the books, y = lane position)
+    function X(x, y) { return vertical ? OX + y * S : OX + x * S; }
+    function Y(x, y) { return vertical ? OY + (MWv - x) * S : OY + y * S; }
+    function pz(n) { return n * S; }
     function tileX(c) { return GXv + c * CWv + CWv / 2; }
     function tileY(r) {
       var vr = r;
@@ -123,11 +157,12 @@
     var level = 0, plan = null, run = 0, ink = 0, over = false, paused = false, endShown = false;
     var plants = [], zombies = [], shots = [], carts = [], spawnIdx = 0, hugeShown = {};
     var selected = null, rushCd = 0, lastFmt = null, kills = 0, rushes = 0;
+    var drops = [], dropT = 9, pw = 0, pwUsed = 0, zshots = [], endT = 6, endWave = 0;
 
     var msgEl = document.getElementById("bkmsg"), bigEl = document.getElementById("bkbig");
     function big(m, col) { bigEl.textContent = m; bigEl.style.color = col || "#fff"; bigEl.style.opacity = "1"; setTimeout(function () { bigEl.style.opacity = "0"; }, 1300); }
     function hud() {
-      document.getElementById("bkink").textContent = "🖋 " + ink;
+      document.getElementById("bkink").textContent = "🖋 " + ink + (pw > 0 ? "  ⚡" + pw : "");
       var total = plan ? plan.spawns.length : 0;
       document.getElementById("bkwave").textContent = plan ? "🧟 " + Math.min(spawnIdx, total) + "/" + total : "";
     }
@@ -136,25 +171,34 @@
     function showSelect() {
       level = 0; plan = null; paused = true;
       var end = document.getElementById("bkend");
+      var st3 = stats.stars || {};
       var rows = [1, 2, 3, 4, 5].map(function (n) {
-        var open = n <= stats.lvl, done = n < stats.lvl;
+        var open = n <= stats.lvl;
+        var sn = st3[n] || 0;
+        var starTxt = sn > 0 ? "⭐".repeat(sn) : (open ? "▶ " : "🔒 ");
         return '<button class="embtn" style="min-width:118px' + (open ? "" : ";opacity:.45") + '" data-lv="' + n + '">' +
-          '<span class="ebl">' + (done ? "⭐ " : open ? "▶ " : "🔒 ") + "Level " + n + "</span>" +
+          '<span class="ebl">' + starTxt + " Lv " + n + "</span>" +
           '<span class="ebs">' + ["First Shelf", "Five Rooms", "Helmet Heads", "Tablet Shields", "THE BOSS"][n - 1] + "</span></button>";
       }).join("");
-      end.innerHTML = '<div class="wqcard" style="text-align:center;max-width:560px"><div style="font-size:40px">📚🧟</div>' +
+      var endlessBtn = '<button class="embtn study" style="min-width:150px' + (stats.beatBoss ? "" : ";opacity:.45") + '" id="bk_endless">' +
+        '<span class="ebl">🌙 Midnight Library</span><span class="ebs">' + (stats.beatBoss ? ("endless! best: wave " + (stats.endlessBest || 0)) : "beat THE BOSS to unlock") + "</span></button>";
+      end.innerHTML = '<div class="wqcard" style="text-align:center;max-width:580px"><div style="font-size:40px">📚🧟</div>' +
         '<div class="wqtitle" style="font-size:20px">Books vs Zombies</div>' +
         '<div style="margin:4px 0 10px;color:#5a6b7a;font-weight:bold">The Brain-Rot horde is at the doors. Knowledge is the only weapon.</div>' +
-        '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">' + rows + "</div></div>";
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">' + rows + endlessBtn + "</div>" +
+        '<div style="font-size:11px;color:#8a98a8;margin-top:8px">⭐ per level: win · keep all carts · use 2+ ⚡ Power Words</div></div>';
       end.style.display = "flex";
       Array.prototype.forEach.call(end.querySelectorAll("[data-lv]"), function (b) {
         b.onclick = function () { var n = +b.dataset.lv; if (n <= stats.lvl) beginLevel(n); else big("🔒 Beat Level " + (n - 1) + " first!", "#ffd740"); };
       });
+      var eb = document.getElementById("bk_endless");
+      if (eb) eb.onclick = function () { if (stats.beatBoss) beginLevel(6); else big("🔒 Beat THE BOSS first!", "#ffd740"); };
     }
     function beginLevel(n) {
-      level = n; plan = levelPlan(n);
-      run = 0; ink = 75; spawnIdx = 0; hugeShown = {}; kills = 0; rushes = 0;
-      plants = []; zombies = []; shots = []; selected = null; rushCd = 0; over = false; endShown = false;
+      level = n; plan = n === 6 ? endlessPlan() : levelPlan(n);
+      run = 0; ink = n === 6 ? 150 : 75; spawnIdx = 0; hugeShown = {}; kills = 0; rushes = 0;
+      plants = []; zombies = []; shots = []; zshots = []; drops = []; selected = null; rushCd = 0; over = false; endShown = false;
+      pw = 0; pwUsed = 0; dropT = 9; endT = 8; endWave = 0;
       for (var r = 0; r < ROWS; r++) { plants.push([null, null, null, null, null, null, null, null, null]); }
       carts = plan.rows.map(function (r) { return { row: r, used: false, x: GXv - 52, rolling: false }; });
       resize(); // row metrics depend on how many lanes this level opens
@@ -166,23 +210,36 @@
     }
     function endLevel(won) {
       if (over) return; over = true; paused = true;
+      var endless = plan && plan.endless;
       var res = store.recordGame ? store.recordGame("books", {
         win: won,
-        score: kills * 4 + rushes * 10 + level * 20,
-        rankPtsDelta: won ? Math.min(12, 3 + level * 2) : 2,
+        score: kills * 4 + rushes * 10 + (endless ? endWave * 8 : level * 20),
+        rankPtsDelta: won ? Math.min(12, 3 + level * 2) : (endless ? Math.min(8, 1 + Math.floor(endWave / 4)) : 2),
         xp: Math.min(60, 8 + kills * 2 + rushes * 5 + (won ? level * 6 : 0)),
-        gems: won ? 10 + level * 5 : 5
+        gems: won ? 10 + level * 5 : (endless ? Math.min(20, 3 + endWave) : 5)
       }) : null;
       if (won && level >= stats.lvl && level < 5) { stats.lvl = level + 1; store.save(); }
       if (won && level === 5) { stats.beatBoss = true; store.save(); }
+      // ⭐ star challenges: win / keep every book cart / unleash 2+ Power Words
+      var earned = 0;
+      if (won && !endless) {
+        earned = 1 + (carts.every(function (ct) { return !ct.used && !ct.rolling; }) ? 1 : 0) + (pwUsed >= 2 ? 1 : 0);
+        stats.stars = stats.stars || {};
+        if (earned > (stats.stars[level] || 0)) { stats.stars[level] = earned; store.save(); }
+      }
+      if (endless && endWave > (stats.endlessBest || 0)) { stats.endlessBest = endWave; store.save(); }
       var end = document.getElementById("bkend");
-      end.innerHTML = '<div class="wqcard" style="text-align:center"><div style="font-size:44px">' + (won ? "🏆" : "🧟") + '</div>' +
-        '<div class="wqtitle" style="font-size:20px">' + (won ? (level === 5 ? "THE LIBRARY IS SAVED! You beat the Doomscroller!" : "Level " + level + " cleared!") : "The zombies reached the shelves…") + "</div>" +
-        '<div style="margin:6px 0">🧟 ' + kills + " munched · 🖋 " + rushes + " ink rushes" + (res && res.rankedUp ? "<br>🎖 RANK UP!" : "") + "</div>" +
+      var title = endless ? "🌙 The library fell on wave " + endWave + (endWave >= (stats.endlessBest || 0) ? " — NEW RECORD!" : "!") :
+        won ? (level === 5 ? "THE LIBRARY IS SAVED! You beat the Doomscroller!" : "Level " + level + " cleared!") : "The zombies reached the shelves…";
+      var starRow = (won && !endless) ? '<div style="font-size:26px;margin:2px 0">' + "⭐".repeat(earned) + "☆".repeat(3 - earned) + '</div>' +
+        '<div style="font-size:11px;color:#5a6b7a">win · keep all carts · use 2+ ⚡ Power Words</div>' : "";
+      end.innerHTML = '<div class="wqcard" style="text-align:center"><div style="font-size:44px">' + (won ? "🏆" : endless ? "🌙" : "🧟") + '</div>' +
+        '<div class="wqtitle" style="font-size:20px">' + title + "</div>" + starRow +
+        '<div style="margin:6px 0">🧟 ' + kills + " munched · 🖋 " + rushes + " ink rushes · ⚡ " + pwUsed + " power words" + (res && res.rankedUp ? "<br>🎖 RANK UP!" : "") + "</div>" +
         '<button class="submit big-next" id="bknext">' + (won && level < 5 ? "Next level ➜" : "Level select") + "</button></div>";
       end.style.display = "flex";
       if (won && sfx && sfx.fanfare) sfx.fanfare();
-      if (won && juice) juice.shake(6);
+      if (won && juice) { juice.shake(6); for (var cf = 0; cf < 5; cf++) juice.burst(W * (0.2 + cf * 0.15), H * 0.3, ["#ffd23f", "#69f0ae", "#40c4ff", "#ff6b6b", "#e040fb"][cf], 16); }
       document.getElementById("bknext").onclick = function () {
         if (won && level < 5) beginLevel(level + 1); else showSelect();
       };
@@ -221,9 +278,10 @@
           lastFmt = fmt; paused = false;
           if (ok) {
             ink += 150; rushes++; rushCd = 15;
-            big("🖋 +150 INK!", "#69f0ae");
+            pw = Math.min(2, pw + 1); // every studied word also charges a ⚡ POWER WORD
+            big("🖋 +150 INK & ⚡ POWER WORD! Tap a book to unleash it!", "#69f0ae");
             if (sfx && sfx.coin) sfx.coin();
-            if (juice) juice.burst(px(60), py(60), "#69f0ae", 14);
+            if (juice) juice.burst(60, 60, "#69f0ae", 14);
           } else big("The pen ran dry…", "#ff8a8a");
           hud(); renderBar();
         }
@@ -241,7 +299,7 @@
       var def = BOOKS[k];
       plants[r][c] = { k: k, hp: def.hp, maxHp: def.hp, cd: 1 + Math.random(), drip: def.dripCd || 0, r: r, c: c, flash: 0 };
       ink -= def.cost; selected = null;
-      if (juice) juice.burst(px(tileX(c)), py(tileY(r)), "#9be15d", 10);
+      if (juice) juice.burst(X(tileX(c), tileY(r)), Y(tileX(c), tileY(r)), "#9be15d", 10);
       if (sfx && sfx.pop) sfx.pop();
       if (def.boom) { // Grammar Bomb: fuse then BOOM
         setTimeout(function () { explode(r, c); }, 900);
@@ -276,7 +334,7 @@
         var z = zombies[i];
         if (z.row >= r - 1 && z.row <= r + 1 && Math.abs(z.x - tileX(c)) < CWv * 1.7) hurtZ(z, 95);
       }
-      if (juice) { juice.shake(10); juice.burst(px(tileX(c)), py(tileY(r)), "#ff9f43", 24); }
+      if (juice) { juice.shake(10); juice.burst(X(tileX(c), tileY(r)), Y(tileX(c), tileY(r)), "#ff9f43", 24); }
       if (sfx) { sfx.tone && sfx.tone(80, 0.35, 0.09); }
     }
 
@@ -284,14 +342,21 @@
     function spawnZombie(type, row) {
       var def = ZOMBIES[type];
       zombies.push({ type: type, row: row, x: MWv + 30, hp: def.hp, maxHp: def.hp, speed: def.speed, dps: def.dps, chill: 0, groan: Math.random() * 6 });
+      if (def.big) { big("📺 " + def.name + " HAS ENTERED THE LIBRARY!", "#c9b6ff"); if (sfx && sfx.buzz) sfx.buzz(); }
+      else if (sfx && sfx.buzz && Math.random() < 0.25) sfx.buzz();
     }
     function hurtZ(z, dmg) {
       z.hp -= dmg;
-      if (juice && Math.random() < 0.4) juice.text(px(z.x), py(tileY(z.row) - 40), "-" + dmg, "#ffd740");
+      if (juice && Math.random() < 0.4) juice.text(X(z.x, tileY(z.row) - 40), Y(z.x, tileY(z.row) - 40), "-" + dmg, "#ffd740");
       if (z.hp <= 0) {
         kills++;
         var zi = zombies.indexOf(z); if (zi >= 0) zombies.splice(zi, 1);
-        if (juice) juice.burst(px(z.x), py(tileY(z.row)), "#9aa86a", 12);
+        if (ZOMBIES[z.type].split) { // 🤖 breaks into two angry minis
+          spawnZombie("mini", z.row); zombies[zombies.length - 1].x = z.x - 14;
+          spawnZombie("mini", z.row); zombies[zombies.length - 1].x = z.x + 14;
+          big("🤖 IT SPLIT!", "#ffd740");
+        }
+        if (juice) juice.burst(X(z.x, tileY(z.row)), Y(z.x, tileY(z.row)), "#9aa86a", 12);
         if (sfx && sfx.pop && Math.random() < 0.5) sfx.pop();
         hud();
       }
@@ -300,6 +365,31 @@
       run += dt;
       rushCd = Math.max(0, rushCd - dt);
       if (Math.floor(run) !== Math.floor(run - dt) && Math.floor(run) % 3 === 0) renderBar(); // refresh cooldown/costs
+      // 🌙 endless: generated waves, faster and meaner the longer you survive
+      if (plan.endless) {
+        endT -= dt;
+        if (endT <= 0) {
+          endWave++;
+          endT = Math.max(3.5, 15 - run / 25);
+          var pool = ["basic", "basic", "speedy"];
+          if (run > 45) pool.push("bucket", "scooter");
+          if (run > 90) pool.push("shield", "balloon", "splitter");
+          if (run > 150) pool.push("couch", "miniboss");
+          var n2 = 1 + Math.floor(run / 60);
+          for (var ei = 0; ei < Math.min(4, n2); ei++) spawnZombie(pool[Math.floor(Math.random() * pool.length)], plan.rows[Math.floor(Math.random() * plan.rows.length)]);
+          if (endWave % 5 === 0) big("🌙 Wave " + endWave + " — still standing!", "#c9b6ff");
+        }
+      }
+      // 💧 ink drips from the library ceiling — tap it before it dries!
+      dropT -= dt;
+      if (dropT <= 0) {
+        dropT = 9 + Math.random() * 5;
+        var dr = plan.rows[Math.floor(Math.random() * plan.rows.length)];
+        var dc = 1 + Math.floor(Math.random() * (COLS - 2));
+        drops.push({ x: tileX(dc), y: tileY(dr), t: 7 });
+        if (sfx && sfx.pop) sfx.pop();
+      }
+      for (var dd = drops.length - 1; dd >= 0; dd--) { drops[dd].t -= dt; if (drops[dd].t <= 0) drops.splice(dd, 1); }
       // spawns
       while (spawnIdx < plan.spawns.length && plan.spawns[spawnIdx].t <= run) {
         var s = plan.spawns[spawnIdx++]; spawnZombie(s.type, s.row); hud();
@@ -312,44 +402,94 @@
         var p = plants[r][c]; if (!p) continue;
         var def = BOOKS[p.k];
         p.flash = Math.max(0, p.flash - dt);
-        if (def.drip) { p.drip -= dt; if (p.drip <= 0) { p.drip = def.dripCd; ink += def.drip; hud(); if (juice) juice.text(px(tileX(c)), py(tileY(r) - 30), "+" + def.drip + "🖋", "#8ecdf7"); } }
+        if (def.drip) { p.drip -= dt; if (p.drip <= 0) { p.drip = def.dripCd; ink += def.drip; hud(); if (juice) juice.text(X(tileX(c), tileY(r) - 30), Y(tileX(c), tileY(r) - 30), "+" + def.drip + "🖋", "#8ecdf7"); } }
         if (def.dmg) {
           var target = null;
-          for (var zi = 0; zi < zombies.length; zi++) { var z = zombies[zi]; if (z.row === r && z.x > tileX(c) - 10 && z.x < MW + 20) { if (!target || z.x < target.x) target = z; } }
+          // MWv, not MW: on wide phones zombies on the right third were invisible to
+          // targeting (looked like walls blocked shots). Shots always pass over walls.
+          for (var zi = 0; zi < zombies.length; zi++) { var z = zombies[zi]; if (z.row === r && z.x > tileX(c) - 10 && z.x < MWv + 40) { if (!target || z.x < target.x) target = z; } }
           if (target) {
             p.cd -= dt;
             if (p.cd <= 0) {
-              p.cd = def.cd;
-              shots.push({ x: tileX(c) + 20, y: tileY(r) - 14, row: r, dmg: def.dmg, slow: !!def.slow, pierce: !!def.pierce, hit: {}, ch: String.fromCharCode(65 + Math.floor(Math.random() * 26)) });
+              p.cd = def.cd; p.fireK = run;
+              shots.push({ x: tileX(c) + 20, y: tileY(r) - 14, row: r, dmg: def.dmg, slow: !!def.slow, pierce: !!def.pierce, lob: !!def.lob, born: run, hit: {}, ch: def.lob ? "🖍️" : String.fromCharCode(65 + Math.floor(Math.random() * 26)) });
               if (sfx && sfx.pop && Math.random() < 0.2) sfx.pop();
             }
           }
         }
+        if (def.strip) { // 🧲 magnet: yanks the armor off Helmet Heads and Tablet Shields
+          p.stripT = (p.stripT === undefined ? 2 : p.stripT) - dt;
+          if (p.stripT <= 0) {
+            var vic = null;
+            for (var az = 0; az < zombies.length; az++) { var zv = zombies[az]; if (zv.row === r && ZOMBIES[zv.type].armored && !ZOMBIES[zv.type].big && zv.x > tileX(c) - 10 && zv.x < tileX(c) + CWv * 5.5) { vic = zv; break; } }
+            if (vic) {
+              p.stripT = def.stripCd;
+              vic.type = "basic"; vic.hp = Math.min(vic.hp, 60); vic.maxHp = 60;
+              vic.speed = ZOMBIES.basic.speed; vic.dps = ZOMBIES.basic.dps;
+              if (juice) { juice.text(X(vic.x, tileY(r) - 30), Y(vic.x, tileY(r) - 30), "🧲 CLANK!", "#8ecdf7"); juice.burst(X(vic.x, tileY(r)), Y(vic.x, tileY(r)), "#cfd6dd", 10); }
+              if (sfx && sfx.pop) sfx.pop();
+            } else p.stripT = 0.5;
+          }
+        }
       }
-      // shots fly
+      // 🛋 couch potatoes throw pillows at your front line
+      for (var qs = zshots.length - 1; qs >= 0; qs--) {
+        var q2 = zshots[qs];
+        q2.x -= 240 * SPD * dt;
+        var qcol = Math.floor((q2.x - GXv) / CWv);
+        var qp = (qcol >= 0 && qcol < COLS) ? plants[q2.row][qcol] : null;
+        if (qp) {
+          qp.hp -= q2.dmg; qp.flash = 0.15;
+          if (qp.hp <= 0) plants[q2.row][qcol] = null;
+          zshots.splice(qs, 1);
+        } else if (q2.x < GXv - 30) zshots.splice(qs, 1);
+      }
+      // shots fly (crayon lobs are slower and SPLASH on impact)
       for (var si = shots.length - 1; si >= 0; si--) {
         var sh = shots[si];
-        sh.x += 300 * SPD * dt;
+        sh.x += (sh.lob ? 185 : 300) * SPD * dt;
         var gone = sh.x > MWv + 20;
         for (var z2i = 0; z2i < zombies.length && !gone; z2i++) {
           var z2 = zombies[z2i];
           if (z2.row === sh.row && Math.abs(z2.x - sh.x) < 22 && !sh.hit[z2i]) {
             hurtZ(z2, sh.dmg);
             if (sh.slow) z2.chill = 3;
-            if (sh.pierce) { sh.hit[z2i] = 1; } else gone = true;
+            if (sh.lob) { // splash!
+              for (var sp2 = zombies.length - 1; sp2 >= 0; sp2--) { var zn = zombies[sp2]; if (zn !== z2 && Math.abs(zn.row - sh.row) <= 1 && Math.abs(zn.x - sh.x) < CWv * 0.9) hurtZ(zn, Math.round(sh.dmg * 0.6)); }
+              if (juice) juice.burst(X(sh.x, tileY(sh.row)), Y(sh.x, tileY(sh.row)), "#ff9f43", 12);
+              gone = true;
+            }
+            else if (sh.pierce) { sh.hit[z2i] = 1; } else gone = true;
           }
         }
         if (gone) shots.splice(si, 1);
       }
-      // zombies advance + munch
+      // zombies advance + munch (each type with its own tricks)
       for (var zj = zombies.length - 1; zj >= 0; zj--) {
         var zz = zombies[zj];
+        var zdef = ZOMBIES[zz.type];
         zz.chill = Math.max(0, zz.chill - dt);
         var sp = zz.speed * SPD * (zz.chill > 0 ? 0.5 : 1);
-        // munch the first plant in reach
         var col = Math.floor((zz.x - 24 - GXv) / CWv);
         var plant = (col >= 0 && col < COLS) ? plants[zz.row][col] : null;
-        if (plant && zz.x - 24 <= tileX(col) + CWv * 0.3) {
+        var atPlant = plant && zz.x - 24 <= tileX(col) + CWv * 0.3;
+        if (zdef.fly) { // 🎈 floats right over your books
+          zz.x -= sp * dt;
+        } else if (zdef.ranged) { // 🛋 stops and throws pillows from range
+          var frontPlant = null;
+          for (var fc = COLS - 1; fc >= 0; fc--) { if (plants[zz.row][fc] && tileX(fc) < zz.x && zz.x - tileX(fc) < CWv * 4.5) { frontPlant = fc; break; } }
+          if (frontPlant !== null) {
+            zz.throwT = (zz.throwT === undefined ? 1.2 : zz.throwT) - dt;
+            if (zz.throwT <= 0) { zz.throwT = 3; zshots.push({ x: zz.x - 26, row: zz.row, dmg: 6 }); if (sfx && sfx.whoosh) sfx.whoosh(); }
+          } else zz.x -= sp * dt;
+        } else if (atPlant) {
+          if (zdef.crash) { // 🛴 kamikaze into the first thing it touches
+            plant.hp -= zdef.crash; plant.flash = 0.2;
+            if (plant.hp <= 0) plants[zz.row][col] = null;
+            if (juice) { juice.burst(X(zz.x, tileY(zz.row)), Y(zz.x, tileY(zz.row)), "#ffd740", 14); juice.shake(4); }
+            zombies.splice(zj, 1); kills++;
+            continue;
+          }
           plant.hp -= zz.dps * dt; plant.flash = 0.15;
           if (plant.hp <= 0) { plants[zz.row][col] = null; if (sfx && sfx.buzz && Math.random() < 0.3) sfx.buzz(); }
         } else {
@@ -368,76 +508,166 @@
         for (var ci = zombies.length - 1; ci >= 0; ci--) { if (zombies[ci].row === ct.row && zombies[ci].x < ct.x + 40) { kills++; zombies.splice(ci, 1); } }
         if (ct.x > MWv + 60) { ct.rolling = false; ct.used = true; }
       });
-      // victory: everything spawned and cleared
-      if (spawnIdx >= plan.spawns.length && zombies.length === 0 && !over) endLevel(true);
+      // victory: everything spawned and cleared (endless never ends by winning)
+      if (!plan.endless && spawnIdx >= plan.spawns.length && zombies.length === 0 && !over) endLevel(true);
     }
 
     // ---------- drawing ----------
     function rrect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+    // a logical rect (x,y,w,h) → screen rect in either orientation
+    function TR(x, y, w, h) {
+      var ax = X(x, y), ay = Y(x, y), bx2 = X(x + w, y + h), by2 = Y(x + w, y + h);
+      return { x: Math.min(ax, bx2), y: Math.min(ay, by2), w: Math.abs(bx2 - ax), h: Math.abs(by2 - ay) };
+    }
+    // small screen-space health bar under a sprite (always horizontal, readable)
+    function bar(cx, cy, wpx, f, col) {
+      if (f >= 1) return;
+      ctx.fillStyle = "rgba(0,0,0,.4)"; ctx.fillRect(cx - wpx / 2, cy, wpx, 5);
+      ctx.fillStyle = col; ctx.fillRect(cx - wpx / 2, cy, wpx * Math.max(0, f), 5);
+    }
     function draw() {
       ctx.clearRect(0, 0, W, H);
-      // library backdrop: warm wall + bookshelf stripes
+      // library backdrop: warm wall + bookshelf stripes (roomy screens only)
       var g1 = ctx.createLinearGradient(0, 0, 0, H); g1.addColorStop(0, "#5b4632"); g1.addColorStop(1, "#3c2e20");
       ctx.fillStyle = g1; ctx.fillRect(0, 0, W, H);
-      if (!compact) for (var b = 0; b < 12; b++) {
-        ctx.fillStyle = ["#c65b4e", "#5b8ac6", "#c6a94e", "#6ac65b", "#9a6ac6"][b % 5];
-        ctx.fillRect(px(20 + b * 82), py(18), pz(30), pz(52));
+      if (!compact && !vertical) {
+        for (var b = 0; b < 12; b++) {
+          ctx.fillStyle = ["#c65b4e", "#5b8ac6", "#c6a94e", "#6ac65b", "#9a6ac6"][b % 5];
+          ctx.fillRect(OX + pz(20 + b * 82), OY - pz(80), pz(30), pz(52));
+        }
+        ctx.fillStyle = "rgba(0,0,0,.25)"; ctx.fillRect(0, OY - pz(24), W, pz(8));
       }
-      ctx.fillStyle = "rgba(0,0,0,.25)"; ctx.fillRect(0, py(74), W, pz(8));
       if (!plan) return;
-      // floor tiles: on phones only OPEN lanes render (full height); desktop shows all
+      var spriteS = pz(Math.min(CHv, CWv * 1.15) * 0.66);
+      // floor tiles: on phones only OPEN lanes render (full size)
       var floorRows = compact ? plan.rows : [0, 1, 2, 3, 4];
       floorRows.forEach(function (r) {
         var open = plan.rows.indexOf(r) >= 0;
         for (var c = 0; c < COLS; c++) {
           ctx.fillStyle = !open ? "rgba(0,0,0,.35)" : ((r + c) % 2 ? "#8a6a4a" : "#967553");
-          ctx.fillRect(px(GXv + c * CWv), py(tileY(r) - CHv / 2), pz(CWv - 3), pz(CHv - 3));
+          var t = TR(GXv + c * CWv, tileY(r) - CHv / 2, CWv - 3, CHv - 3);
+          ctx.fillRect(t.x, t.y, t.w, t.h);
         }
       });
-      // selected ghost
-      if (selected) { ctx.fillStyle = "rgba(155,225,93,.25)"; ctx.fillRect(px(GXv), py(GYv), pz(COLS * CWv), pz(ROWS * CHv)); }
+      if (selected) {
+        ctx.fillStyle = "rgba(155,225,93,.25)";
+        var g = TR(GXv, GYv, COLS * CWv, ROWS * CHv);
+        ctx.fillRect(g.x, g.y, g.w, g.h);
+      }
+      // 💧 ink drops (tap to collect!)
+      drops.forEach(function (d) {
+        var pulse = 1 + Math.sin(run * 6 + d.x) * 0.12;
+        ctx.font = Math.round(spriteS * 0.8 * pulse) + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText("🖋", X(d.x, d.y), Y(d.x, d.y));
+        ctx.font = "bold " + Math.round(spriteS * 0.3) + "px Trebuchet MS"; ctx.fillStyle = "#8ecdf7";
+        ctx.fillText("+15", X(d.x, d.y), Y(d.x, d.y) + spriteS * 0.62);
+      });
       // carts
       carts.forEach(function (ct) {
         if (ct.used && !ct.rolling) return;
-        ctx.font = Math.round(pz(CHv * 0.52)) + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.fillText("🛒", px(ct.rolling ? ct.x : GXv - 52), py(tileY(ct.row)));
+        ctx.font = Math.round(spriteS * 0.8) + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        var cxx = ct.rolling ? ct.x : GXv - 52;
+        ctx.fillText("🛒", X(cxx, tileY(ct.row)), Y(cxx, tileY(ct.row)));
       });
       // plants
       for (var pr = 0; pr < ROWS; pr++) for (var pc = 0; pc < COLS; pc++) {
         var p = plants[pr][pc]; if (!p) continue;
         var bx = tileX(pc), by = tileY(pr);
-        var bob = Math.sin(run * 3 + pc + pr) * 2.5;
-        ctx.font = Math.round(pz(CHv * 0.66)) + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        var bob = Math.sin(run * 3 + pc + pr) * 2.5 + (p.fireK ? -Math.sin(Math.min(1, (run - p.fireK) * 6) * Math.PI) * 4 : 0);
+        var cxs = X(bx, by), cys = Y(bx, by) + pz(bob);
+        ctx.font = Math.round(spriteS) + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
         if (p.flash > 0) { ctx.save(); ctx.globalAlpha = 0.55; }
-        ctx.fillText(BOOKS[p.k].emoji, px(bx), py(by + bob));
+        ctx.fillText(BOOKS[p.k].emoji, cxs, cys);
         if (p.flash > 0) ctx.restore();
-        if (p.hp < p.maxHp) { ctx.fillStyle = "rgba(0,0,0,.4)"; ctx.fillRect(px(bx - CWv * 0.3), py(by + CHv * 0.34), pz(CWv * 0.6), pz(5)); ctx.fillStyle = "#69f0ae"; ctx.fillRect(px(bx - CWv * 0.3), py(by + CHv * 0.34), pz(CWv * 0.6 * Math.max(0, p.hp / p.maxHp)), pz(5)); }
+        if (pw > 0) { // a charged Power Word makes your books shimmer, ready to tap
+          ctx.strokeStyle = "rgba(255,225,77," + (0.5 + Math.sin(run * 5) * 0.3) + ")"; ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.arc(cxs, cys, spriteS * 0.62, 0, Math.PI * 2); ctx.stroke();
+        }
+        bar(cxs, cys + spriteS * 0.55, spriteS * 0.9, p.hp / p.maxHp, "#69f0ae");
       }
-      // shots: flying letters!
-      ctx.fillStyle = "#ffe14d"; ctx.font = "bold " + Math.round(pz(CHv * 0.36)) + "px Trebuchet MS";
-      shots.forEach(function (sh) { ctx.fillText(sh.ch, px(sh.x), py(sh.y)); });
+      // shots: flying letters (and lobbed crayons with a little arc)
+      ctx.fillStyle = "#ffe14d"; ctx.font = "bold " + Math.round(spriteS * 0.52) + "px Trebuchet MS"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      shots.forEach(function (sh) {
+        var arc = sh.lob ? -Math.abs(Math.sin((run - sh.born) * 2.4)) * spriteS * 0.5 : 0;
+        ctx.fillText(sh.ch, X(sh.x, sh.y), Y(sh.x, sh.y) + arc);
+      });
+      // pillows incoming!
+      ctx.font = Math.round(spriteS * 0.4) + "px serif";
+      zshots.forEach(function (q3) { ctx.fillText("☁️", X(q3.x, tileY(q3.row)), Y(q3.x, tileY(q3.row))); });
       // zombies
       zombies.forEach(function (z) {
-        var zy = tileY(z.row), sc = CHv * (ZOMBIES[z.type].big ? 1.05 : 0.76);
+        var zy = tileY(z.row), zsc = spriteS * (ZOMBIES[z.type].big ? 1.5 : 1.05);
         var lurch = Math.sin(run * 4 + z.groan) * 3;
-        ctx.font = Math.round(pz(sc)) + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        var zxs = X(z.x, zy), zys = Y(z.x, zy) + pz(lurch) - zsc * 0.12;
+        ctx.font = Math.round(zsc) + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
         if (z.chill > 0) { ctx.save(); ctx.filter = "hue-rotate(160deg)"; }
-        ctx.fillText(ZOMBIES[z.type].emoji, px(z.x), py(zy - 8 + lurch));
+        ctx.fillText(ZOMBIES[z.type].emoji, zxs, zys);
         if (z.chill > 0) ctx.restore();
-        ctx.font = Math.round(pz(CHv * 0.24)) + "px serif";
-        ctx.fillText("📱", px(z.x + CWv * 0.18), py(zy + 8 + lurch)); // doomscrolling, always
-        ctx.fillStyle = "rgba(0,0,0,.4)"; ctx.fillRect(px(z.x - CWv * 0.27), py(zy - sc * 0.72), pz(CWv * 0.55), pz(5));
-        ctx.fillStyle = "#ff8a8a"; ctx.fillRect(px(z.x - CWv * 0.27), py(zy - sc * 0.72), pz(CWv * 0.55 * Math.max(0, z.hp / z.maxHp)), pz(5));
-        ctx.fillStyle = "#ffe14d";
+        ctx.font = Math.round(zsc * 0.36) + "px serif";
+        ctx.fillText("📱", zxs + zsc * 0.34, zys + zsc * 0.28); // doomscrolling, always
+        bar(zxs, zys - zsc * 0.66, zsc * 0.8, z.hp / z.maxHp, "#ff8a8a");
       });
+      // boss health bar across the top
+      var boss = null; zombies.forEach(function (z) { if (ZOMBIES[z.type].big) boss = z; });
+      if (boss) {
+        ctx.fillStyle = "rgba(0,0,0,.55)"; ctx.fillRect(W * 0.14, 8, W * 0.72, 16);
+        ctx.fillStyle = "#c9b6ff"; ctx.fillRect(W * 0.14 + 2, 10, (W * 0.72 - 4) * Math.max(0, boss.hp / boss.maxHp), 12);
+        ctx.fillStyle = "#fff"; ctx.font = "bold 11px Trebuchet MS"; ctx.textAlign = "center";
+        ctx.fillText(ZOMBIES[boss.type].emoji + " " + ZOMBIES[boss.type].name, W / 2, 17);
+      }
       if (juice) { juice.update(0.016); juice.draw(ctx); }
     }
 
     // ---------- input (phantom-tap safe) ----------
     function tap(x, y) {
-      var mx = (x - OX) / S, my = (y - OY) / S;
+      var mx, my;
+      if (vertical) { my = (x - OX) / S; mx = MWv - (y - OY) / S; }
+      else { mx = (x - OX) / S; my = (y - OY) / S; }
+      tapLogical(mx, my);
+    }
+    function tapLogical(mx, my) {
+      // ink drops first (they're the tastiest tap)
+      for (var di = drops.length - 1; di >= 0; di--) {
+        var d = drops[di];
+        if (Math.abs(mx - d.x) < CWv * 0.55 && Math.abs(my - d.y) < CHv * 0.55) {
+          drops.splice(di, 1);
+          ink += 15; hud();
+          if (juice) { juice.burst(X(d.x, d.y), Y(d.x, d.y), "#8ecdf7", 10); juice.text(X(d.x, d.y), Y(d.x, d.y) - 16, "+15🖋", "#8ecdf7"); }
+          if (sfx && sfx.coin) sfx.coin();
+          return;
+        }
+      }
       var t = tileAt(mx, my);
-      if (t) tryPlace(t.r, t.c);
+      if (!t) return;
+      // a charged ⚡ Power Word supercharges one of YOUR books
+      if (plants[t.r] && plants[t.r][t.c] && pw > 0 && !selected) { superCharge(t.r, t.c); return; }
+      tryPlace(t.r, t.c);
+    }
+    // ⚡ POWER WORDS: earned by answering (ink rush), spent by tapping a book
+    function superCharge(r, c) {
+      var p = plants[r][c], def = BOOKS[p.k];
+      if (def.boom) { big("💥 The bomb IS the power — just place it!", "#ffd740"); return; }
+      pw--; pwUsed++;
+      var bx = tileX(c), by = tileY(r);
+      if (juice) { juice.burst(X(bx, by), Y(bx, by), "#ffe14d", 22); juice.shake(5); }
+      if (sfx && sfx.fanfare) sfx.fanfare();
+      if (def.drip) { ink += 100; big("📖⚡ INK FOUNTAIN! +100", "#8ecdf7"); }
+      else if (p.k === "wall") {
+        p.hp = p.maxHp;
+        zombies.forEach(function (z) { if (z.row === r && Math.abs(z.x - bx) < CWv * 2.6) z.x = Math.min(MWv - 10, z.x + CWv * 1.3); });
+        big("📚⚡ SHELF SLAM! Healed + knockback!", "#9be15d");
+      }
+      else if (p.k === "freeze") { zombies.forEach(function (z) { z.chill = 4; }); big("❄️⚡ EVERYONE FREEZES!", "#8ecdf7"); }
+      else if (p.k === "spell") {
+        zombies.forEach(function (z) { if (z.row === r) hurtZ(z, 60); });
+        for (var li = 0; li < COLS; li++) if (juice) juice.burst(X(tileX(li), by), Y(tileX(li), by), "#c9b6ff", 6);
+        big("📜⚡ LIGHTNING SENTENCE!", "#c9b6ff");
+      }
+      else { // blaster (and future shooters): an alphabet VOLLEY
+        for (var vi = 0; vi < 12; vi++) shots.push({ x: bx + 20 + vi * 16, y: by - 14, row: r, dmg: def.dmg || 7, slow: !!def.slow, pierce: true, hit: {}, ch: String.fromCharCode(65 + Math.floor(Math.random() * 26)) });
+        big("📕⚡ ALPHABET STORM!", "#ffe14d");
+      }
+      hud();
     }
     cv.addEventListener("touchstart", function (e) { e.preventDefault(); var r = cv.getBoundingClientRect(); tap(e.changedTouches[0].clientX - r.left, e.changedTouches[0].clientY - r.top); }, { passive: false });
     cv.addEventListener("mousedown", function (e) { var r = cv.getBoundingClientRect(); tap(e.clientX - r.left, e.clientY - r.top); });
@@ -465,13 +695,16 @@
 
     // test hook
     cv._books = {
-      state: function () { return { level: level, ink: ink, plants: plants, zombies: zombies, carts: carts, over: over, best: stats.lvl, spawnIdx: spawnIdx, planLen: plan ? plan.spawns.length : 0 }; },
+      state: function () { return { level: level, ink: ink, plants: plants, zombies: zombies, carts: carts, over: over, best: stats.lvl, spawnIdx: spawnIdx, planLen: plan ? plan.spawns.length : 0, pw: pw, pwUsed: pwUsed, drops: drops, stars: stats.stars || {}, endlessBest: stats.endlessBest || 0, endWave: endWave, vertical: vertical }; },
       begin: beginLevel,
       give: function (n) { ink += n; hud(); renderBar(); },
       pick: function (k) { selected = k; },
       put: function (k, r, c) { place(k, r, c); },
-      zombie: function (type, row, x) { spawnZombie(type, row); if (x !== undefined) zombies[zombies.length - 1].x = x; },
-      clearSpawns: function () { spawnIdx = plan.spawns.length; }
+      zombie: function (type, row, x) { spawnZombie(type, row); var z = zombies[zombies.length - 1]; if (x !== undefined) z.x = x; return z; },
+      clearSpawns: function () { spawnIdx = plan.spawns.length; },
+      charge: function (n) { pw = Math.min(2, pw + n); hud(); },
+      power: function (r, c) { superCharge(r, c); },
+      tapLogical: tapLogical
     };
 
     hud();
