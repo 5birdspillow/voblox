@@ -248,7 +248,7 @@
         }
         function keyCommit(e) { if (e.key === " " || e.key === "Enter") { e.preventDefault(); commit(); } }
         card().addEventListener("mousedown", commit);
-        card().addEventListener("touchstart", commit, { passive: true });
+        card().addEventListener("touchstart", function (e) { e.preventDefault(); commit(e); }, { passive: false }); // suppress iOS phantom mouse tap
         document.addEventListener("keydown", keyCommit);
         return;
       }
@@ -304,7 +304,7 @@
     }
 
     // ---------- meadow ----------
-    cv.addEventListener("touchstart", function (e) { var r = cv.getBoundingClientRect(); tapMeadow(e.changedTouches[0].clientX - r.left, e.changedTouches[0].clientY - r.top); }, { passive: true });
+    cv.addEventListener("touchstart", function (e) { e.preventDefault(); var r = cv.getBoundingClientRect(); tapMeadow(e.changedTouches[0].clientX - r.left, e.changedTouches[0].clientY - r.top); }, { passive: false }); // suppress iOS phantom mouse tap
     cv.addEventListener("mousedown", function (e) { var r = cv.getBoundingClientRect(); tapMeadow(e.clientX - r.left, e.clientY - r.top); });
     function tapMeadow(x, y) {
       if (card().style.display === "flex") return;

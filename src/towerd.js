@@ -169,7 +169,7 @@
         }
       });
     }
-    cv.addEventListener("touchstart", function (e) { var r = cv.getBoundingClientRect(); tapAt(e.changedTouches[0].clientX - r.left, e.changedTouches[0].clientY - r.top); }, { passive: true });
+    cv.addEventListener("touchstart", function (e) { e.preventDefault(); var r = cv.getBoundingClientRect(); tapAt(e.changedTouches[0].clientX - r.left, e.changedTouches[0].clientY - r.top); }, { passive: false }); // suppress iOS phantom mouse tap
     cv.addEventListener("mousedown", function (e) { var r = cv.getBoundingClientRect(); tapAt(e.clientX - r.left, e.clientY - r.top); });
     function onKey(e) { if ((e.key || "") === "Enter" && state === "build") startWave(); }
     document.addEventListener("keydown", onKey);

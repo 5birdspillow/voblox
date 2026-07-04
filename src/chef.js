@@ -123,7 +123,9 @@
         }
       });
     }
-    cv.addEventListener("touchstart", function (e) { var r = cv.getBoundingClientRect(); hitTest(e.changedTouches[0].clientX - r.left, e.changedTouches[0].clientY - r.top); }, { passive: true });
+    // passive:false + preventDefault suppresses iOS's synthesized mouse event —
+    // without it every tap fired TWICE (the phantom second tap hit "wrong station")
+    cv.addEventListener("touchstart", function (e) { e.preventDefault(); var r = cv.getBoundingClientRect(); hitTest(e.changedTouches[0].clientX - r.left, e.changedTouches[0].clientY - r.top); }, { passive: false });
     cv.addEventListener("mousedown", function (e) { var r = cv.getBoundingClientRect(); hitTest(e.clientX - r.left, e.clientY - r.top); });
     function hitTest(x, y) {
       if (y > KY - 70) for (var i = 0; i < 4; i++) if (Math.abs(x - stationX(i)) < W * 0.11) return tapStation(i);

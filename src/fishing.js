@@ -280,7 +280,7 @@
       else if (state === "bite") hook();
       else if (state === "wait") { /* patience, fisher */ }
     }
-    cv.addEventListener("touchstart", function () { held = true; press(); }, { passive: true });
+    cv.addEventListener("touchstart", function (e) { e.preventDefault(); held = true; press(); }, { passive: false }); // suppress iOS phantom mouse tap (press() advances the cast!)
     cv.addEventListener("touchend", function () { held = false; }, { passive: true });
     cv.addEventListener("mousedown", function () { held = true; press(); });
     window.addEventListener("mouseup", mouseUp);
