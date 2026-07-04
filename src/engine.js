@@ -35,9 +35,12 @@
     5: [FORMATS.CLOZE_TYPE, FORMATS.DEF2WORD_TYPE]
   };
 
-  // Real-time intervals per box (used for across-session "Adventure" review).
+  // Real-time intervals per box. Tuned for Leo's ACTUAL school cadence: words arrive
+  // Monday, quiz is Tuesday — so the whole ladder (including the typed/production
+  // tiers at boxes 2-4) must be climbable in ONE day across 2-3 short sessions.
+  // Old day-scale intervals stranded words at box 2 until after the quiz.
   const MIN = 60 * 1000, HOUR = 60 * MIN, DAY = 24 * HOUR;
-  const INTERVALS_MS = [1 * MIN, 10 * MIN, 1 * DAY, 3 * DAY, 7 * DAY, 16 * DAY];
+  const INTERVALS_MS = [1 * MIN, 8 * MIN, 25 * MIN, 90 * MIN, 4 * HOUR, 1 * DAY];
 
   const MAX_BOX = 5;
 

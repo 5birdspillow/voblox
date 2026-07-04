@@ -179,13 +179,15 @@
       '</div>' +
       '<div class="menu">' +
         btn("play", "▶ Practice", "Earn Vobux while the game quizzes you") +
+        btn("warmup", "⚡ Quiz Warm-up", ready < WORDS.length ? "Drill just the " + (WORDS.length - ready) + " words that need you most" : "All words ready — quick sharpening round") +
         btn("mock", "📝 Mock Quiz", "A pretend test — see your grade") +
         btn("words", "📖 Word List", "See all the words and hear them") +
         btn("settings", "⚙️ Backup / Settings", "Save or move progress") +
       '</div>' +
-      '<div class="tip">Tip: a little tonight and a little before the quiz beats one long cram.</div>'
+      '<div class="tip">Quiz tomorrow? Play after school, again before bed, then ⚡ Warm-up in the morning.</div>'
     );
-    el("play").onclick = startPractice;
+    el("play").onclick = function () { startPractice(false); };
+    el("warmup").onclick = function () { startPractice(true); };
     el("mock").onclick = startMock;
     el("words").onclick = renderWords;
     el("settings").onclick = renderSettings;
@@ -327,8 +329,14 @@
   }
 
   // ---- PRACTICE (Quiz Crunch) ---------------------------------------------
-  function startPractice() {
-    session = { queue: shuffle(WORDS.map(function (w) { return w.word; })), lastFormat: {}, senseCursor: {}, asked: 0 };
+  function startPractice(onlyRisky) {
+    var pool = WORDS;
+    if (onlyRisky === true) {
+      // quiz-morning warm-up: only the words that aren't quiz-ready yet
+      var risky = WORDS.filter(function (w) { return !Engine.isQuizReady(state.cards[w.word]); });
+      if (risky.length) pool = risky;
+    }
+    session = { queue: shuffle(pool.map(function (w) { return w.word; })), lastFormat: {}, senseCursor: {}, asked: 0 };
     askQuestion();
   }
   function askQuestion() {
@@ -727,6 +735,7 @@
   // optional deep links (e.g. index.html#practice) for quick access
   var h = (location.hash || "").replace("#", "");
   if (h === "practice") startPractice();
+  else if (h === "warmup") startPractice(true);
   else if (h === "mock") startMock();
   else if (h === "words") renderWords();
   else if (h === "settings") renderSettings();
