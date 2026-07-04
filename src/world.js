@@ -242,7 +242,8 @@
       { tab: "shop", name: "Item Shop", emoji: "🛍️", color: 0xf0a92e, flavor: "awning", wall: 0xffe2a8, roof: 0xf0a92e },
       { tab: "locker", name: "Wardrobe", emoji: "🧢", color: 0x5aa6f0, flavor: null, wall: 0xcfe0f4, roof: 0x3a6ab0 },
       { href: "craft.html", name: "Vocraft Mine", emoji: "⛏️", color: 0x6fae3e, flavor: "tower", wall: 0x8a5a3b, roof: 0x57c04a },
-      { gameId: "empire", flavor: "tower", wall: 0xd8ccf4, roof: 0x6b5ac0 }
+      { gameId: "empire", flavor: "tower", wall: 0xd8ccf4, roof: 0x6b5ac0 },
+      { gameId: "books", flavor: "awning", wall: 0xf4e8cc, roof: 0x6a8ad0 }
     ];
     var R = 18.5;
     DEFS.forEach(function (d, i) {

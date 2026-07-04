@@ -41,10 +41,17 @@
       '<div id="embar"></div>';
     document.body.appendChild(wrap);
     var cv = wrap.querySelector("#emcv"), ctx = cv.getContext("2d");
-    var W, H, SX, SY;
-    function resize() { W = cv.width = wrap.clientWidth; H = cv.height = wrap.clientHeight; SX = W / MW; SY = H / MH; }
+    var W, H, S, OX, OY, portrait = false;
+    var rot = document.createElement("div"); rot.className = "rotgate"; rot.innerHTML = "🔄<br>Turn your phone sideways,<br>Commander!"; wrap.appendChild(rot);
+    function resize() {
+      W = cv.width = wrap.clientWidth; H = cv.height = wrap.clientHeight;
+      // uniform letterbox scale: the battlefield is NEVER stretched
+      S = Math.min(W / MW, (H - 60) / MH); OX = (W - MW * S) / 2; OY = Math.max(0, (H - 66 - MH * S) / 2);
+      portrait = W < H && W < 700;
+      rot.style.display = portrait ? "flex" : "none";
+    }
     resize(); window.addEventListener("resize", resize);
-    function px(x) { return x * SX; } function py(y) { return y * SY; }
+    function px(x) { return OX + x * S; } function py(y) { return OY + y * S; } function pz(n) { return n * S; }
 
     var juice = global.VobloxJuice ? global.VobloxJuice() : null;
     var sfx = global.VobloxSfx || null;
@@ -368,18 +375,18 @@
       var g1 = ctx.createLinearGradient(0, 0, 0, H); g1.addColorStop(0, "#8fd062"); g1.addColorStop(1, "#5cab3e");
       ctx.fillStyle = g1; ctx.fillRect(0, 0, W, H);
       ctx.fillStyle = "rgba(255,255,255,.10)";
-      for (var i = 0; i < 8; i++) ctx.fillRect(0, py(70 * i + 20), W, py(6));
+      for (var i = 0; i < 8; i++) ctx.fillRect(0, py(70 * i + 20), W, pz(6));
       // territory tints
       ctx.fillStyle = "rgba(47,123,224,.07)"; ctx.fillRect(0, 0, px(380), H);
       ctx.fillStyle = "rgba(224,60,60,.07)"; ctx.fillRect(px(620), 0, W - px(620), H);
-      trees.forEach(function (t) { ctx.font = Math.round(py(30)) + "px serif"; ctx.textAlign = "center"; ctx.fillText("🌳", px(t.x), py(t.y)); });
+      trees.forEach(function (t) { ctx.font = Math.round(pz(30)) + "px serif"; ctx.textAlign = "center"; ctx.fillText("🌳", px(t.x), py(t.y)); });
       mines.forEach(function (m) {
-        ctx.font = Math.round(py(26)) + "px serif"; ctx.textAlign = "center";
+        ctx.font = Math.round(pz(26)) + "px serif"; ctx.textAlign = "center";
         ctx.fillText(m.left > 0 ? "⛰️" : "🕳️", px(m.x), py(m.y));
-        if (m.left > 0) { ctx.font = Math.round(py(13)) + "px Trebuchet MS"; ctx.fillStyle = "#5a4a20"; ctx.fillText("💰" + m.left, px(m.x), py(m.y + 18)); }
+        if (m.left > 0) { ctx.font = Math.round(pz(13)) + "px Trebuchet MS"; ctx.fillStyle = "#5a4a20"; ctx.fillText("💰" + m.left, px(m.x), py(m.y + 18)); }
       });
       buildings.forEach(function (b) {
-        var def = BLD[b.kind], w = px(def.w), h = py(def.h);
+        var def = BLD[b.kind], w = pz(def.w), h = pz(def.h);
         ctx.fillStyle = b.team === 0 ? "#cfe0f4" : "#f4cfcf";
         ctx.strokeStyle = b.team === 0 ? "#2f6bb0" : "#b03a3a"; ctx.lineWidth = 3;
         rrect(px(b.x) - w / 2, py(b.y) - h / 2, w, h, 8); ctx.fill(); ctx.stroke();
@@ -396,7 +403,7 @@
         hpBar(px(u.x), py(u.y) - s * 0.75, s * 0.9, u.hp / u.maxHp, u.team);
       });
       var gc2 = garrisonCount();
-      if (gc2 > 0) { ctx.font = Math.round(py(18)) + "px Trebuchet MS"; ctx.textAlign = "center"; ctx.fillStyle = "#fff"; ctx.fillText("🔔×" + gc2, px(myHall.x), py(myHall.y - 58)); }
+      if (gc2 > 0) { ctx.font = Math.round(pz(18)) + "px Trebuchet MS"; ctx.textAlign = "center"; ctx.fillStyle = "#fff"; ctx.fillText("🔔×" + gc2, px(myHall.x), py(myHall.y - 58)); }
       // effects
       for (var e = effects.length - 1; e >= 0; e--) {
         var fx = effects[e]; fx.t += 0.05;
@@ -408,9 +415,9 @@
           if (k >= 1) effects.splice(e, 1);
         } else if (fx.kind === "meteor") {
           var mk = Math.min(1, fx.t * 1.4);
-          ctx.font = Math.round(py(30 + mk * 26)) + "px serif"; ctx.textAlign = "center";
+          ctx.font = Math.round(pz(30 + mk * 26)) + "px serif"; ctx.textAlign = "center";
           ctx.fillText("☄️", px(fx.x + (1 - mk) * 140), py(fx.y - (1 - mk) * 260));
-          if (mk >= 1) { ctx.font = Math.round(py(60)) + "px serif"; ctx.fillText("💥", px(fx.x), py(fx.y)); if (fx.t > 1) effects.splice(e, 1); }
+          if (mk >= 1) { ctx.font = Math.round(pz(60)) + "px serif"; ctx.fillText("💥", px(fx.x), py(fx.y)); if (fx.t > 1) effects.splice(e, 1); }
         }
       }
       if (juice) { juice.update(0.016); juice.draw(ctx); }

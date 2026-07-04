@@ -27,5 +27,6 @@
   add("VobloxChef", { id: "chef", name: "Chef Rush", emoji: "👨‍🍳", color: 0xf0a92e, hub: true });
   add("VobloxPets", { id: "pets", name: "Pet Paradise", emoji: "🐾", color: 0xff7eb9, hub: true });
   add("VobloxEmpire", { id: "empire", name: "Word Empire", emoji: "🏰", color: 0x8a6ad0, hub: true });
+  add("VobloxBooks", { id: "books", name: "Books vs Zombies", emoji: "📚", color: 0x6a8ad0, hub: true });
   global.VobloxGames = games;
 })(typeof window !== "undefined" ? window : globalThis);
