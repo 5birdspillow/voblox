@@ -202,6 +202,14 @@
   background: linear-gradient(transparent, rgba(0,0,0,.28)); }
 #embar::-webkit-scrollbar, #bkbar::-webkit-scrollbar { display: none; }
 
+/* compact chrome on phones: title hidden, tighter HUD, shorter bar buttons —
+   every pixel goes to the battlefield */
+.gamewrap.compact .ghud .clue { display: none; }
+.gamewrap.compact .ghud { padding: 4px 6px; gap: 4px; }
+.gamewrap.compact #embar .embtn, .gamewrap.compact #bkbar .embtn { min-width: 60px; padding: 4px 8px; }
+.gamewrap.compact #embar .ebl, .gamewrap.compact #bkbar .ebl { font-size: 12px; }
+.gamewrap.compact #embar .ebs, .gamewrap.compact #bkbar .ebs { font-size: 9.5px; }
+
 /* rotate-your-phone gate for the RTS/lane games (portrait is unplayable-small) */
 .rotgate { display: none; position: absolute; inset: 0; z-index: 20; background: rgba(12,18,30,.9);
   color: #fff; font-family: "Trebuchet MS", sans-serif; font-weight: 900; font-size: 22px; text-align: center;

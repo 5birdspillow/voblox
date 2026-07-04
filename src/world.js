@@ -789,6 +789,11 @@
   else if (location.hash === "#players") openPlayers(); // test hook: the players overlay
   else if (location.hash === "#locker") openBackpack("locker"); // test hook: the locker
   else if (location.hash === "#style") openBackpack("locker", "style"); // test hook: Style panel (hair + voice)
+  else if (location.hash === "#bvzdemo") { // test hook: Books vs Zombies mid-battle board
+    window._bvzdemo = 1;
+    var bkgm = (window.VobloxGames || []).filter(function (x) { return x.id === "books"; })[0];
+    if (bkgm) launchGame(bkgm);
+  }
   else if (location.hash.indexOf("#enter=") === 0) { // test hook: walk in through a building's DOOR (the path that once froze)
     var wantId = location.hash.slice(7);
     var bTarget = buildings.filter(function (b) { return b.def && (b.def.gameId === wantId || b.def.tab === wantId); })[0];

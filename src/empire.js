@@ -43,10 +43,14 @@
     var cv = wrap.querySelector("#emcv"), ctx = cv.getContext("2d");
     var W, H, S, OX, OY, portrait = false;
     var rot = document.createElement("div"); rot.className = "rotgate"; rot.innerHTML = "🔄<br>Turn your phone sideways,<br>Commander!"; wrap.appendChild(rot);
+    var compact = false;
     function resize() {
       W = cv.width = wrap.clientWidth; H = cv.height = wrap.clientHeight;
+      compact = H < 480 || W < 900;
+      wrap.classList.toggle("compact", compact);
       // uniform letterbox scale: the battlefield is NEVER stretched
-      S = Math.min(W / MW, (H - 60) / MH); OX = (W - MW * S) / 2; OY = Math.max(0, (H - 66 - MH * S) / 2);
+      var reserve = compact ? 76 : 66;
+      S = Math.min(W / MW, (H - reserve) / MH); OX = (W - MW * S) / 2; OY = Math.max(0, (H - reserve - MH * S) / 2 + (compact ? 30 : 0));
       portrait = W < H && W < 700;
       rot.style.display = portrait ? "flex" : "none";
     }
@@ -379,11 +383,11 @@
       // territory tints
       ctx.fillStyle = "rgba(47,123,224,.07)"; ctx.fillRect(0, 0, px(380), H);
       ctx.fillStyle = "rgba(224,60,60,.07)"; ctx.fillRect(px(620), 0, W - px(620), H);
-      trees.forEach(function (t) { ctx.font = Math.round(pz(30)) + "px serif"; ctx.textAlign = "center"; ctx.fillText("🌳", px(t.x), py(t.y)); });
+      trees.forEach(function (t) { ctx.font = Math.round(Math.max(17, pz(30))) + "px serif"; ctx.textAlign = "center"; ctx.fillText("🌳", px(t.x), py(t.y)); });
       mines.forEach(function (m) {
-        ctx.font = Math.round(pz(26)) + "px serif"; ctx.textAlign = "center";
+        ctx.font = Math.round(Math.max(18, pz(26))) + "px serif"; ctx.textAlign = "center";
         ctx.fillText(m.left > 0 ? "⛰️" : "🕳️", px(m.x), py(m.y));
-        if (m.left > 0) { ctx.font = Math.round(pz(13)) + "px Trebuchet MS"; ctx.fillStyle = "#5a4a20"; ctx.fillText("💰" + m.left, px(m.x), py(m.y + 18)); }
+        if (m.left > 0) { ctx.font = Math.round(Math.max(11, pz(13))) + "px Trebuchet MS"; ctx.fillStyle = "#5a4a20"; ctx.fillText("💰" + m.left, px(m.x), py(m.y + 18)); }
       });
       buildings.forEach(function (b) {
         var def = BLD[b.kind], w = pz(def.w), h = pz(def.h);
@@ -396,14 +400,14 @@
       });
       units.forEach(function (u) {
         if (u.inside) return; // garrisoned villagers are safe inside the castle
-        var s = u.kind === "worker" ? 30 : 36;
+        var s = (compact ? 8 : 0) + (u.kind === "worker" ? 30 : 36); // bigger heroes on phones
         var cfg = u.team === 0 ? myCfg : rivalCfg;
         var held = u.kind === "knight" ? "🗡️" : u.kind === "archer" ? "🏹" : (u.carry ? "💰" : "⛏️");
         AV.draw(ctx, { x: px(u.x), y: py(u.y) + s / 2, size: s, config: cfg, pose: "run", frame: run + u.x * 0.01, flip: u.face < 0, heldOverride: held });
         hpBar(px(u.x), py(u.y) - s * 0.75, s * 0.9, u.hp / u.maxHp, u.team);
       });
       var gc2 = garrisonCount();
-      if (gc2 > 0) { ctx.font = Math.round(pz(18)) + "px Trebuchet MS"; ctx.textAlign = "center"; ctx.fillStyle = "#fff"; ctx.fillText("🔔×" + gc2, px(myHall.x), py(myHall.y - 58)); }
+      if (gc2 > 0) { ctx.font = Math.round(Math.max(13, pz(18))) + "px Trebuchet MS"; ctx.textAlign = "center"; ctx.fillStyle = "#fff"; ctx.fillText("🔔×" + gc2, px(myHall.x), py(myHall.y - 58)); }
       // effects
       for (var e = effects.length - 1; e >= 0; e--) {
         var fx = effects[e]; fx.t += 0.05;

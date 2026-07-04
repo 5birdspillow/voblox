@@ -13,9 +13,7 @@
   var VQ = global.VobloxQuestions, Bots = global.VobloxBots, P = global.VobloxProfile;
 
   var MW = 1000, MH = 560;
-  var ROWS = 5, COLS = 9, GX = 118, GY = 96, CW = 92, CH = 88;
-  function tileX(c) { return GX + c * CW + CW / 2; }
-  function tileY(r) { return GY + r * CH + CH / 2; }
+  var ROWS = 5, COLS = 9;
 
   var BOOKS = {
     blaster: { name: "Word Blaster", emoji: "📕", cost: 100, hp: 90, dmg: 7, cd: 1.15, lvl: 1, tip: "shoots letters" },
@@ -85,17 +83,38 @@
       '<div id="bkbar"></div>';
     document.body.appendChild(wrap);
     var cv = wrap.querySelector("#bkcv"), ctx = cv.getContext("2d");
-    var W, H, S, OX, OY, portrait = false;
+    var W, H, S, OX, OY, portrait = false, compact = false;
+    // responsive grid metrics: on phones the lawn goes EDGE TO EDGE with wide
+    // PvZ-mobile tiles (logical width expands to fill; zombie/shot speeds rescale)
+    var MWv = MW, GXv = 118, GYv = 96, CWv = 92, CHv = 88, SPD = 1;
     var rot = document.createElement("div"); rot.className = "rotgate"; rot.innerHTML = "🔄<br>Turn your phone sideways,<br>Librarian!"; wrap.appendChild(rot);
     function resize() {
       W = cv.width = wrap.clientWidth; H = cv.height = wrap.clientHeight;
-      // uniform letterbox scale: the library is NEVER stretched
-      S = Math.min(W / MW, (H - 64) / MH); OX = (W - MW * S) / 2; OY = Math.max(0, (H - 70 - MH * S) / 2);
+      compact = H < 480 || W < 900;
+      wrap.classList.toggle("compact", compact);
+      var reserve = compact ? 86 : 132; // real HUD + build-bar heights
+      S = (H - reserve) / MH;
+      if (!compact) S = Math.min(S, W / MW);
+      MWv = Math.max(MW, Math.floor(W / S) - 4); // fill the physical width
+      GXv = compact ? 66 : 118; GYv = compact ? 10 : 96;
+      CWv = (MWv - GXv - 16) / COLS;
+      // on phones, ONLY the open lanes render — a 3-lane level gets huge full-height rows
+      var rowsN = (compact && plan) ? Math.max(3, plan.rows.length) : ROWS;
+      CHv = (MH - GYv - 8) / rowsN;
+      SPD = CWv / 92; // keep crossing-time balance no matter how wide the tiles get
+      OX = Math.max(0, (W - MWv * S) / 2);
+      OY = compact ? 40 : Math.max(36, (H - reserve - MH * S) / 2 + 36);
       portrait = W < H && W < 700;
       rot.style.display = portrait ? "flex" : "none";
     }
     resize(); window.addEventListener("resize", resize);
     function px(x) { return OX + x * S; } function py(y) { return OY + y * S; } function pz(n) { return n * S; }
+    function tileX(c) { return GXv + c * CWv + CWv / 2; }
+    function tileY(r) {
+      var vr = r;
+      if (compact && plan) { vr = plan.rows.indexOf(r); if (vr < 0) vr = r; }
+      return GYv + vr * CHv + CHv / 2;
+    }
 
     var juice = global.VobloxJuice ? global.VobloxJuice() : null;
     var sfx = global.VobloxSfx || null;
@@ -137,7 +156,8 @@
       run = 0; ink = 75; spawnIdx = 0; hugeShown = {}; kills = 0; rushes = 0;
       plants = []; zombies = []; shots = []; selected = null; rushCd = 0; over = false; endShown = false;
       for (var r = 0; r < ROWS; r++) { plants.push([null, null, null, null, null, null, null, null, null]); }
-      carts = plan.rows.map(function (r) { return { row: r, used: false, x: GX - 52, rolling: false }; });
+      carts = plan.rows.map(function (r) { return { row: r, used: false, x: GXv - 52, rolling: false }; });
+      resize(); // row metrics depend on how many lanes this level opens
       document.getElementById("bkend").style.display = "none";
       paused = false;
       msgEl.innerHTML = "📚 <b>Level " + n + "</b>";
@@ -212,7 +232,8 @@
 
     // ---------- planting ----------
     function tileAt(x, y) {
-      var c = Math.floor((x - GX) / CW), r = Math.floor((y - GY) / CH);
+      var c = Math.floor((x - GXv) / CWv), vr = Math.floor((y - GYv) / CHv);
+      var r = (compact && plan) ? (plan.rows[vr] !== undefined ? plan.rows[vr] : -1) : vr;
       if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return null;
       return { r: r, c: c };
     }
@@ -253,7 +274,7 @@
       plants[r][c] = null;
       for (var rr = r - 1; rr <= r + 1; rr++) for (var i = zombies.length - 1; i >= 0; i--) {
         var z = zombies[i];
-        if (z.row >= r - 1 && z.row <= r + 1 && Math.abs(z.x - tileX(c)) < CW * 1.7) hurtZ(z, 95);
+        if (z.row >= r - 1 && z.row <= r + 1 && Math.abs(z.x - tileX(c)) < CWv * 1.7) hurtZ(z, 95);
       }
       if (juice) { juice.shake(10); juice.burst(px(tileX(c)), py(tileY(r)), "#ff9f43", 24); }
       if (sfx) { sfx.tone && sfx.tone(80, 0.35, 0.09); }
@@ -262,7 +283,7 @@
     // ---------- combat ----------
     function spawnZombie(type, row) {
       var def = ZOMBIES[type];
-      zombies.push({ type: type, row: row, x: MW + 30, hp: def.hp, maxHp: def.hp, speed: def.speed, dps: def.dps, chill: 0, groan: Math.random() * 6 });
+      zombies.push({ type: type, row: row, x: MWv + 30, hp: def.hp, maxHp: def.hp, speed: def.speed, dps: def.dps, chill: 0, groan: Math.random() * 6 });
     }
     function hurtZ(z, dmg) {
       z.hp -= dmg;
@@ -308,8 +329,8 @@
       // shots fly
       for (var si = shots.length - 1; si >= 0; si--) {
         var sh = shots[si];
-        sh.x += 300 * dt;
-        var gone = sh.x > MW + 20;
+        sh.x += 300 * SPD * dt;
+        var gone = sh.x > MWv + 20;
         for (var z2i = 0; z2i < zombies.length && !gone; z2i++) {
           var z2 = zombies[z2i];
           if (z2.row === sh.row && Math.abs(z2.x - sh.x) < 22 && !sh.hit[z2i]) {
@@ -324,28 +345,28 @@
       for (var zj = zombies.length - 1; zj >= 0; zj--) {
         var zz = zombies[zj];
         zz.chill = Math.max(0, zz.chill - dt);
-        var sp = zz.speed * (zz.chill > 0 ? 0.5 : 1);
+        var sp = zz.speed * SPD * (zz.chill > 0 ? 0.5 : 1);
         // munch the first plant in reach
-        var col = Math.floor((zz.x - 24 - GX) / CW);
+        var col = Math.floor((zz.x - 24 - GXv) / CWv);
         var plant = (col >= 0 && col < COLS) ? plants[zz.row][col] : null;
-        if (plant && zz.x - 24 <= tileX(col) + CW * 0.3) {
+        if (plant && zz.x - 24 <= tileX(col) + CWv * 0.3) {
           plant.hp -= zz.dps * dt; plant.flash = 0.15;
           if (plant.hp <= 0) { plants[zz.row][col] = null; if (sfx && sfx.buzz && Math.random() < 0.3) sfx.buzz(); }
         } else {
           zz.x -= sp * dt;
         }
-        if (zz.x < GX - 6) { // reached the carts
+        if (zz.x < GXv - 6) { // reached the carts
           var cart = carts.filter(function (ct) { return ct.row === zz.row && !ct.used && !ct.rolling; })[0];
           if (cart) { cart.rolling = true; if (sfx && sfx.whoosh) sfx.whoosh(); big("📚 BOOK CART!", "#8ecdf7"); }
-          else if (zz.x < GX - 40) { endLevel(false); return; }
+          else if (zz.x < GXv - 40) { endLevel(false); return; }
         }
       }
       // carts roll
       carts.forEach(function (ct) {
         if (!ct.rolling) return;
-        ct.x += 480 * dt;
+        ct.x += 480 * SPD * dt;
         for (var ci = zombies.length - 1; ci >= 0; ci--) { if (zombies[ci].row === ct.row && zombies[ci].x < ct.x + 40) { kills++; zombies.splice(ci, 1); } }
-        if (ct.x > MW + 60) { ct.rolling = false; ct.used = true; }
+        if (ct.x > MWv + 60) { ct.rolling = false; ct.used = true; }
       });
       // victory: everything spawned and cleared
       if (spawnIdx >= plan.spawns.length && zombies.length === 0 && !over) endLevel(true);
@@ -358,53 +379,55 @@
       // library backdrop: warm wall + bookshelf stripes
       var g1 = ctx.createLinearGradient(0, 0, 0, H); g1.addColorStop(0, "#5b4632"); g1.addColorStop(1, "#3c2e20");
       ctx.fillStyle = g1; ctx.fillRect(0, 0, W, H);
-      for (var b = 0; b < 12; b++) {
+      if (!compact) for (var b = 0; b < 12; b++) {
         ctx.fillStyle = ["#c65b4e", "#5b8ac6", "#c6a94e", "#6ac65b", "#9a6ac6"][b % 5];
         ctx.fillRect(px(20 + b * 82), py(18), pz(30), pz(52));
       }
       ctx.fillStyle = "rgba(0,0,0,.25)"; ctx.fillRect(0, py(74), W, pz(8));
       if (!plan) return;
-      // floor tiles (open rows lit like lanes)
-      for (var r = 0; r < ROWS; r++) for (var c = 0; c < COLS; c++) {
+      // floor tiles: on phones only OPEN lanes render (full height); desktop shows all
+      var floorRows = compact ? plan.rows : [0, 1, 2, 3, 4];
+      floorRows.forEach(function (r) {
         var open = plan.rows.indexOf(r) >= 0;
-        ctx.fillStyle = !open ? "rgba(0,0,0,.35)" : ((r + c) % 2 ? "#8a6a4a" : "#96755387");
-        ctx.fillStyle = !open ? "rgba(0,0,0,.35)" : ((r + c) % 2 ? "#8a6a4a" : "#967553");
-        ctx.fillRect(px(GX + c * CW), py(GY + r * CH), pz(CW - 3), pz(CH - 3));
-      }
+        for (var c = 0; c < COLS; c++) {
+          ctx.fillStyle = !open ? "rgba(0,0,0,.35)" : ((r + c) % 2 ? "#8a6a4a" : "#967553");
+          ctx.fillRect(px(GXv + c * CWv), py(tileY(r) - CHv / 2), pz(CWv - 3), pz(CHv - 3));
+        }
+      });
       // selected ghost
-      if (selected) { ctx.fillStyle = "rgba(155,225,93,.25)"; ctx.fillRect(px(GX), py(GY), pz(COLS * CW), pz(ROWS * CH)); }
+      if (selected) { ctx.fillStyle = "rgba(155,225,93,.25)"; ctx.fillRect(px(GXv), py(GYv), pz(COLS * CWv), pz(ROWS * CHv)); }
       // carts
       carts.forEach(function (ct) {
         if (ct.used && !ct.rolling) return;
-        ctx.font = Math.round(pz(34)) + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.fillText("🛒", px(ct.rolling ? ct.x : GX - 52), py(tileY(ct.row)));
+        ctx.font = Math.round(pz(CHv * 0.52)) + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText("🛒", px(ct.rolling ? ct.x : GXv - 52), py(tileY(ct.row)));
       });
       // plants
       for (var pr = 0; pr < ROWS; pr++) for (var pc = 0; pc < COLS; pc++) {
         var p = plants[pr][pc]; if (!p) continue;
         var bx = tileX(pc), by = tileY(pr);
         var bob = Math.sin(run * 3 + pc + pr) * 2.5;
-        ctx.font = Math.round(pz(42)) + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.font = Math.round(pz(CHv * 0.66)) + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
         if (p.flash > 0) { ctx.save(); ctx.globalAlpha = 0.55; }
         ctx.fillText(BOOKS[p.k].emoji, px(bx), py(by + bob));
         if (p.flash > 0) ctx.restore();
-        if (p.hp < p.maxHp) { ctx.fillStyle = "rgba(0,0,0,.4)"; ctx.fillRect(px(bx - 26), py(by + 30), pz(52), pz(5)); ctx.fillStyle = "#69f0ae"; ctx.fillRect(px(bx - 26), py(by + 30), pz(52 * Math.max(0, p.hp / p.maxHp)), pz(5)); }
+        if (p.hp < p.maxHp) { ctx.fillStyle = "rgba(0,0,0,.4)"; ctx.fillRect(px(bx - CWv * 0.3), py(by + CHv * 0.34), pz(CWv * 0.6), pz(5)); ctx.fillStyle = "#69f0ae"; ctx.fillRect(px(bx - CWv * 0.3), py(by + CHv * 0.34), pz(CWv * 0.6 * Math.max(0, p.hp / p.maxHp)), pz(5)); }
       }
       // shots: flying letters!
-      ctx.fillStyle = "#ffe14d"; ctx.font = "bold " + Math.round(pz(22)) + "px Trebuchet MS";
+      ctx.fillStyle = "#ffe14d"; ctx.font = "bold " + Math.round(pz(CHv * 0.36)) + "px Trebuchet MS";
       shots.forEach(function (sh) { ctx.fillText(sh.ch, px(sh.x), py(sh.y)); });
       // zombies
       zombies.forEach(function (z) {
-        var zy = tileY(z.row), sc = ZOMBIES[z.type].big ? 66 : 44;
+        var zy = tileY(z.row), sc = CHv * (ZOMBIES[z.type].big ? 1.05 : 0.76);
         var lurch = Math.sin(run * 4 + z.groan) * 3;
         ctx.font = Math.round(pz(sc)) + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
         if (z.chill > 0) { ctx.save(); ctx.filter = "hue-rotate(160deg)"; }
         ctx.fillText(ZOMBIES[z.type].emoji, px(z.x), py(zy - 8 + lurch));
         if (z.chill > 0) ctx.restore();
-        ctx.font = Math.round(pz(18)) + "px serif";
-        ctx.fillText("📱", px(z.x + 16), py(zy + 8 + lurch)); // doomscrolling, always
-        ctx.fillStyle = "rgba(0,0,0,.4)"; ctx.fillRect(px(z.x - 24), py(zy - sc * 0.72), pz(48), pz(5));
-        ctx.fillStyle = "#ff8a8a"; ctx.fillRect(px(z.x - 24), py(zy - sc * 0.72), pz(48 * Math.max(0, z.hp / z.maxHp)), pz(5));
+        ctx.font = Math.round(pz(CHv * 0.24)) + "px serif";
+        ctx.fillText("📱", px(z.x + CWv * 0.18), py(zy + 8 + lurch)); // doomscrolling, always
+        ctx.fillStyle = "rgba(0,0,0,.4)"; ctx.fillRect(px(z.x - CWv * 0.27), py(zy - sc * 0.72), pz(CWv * 0.55), pz(5));
+        ctx.fillStyle = "#ff8a8a"; ctx.fillRect(px(z.x - CWv * 0.27), py(zy - sc * 0.72), pz(CWv * 0.55 * Math.max(0, z.hp / z.maxHp)), pz(5));
         ctx.fillStyle = "#ffe14d";
       });
       if (juice) { juice.update(0.016); juice.draw(ctx); }
@@ -453,6 +476,15 @@
 
     hud();
     showSelect();
+    if (global._bvzdemo) setTimeout(function () { // test hook: a lively mid-battle board
+      global._bvzdemo = 0;
+      beginLevel(1);
+      cv._books.give(400);
+      cv._books.put("dict", 1, 0); cv._books.put("dict", 2, 0);
+      cv._books.put("blaster", 1, 1); cv._books.put("blaster", 2, 1); cv._books.put("blaster", 3, 1);
+      cv._books.put("wall", 2, 4);
+      cv._books.zombie("basic", 2, 700); cv._books.zombie("speedy", 1, 820); cv._books.zombie("bucket", 3, 880);
+    }, 700);
     lastT = performance.now(); raf = requestAnimationFrame(frame);
   }
 
