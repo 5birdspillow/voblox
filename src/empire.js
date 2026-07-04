@@ -49,13 +49,18 @@
     var juice = global.VobloxJuice ? global.VobloxJuice() : null;
     var sfx = global.VobloxSfx || null;
     var myCfg = AV.resolve(store.state);
+    // the FIRST battle is a training battle: gentle raids, weaker castle
+    var rookie = (stats.plays || 0) === 0;
     var skill = P.botSkillFor(stats.rankPts);
-    var rival = Bots.pickOpponents(1, Math.max(0.3, skill))[0];
+    if (rookie) skill = Math.min(skill, 0.22);
+    var rival = Bots.pickOpponents(1, Math.max(0.25, skill))[0];
     var rivalCfg = rival.avatar;
 
     var running = true, raf = 0, run = 0, lastT = performance.now(), over = false;
     var gold = 120, study = 0, cap = 3, kills = 0, losses = 0, lastFmt = null;
-    var meteorCd = 0, waveT = 18, waveNum = 0, mode = "defend", paused = false;
+    var meteorCd = 0, waveNum = 0, mode = "defend", paused = false;
+    var waveT = 45 + (1 - skill) * 40; // first raid: rookie ~76s to build, veterans ~48s
+    var bell = false, hintT = 50;
     var units = [], buildings = [], effects = [];
     var mines = [{ x: 330, y: 120, left: 900 }, { x: 300, y: 460, left: 900 }, { x: 660, y: 90, left: 900 }, { x: 690, y: 480, left: 900 }];
     var trees = []; for (var ti = 0; ti < 14; ti++) trees.push({ x: 420 + (ti % 7) * 28 + (ti * 37 % 17), y: 200 + Math.floor(ti / 7) * 130 + (ti * 53 % 23) });
@@ -67,6 +72,7 @@
     }
     var myHall = bld(0, "hall", 120, 280);
     var foeHall = bld(1, "hall", 880, 280);
+    if (rookie) { foeHall.hp = foeHall.maxHp = 240; }
     bld(1, "rax", 800, 180);
     // building pads fill in a fixed, sensible order (no fiddly placement on a phone)
     var PADS = { rax: { x: 215, y: 175 }, library: { x: 215, y: 390 }, tower: [{ x: 330, y: 220 }, { x: 330, y: 345 }] };
@@ -93,6 +99,7 @@
         (myRax ? barBtn("b_knight", "⚔️ Knight", COST.knight + "g") + barBtn("b_archer", "🏹 Archer", COST.archer + "g") : barBtn("b_rax", "🏯 Barracks", COST.rax + "g")) +
         (myLib ? barBtn("b_study", "📖 Study", "+2 army cap", "study") + barBtn("b_meteor", "☄️ Meteor", meteorCd > 0 ? Math.ceil(meteorCd) + "s" : "word spell", "study") : barBtn("b_library", "📚 Library", COST.library + "g")) +
         (towerCount < 2 ? barBtn("b_tower", "🗼 Tower", COST.tower + "g + word") : "") +
+        barBtn("b_bell", bell ? "⛏️ Work!" : "🔔 Garrison", bell ? "villagers come out" : "hide + castle shoots") +
         barBtn("b_mode", mode === "defend" ? "⚔️ ATTACK!" : "🛡 Defend", mode === "defend" ? "send the army" : "come home", "mode");
       function on(id, fn) { var b = document.getElementById(id); if (b) b.onclick = fn; }
       on("b_worker", function () { buy("worker"); });
@@ -103,6 +110,13 @@
       on("b_tower", function () { buyTower(); });
       on("b_study", openStudy);
       on("b_meteor", castMeteor);
+      on("b_bell", function () {
+        bell = !bell;
+        if (!bell) units.forEach(function (u) { if (u.team === 0) u.inside = false; });
+        big(bell ? "🔔 Villagers, into the castle!" : "⛏️ Back to work!", "#8ecdf7");
+        if (sfx && sfx.pop) sfx.pop();
+        renderBar();
+      });
       on("b_mode", function () {
         mode = mode === "defend" ? "attack" : "defend";
         big(mode === "attack" ? "⚔️ CHARGE!" : "🛡 Fall back!", mode === "attack" ? "#ff8a8a" : "#8ecdf7");
@@ -224,7 +238,7 @@
     }
     function nearestFoe(u, maxD) {
       var best = null, bd = maxD;
-      units.forEach(function (v) { if (v.team !== u.team) { var d = Math.hypot(v.x - u.x, v.y - u.y); if (d < bd) { bd = d; best = v; } } });
+      units.forEach(function (v) { if (v.team !== u.team && !v.inside) { var d = Math.hypot(v.x - u.x, v.y - u.y); if (d < bd) { bd = d; best = v; } } });
       // buildings pull less: only when no soldier is close
       if (!best) buildings.forEach(function (b) { if (b.team !== u.team) { var d = Math.hypot(b.x - u.x, b.y - u.y); if (d < bd) { bd = d; best = b; } } });
       return best;
@@ -235,6 +249,12 @@
     function stepWorker(u, dt) {
       if (u.team === 1) { // enemy workers just look busy
         u.x += Math.sin(run * 0.7 + u.y) * 6 * dt; return;
+      }
+      if (bell) { // 🔔 town bell: run inside, drop off any gold, stay safe
+        if (u.inside) return;
+        moveToward(u, myHall.x, myHall.y, dt);
+        if (Math.hypot(u.x - myHall.x, u.y - myHall.y) < 36) { u.inside = true; if (u.carry) { gold += u.carry; u.carry = 0; hud(); } }
+        return;
       }
       if (u.carry) { // bring gold home
         moveToward(u, myHall.x + 40, myHall.y, dt);
@@ -279,14 +299,30 @@
       units.forEach(function (v) { if (v !== u && v.team === u.team) { var dd = Math.hypot(v.x - u.x, v.y - u.y); if (dd < 20 && dd > 0) { u.x += (u.x - v.x) / dd * 14 * dt; u.y += (u.y - v.y) / dd * 14 * dt; } } });
       u.x = Math.max(20, Math.min(MW - 20, u.x)); u.y = Math.max(40, Math.min(MH - 20, u.y));
     }
+    function garrisonCount() { return units.filter(function (u) { return u.team === 0 && u.inside; }).length; }
     function stepTowers(dt) {
       buildings.forEach(function (b) {
         if (b.kind !== "tower") return;
         b.cd -= dt; if (b.cd > 0) return;
         var tgt = null, bd = BLD.tower.range;
-        units.forEach(function (v) { if (v.team !== b.team) { var d = Math.hypot(v.x - b.x, v.y - b.y); if (d < bd) { bd = d; tgt = v; } } });
+        units.forEach(function (v) { if (v.team !== b.team && !v.inside) { var d = Math.hypot(v.x - b.x, v.y - b.y); if (d < bd) { bd = d; tgt = v; } } });
         if (tgt) { b.cd = BLD.tower.cd; effects.push({ kind: "arrow", x: b.x, y: b.y - 30, tx: tgt.x, ty: tgt.y, t: 0 }); hurt(tgt, BLD.tower.dmg); }
       });
+      // AoE town-bell rule: a garrisoned castle SHOOTS — more villagers, more arrows
+      var gc = garrisonCount();
+      if (gc > 0) {
+        myHall.cd = (myHall.cd || 0) - dt;
+        if (myHall.cd <= 0) {
+          var tgt2 = null, bd2 = 160;
+          units.forEach(function (v) { if (v.team === 1) { var d = Math.hypot(v.x - myHall.x, v.y - myHall.y); if (d < bd2) { bd2 = d; tgt2 = v; } } });
+          if (tgt2) {
+            myHall.cd = 0.9;
+            effects.push({ kind: "arrow", x: myHall.x, y: myHall.y - 40, tx: tgt2.x, ty: tgt2.y, t: 0 });
+            hurt(tgt2, 2 + gc);
+            if (sfx && sfx.pop && Math.random() < 0.4) sfx.pop();
+          }
+        }
+      }
     }
 
     // ---------- enemy waves ----------
@@ -294,12 +330,13 @@
       waveT -= dt;
       if (waveT <= 0) {
         waveNum++;
-        waveT = Math.max(22, 52 - skill * 22);
-        var size = Math.min(8, 1 + Math.floor(waveNum * (0.8 + skill * 1.2)));
+        waveT = Math.max(28, 58 - skill * 26);
+        var size = Math.min(rookie ? 4 : 8, 1 + Math.floor(waveNum * (0.35 + skill * 1.15)));
         for (var i = 0; i < size; i++) unit(1, Math.random() < 0.65 ? "knight" : "archer", foeHall.x - 40, foeHall.y - 40 + i * 22);
         big("⚠️ " + rival.name + "'s raid is coming!", "#ffd740");
         if (sfx && sfx.buzz) sfx.buzz();
       }
+      if (hintT > 0) { hintT -= dt; if (hintT <= 0 && !myLib) big("💡 Build a 📚 Library — studying makes your army BIGGER!", "#c9b6ff"); }
     }
 
     // ---------- win / lose ----------
@@ -351,12 +388,15 @@
         hpBar(px(b.x), py(b.y) - h / 2 - 8, w, b.hp / b.maxHp, b.team);
       });
       units.forEach(function (u) {
+        if (u.inside) return; // garrisoned villagers are safe inside the castle
         var s = u.kind === "worker" ? 30 : 36;
         var cfg = u.team === 0 ? myCfg : rivalCfg;
         var held = u.kind === "knight" ? "🗡️" : u.kind === "archer" ? "🏹" : (u.carry ? "💰" : "⛏️");
         AV.draw(ctx, { x: px(u.x), y: py(u.y) + s / 2, size: s, config: cfg, pose: "run", frame: run + u.x * 0.01, flip: u.face < 0, heldOverride: held });
         hpBar(px(u.x), py(u.y) - s * 0.75, s * 0.9, u.hp / u.maxHp, u.team);
       });
+      var gc2 = garrisonCount();
+      if (gc2 > 0) { ctx.font = Math.round(py(18)) + "px Trebuchet MS"; ctx.textAlign = "center"; ctx.fillStyle = "#fff"; ctx.fillText("🔔×" + gc2, px(myHall.x), py(myHall.y - 58)); }
       // effects
       for (var e = effects.length - 1; e >= 0; e--) {
         var fx = effects[e]; fx.t += 0.05;
