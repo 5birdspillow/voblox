@@ -23,7 +23,8 @@
     catapult: { name: "Crayon Catapult", emoji: "🖍️", cost: 150, hp: 90, dmg: 15, cd: 2.6, lob: true, lvl: 3, tip: "splash lobs" },
     bomb: { name: "Grammar Bomb", emoji: "💥", cost: 150, hp: 60, boom: true, lvl: 4, tip: "BOOM! one use" },
     magnet: { name: "Magnet Bookmark", emoji: "🧲", cost: 125, hp: 80, strip: true, stripCd: 7, lvl: 4, tip: "steals helmets" },
-    spell: { name: "Spell Book", emoji: "📜", cost: 200, hp: 90, dmg: 11, cd: 1.1, pierce: true, word: true, lvl: 5, tip: "word-powered beam" }
+    spell: { name: "Spell Book", emoji: "📜", cost: 200, hp: 90, dmg: 11, cd: 1.1, pierce: true, word: true, lvl: 5, tip: "word-powered beam" },
+    lamp: { name: "Lamp Novel", emoji: "💡", cost: 75, hp: 80, light: true, lvl: 11, tip: "lights the dark" }
   };
   var ZOMBIES = {
     basic: { name: "Scroller", emoji: "🧟", hp: 60, speed: 10, dps: 13 },
@@ -36,7 +37,11 @@
     splitter: { name: "Bot Splitter", emoji: "🤖", hp: 90, speed: 11, dps: 12, split: true },
     mini: { name: "Mini Bot", emoji: "🤖", hp: 25, speed: 15, dps: 8, small: true },
     miniboss: { name: "SIR HELMET", emoji: "🪖", hp: 420, speed: 6.5, dps: 22, big: true, armored: true },
-    boss: { name: "THE DOOMSCROLLER", emoji: "📺", hp: 1100, speed: 5.5, dps: 45, big: true }
+    boss: { name: "THE DOOMSCROLLER", emoji: "📺", hp: 1100, speed: 5.5, dps: 45, big: true },
+    gloweyes: { name: "Glow-Eyes", emoji: "👀", hp: 70, speed: 12, dps: 14, darkling: true },
+    pajama: { name: "Pajama Sprinter", emoji: "🥱", hp: 45, speed: 22, dps: 10 },
+    sleepgiant: { name: "Sleepwalker Giant", emoji: "😴", hp: 520, speed: 4.5, dps: 30, big: true, naps: true },
+    king: { name: "THE NOTIFICATION KING", emoji: "📵", hp: 1400, speed: 5, dps: 50, big: true, wordShield: true }
   };
   // level design: which rows are open, the spawn timeline, and what unlocks
   function levelPlan(n) {
@@ -82,6 +87,40 @@
     L.spawns.sort(function (a, b) { return a.t - b.t; });
     return L;
   }
+  // 🌃 CHAPTER 2 — NIGHT SHIFT (levels 11-15): the library after dark.
+  // Zombies move FASTER in darkness; 💡 Lamp Novels carve pools of light.
+  function nightPlan(n) {
+    function wave(t, type, row) { return { t: t, type: type, row: row }; }
+    var L = { rows: [0, 1, 2, 3, 4], spawns: [], intro: "", unlock: [], dark: true };
+    var R = function (rows) { return rows[Math.floor(Math.random() * rows.length)]; };
+    if (n === 11) {
+      L.rows = [1, 2, 3]; L.intro = "🌃 NIGHT SHIFT. The lights are out — zombies are FASTER in the dark. Plant 💡 Lamp Novels!";
+      L.unlock = ["lamp"];
+      [16, 30, 42, 54, 64, 74, 84, 92].forEach(function (t, i) { L.spawns.push(wave(t, i % 3 === 2 ? "gloweyes" : "basic", R(L.rows))); });
+    } else if (n === 12) {
+      L.intro = "Pajama Sprinters! They sleep-run straight at your shelves.";
+      [12, 24, 34, 44, 52, 60, 68, 76, 84, 92, 100].forEach(function (t, i) { L.spawns.push(wave(t, i % 4 === 3 ? "pajama" : i % 3 === 2 ? "gloweyes" : "basic", R(L.rows))); });
+    } else if (n === 13) {
+      L.intro = "Keep the lights ON — Glow-Eyes shrug off hits in darkness.";
+      [10, 20, 30, 40, 48, 56, 64, 72, 80, 88, 96].forEach(function (t, i) { L.spawns.push(wave(t, i % 4 === 3 ? "bucket" : i % 3 === 2 ? "gloweyes" : i % 2 ? "pajama" : "basic", R(L.rows))); });
+      L.spawns.push(wave(108, "sleepgiant", 2));
+      L.huge = [104];
+    } else if (n === 14) {
+      L.intro = "Two Sleepwalker Giants tonight. Try not to wake them. (You will.)";
+      [10, 18, 26, 34, 42, 50, 58, 66, 74, 82, 90, 98].forEach(function (t, i) { L.spawns.push(wave(t, ["basic", "pajama", "gloweyes", "shield"][i % 4], R(L.rows))); });
+      L.spawns.push(wave(106, "sleepgiant", 1));
+      L.spawns.push(wave(112, "sleepgiant", 3));
+      L.huge = [102];
+    } else {
+      L.intro = "📵 THE NOTIFICATION KING. His shield breaks ONLY for a word — TAP HIM and answer!";
+      [10, 18, 26, 34, 42, 50, 58, 66, 74, 82, 90, 98].forEach(function (t, i) { L.spawns.push(wave(t, ["gloweyes", "pajama", "bucket", "splitter"][i % 4], R(L.rows))); });
+      L.spawns.push(wave(110, "king", 2));
+      [118, 120, 122].forEach(function (t, i) { L.spawns.push(wave(t, i % 2 ? "pajama" : "gloweyes", R(L.rows))); });
+      L.huge = [107];
+    }
+    L.spawns.sort(function (a, b) { return a.t - b.t; });
+    return L;
+  }
   // 🌙 Midnight Library: endless survival — waves forever, faster and meaner
   function endlessPlan() {
     return { rows: [0, 1, 2, 3, 4], spawns: [], endless: true, unlock: [], intro: "Survive as long as you can. The horde never ends…" };
@@ -106,7 +145,12 @@
     "z:splitter": "A robot that multitasks so hard it becomes two robots.",
     "z:mini": "Half a robot. Twice the attitude.",
     "z:miniboss": "SIR HELMET took knighthood classes online. Certificate pending.",
-    "z:boss": "THE DOOMSCROLLER. He IS the algorithm. Beat him with words."
+    "z:boss": "THE DOOMSCROLLER. He IS the algorithm. Beat him with words.",
+    "b:lamp": "A cozy novel so warm it literally glows. Zombies hate a good reading lamp.",
+    "z:gloweyes": "Sees perfectly in the dark. Books hit him softer in shadow — keep him lit!",
+    "z:pajama": "Sleep-runs at full speed. Do not ask about the bunny slippers.",
+    "z:sleepgiant": "Naps mid-invasion. The snoring knocks books off shelves.",
+    "z:king": "📵 THE NOTIFICATION KING. His shield of unread alerts breaks only for a WORD."
   };
   // 🏭 Bindery upgrades — bought with 📜 Pages (earned from stars & the Almanac)
   var UPG = {
@@ -252,7 +296,21 @@
           '<span class="ebl">' + starTxt + "Lv " + n + " " + tierIcons + "</span>" +
           '<span class="ebs">' + ["First Shelf", "Five Rooms", "Helmet Heads", "Tablet Shields", "THE BOSS"][n - 1] + "</span></button>";
       }).join("");
-      var endlessBtn = '<button class="embtn study" style="min-width:150px' + (stats.beatBoss ? "" : ";opacity:.45") + '" id="bk_endless">' +
+      var lvl2 = stats.lvl2 || 11;
+      var nightRows = !stats.beatBoss ? '<div style="font-size:12px;color:#8a98a8;margin:6px 0">🌃 Chapter 2: Night Shift — beat THE BOSS to enter the dark…</div>' :
+        '<div style="margin:6px 0 2px;font-weight:900;color:#6a5ac0">🌃 Chapter 2: NIGHT SHIFT</div>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">' +
+        [11, 12, 13, 14, 15].map(function (n) {
+          var open = n <= lvl2;
+          var sn = starTotal(n);
+          var td = (stats.tierDone || {})[n] || 0;
+          var tierIcons = td >= 3 ? "📗📙📕" : td === 2 ? "📗📙" : td === 1 ? "📗" : "";
+          var starTxt = sn > 0 ? "⭐" + sn + "/9 " : (open ? "▶ " : "🔒 ");
+          return '<button class="embtn" style="min-width:118px;background:#2b2440;color:#e8e2ff' + (open ? "" : ";opacity:.45") + '" data-nlv="' + n + '">' +
+            '<span class="ebl">' + starTxt + "Night " + (n - 10) + " " + tierIcons + "</span>" +
+            '<span class="ebs" style="color:#b0a8d8">' + ["Lights Out", "Pajama Party", "Glow-Eyes", "Sleepwalkers", "THE KING"][n - 11] + "</span></button>";
+        }).join("") + "</div>";
+      var endlessBtn = nightRows + '<button class="embtn study" style="min-width:150px' + (stats.beatBoss ? "" : ";opacity:.45") + '" id="bk_endless">' +
         '<span class="ebl">🌙 Midnight Library</span><span class="ebs">' + (stats.beatBoss ? ("endless! best: wave " + (stats.endlessBest || 0)) : "beat THE BOSS to unlock") + "</span></button>" +
         '<button class="embtn" style="min-width:110px" id="bk_almanac"><span class="ebl">📖 Almanac</span><span class="ebs">' + Object.keys(stats.seen).length + "/" + (Object.keys(BOOKS).length + Object.keys(ZOMBIES).length) + ' found</span></button>' +
         '<button class="embtn" style="min-width:110px" id="bk_bindery"><span class="ebl">🏭 Bindery</span><span class="ebs">📜 ' + (stats.pages || 0) + " Pages</span></button>";
@@ -273,6 +331,13 @@
       if (eb) eb.onclick = function () { if (stats.beatBoss) beginLevel(6); else big("🔒 Beat THE BOSS first!", "#ffd740"); };
       var ab = document.getElementById("bk_almanac"); if (ab) ab.onclick = showAlmanac;
       var bb = document.getElementById("bk_bindery"); if (bb) bb.onclick = showBindery;
+      Array.prototype.forEach.call(end.querySelectorAll("[data-nlv]"), function (b) {
+        b.onclick = function () {
+          var n = +b.dataset.nlv;
+          if (n > (stats.lvl2 || 11)) { big("🔒 Beat Night " + (n - 11) + " first!", "#ffd740"); return; }
+          if (((stats.tierDone || {})[n] || 0) >= 1) showTierPick(n); else beginLevel(n, 1);
+        };
+      });
     }
     // 📖 THE ALMANAC — every book & zombie, silly bios, and a Secret Word quiz each
     function showAlmanac() {
@@ -379,7 +444,7 @@
           '<span class="ebl">' + T.emoji + " " + T.name + '</span>' +
           '<span class="ebs">' + (open ? ("⭐" + sn + "/3 · pays ×" + T.gemMul) : ("beat " + TIERS[tr - 1].name + " first")) + "</span></button>";
       }).join("");
-      end.innerHTML = '<div class="wqcard" style="text-align:center"><div class="wqtitle" style="font-size:19px">Level ' + n + " — pick your pain</div>" +
+      end.innerHTML = '<div class="wqcard" style="text-align:center"><div class="wqtitle" style="font-size:19px">' + (n >= 11 ? "Night " + (n - 10) : "Level " + n) + " — pick your pain</div>" +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:8px 0">' + btns + "</div>" +
         '<button class="wqskip" id="tp_back" type="button">back</button></div>';
       end.style.display = "flex";
@@ -395,8 +460,8 @@
     function beginLevel(n, tierN) {
       level = n; tier = tierN || 1;
       var T = TIERS[tier];
-      plan = n === 6 ? endlessPlan() : applyTier(levelPlan(n), tier, n);
-      run = 0; ink = n === 6 ? 150 : T.inkStart; spawnIdx = 0; hugeShown = {}; kills = 0; rushes = 0;
+      plan = n === 6 ? endlessPlan() : applyTier(n >= 11 ? nightPlan(n) : levelPlan(n), tier, n);
+      run = 0; ink = n === 6 ? 150 : (n >= 11 ? T.inkStart + 25 : T.inkStart); spawnIdx = 0; hugeShown = {}; kills = 0; rushes = 0;
       plants = []; zombies = []; shots = []; zshots = []; drops = []; selected = null; rushCd = 0; over = false; endShown = false;
       pw = 0; pwUsed = 0; dropT = T.dropEvery; endT = 8; endWave = 0; adaptT = 20; banked = false;
       for (var r = 0; r < ROWS; r++) { plants.push([null, null, null, null, null, null, null, null, null]); }
@@ -404,7 +469,7 @@
       resize(); // row metrics depend on how many lanes this level opens
       document.getElementById("bkend").style.display = "none";
       paused = false;
-      msgEl.innerHTML = "📚 <b>Level " + n + "</b>";
+      msgEl.innerHTML = plan.dark ? "🌃 <b>Night " + (n - 10) + "</b>" : "📚 <b>" + (n === 6 ? "Midnight Library" : "Level " + n) + "</b>";
       big("📖 " + plan.intro, "#ffe14d");
       renderBar(); hud();
     }
@@ -438,6 +503,9 @@
       var rw = bank.rw, res = bank.res;
       if (won && level >= stats.lvl && level < 5) { stats.lvl = level + 1; store.save(); }
       if (won && level === 5) { stats.beatBoss = true; store.save(); }
+      // 🌃 Chapter 2 chain
+      if (won && level >= 11 && level <= 14 && level + 1 > (stats.lvl2 || 11)) { stats.lvl2 = level + 1; store.save(); }
+      if (won && level === 15) { stats.beatBoss2 = true; store.save(); }
       // ⭐ per-tier star challenges: win / keep every book cart / unleash 2+ Power Words
       var earned = 0, newPages = 0;
       if (won && !endless) {
@@ -457,8 +525,11 @@
       if (endless && endWave > (stats.endlessBest || 0)) { stats.endlessBest = endWave; store.save(); }
       var T = TIERS[tier] || TIERS[1];
       var end = document.getElementById("bkend");
+      var lvName = level >= 11 ? "Night " + (level - 10) : "Level " + level;
       var title = endless ? "🌙 The library fell on wave " + endWave + (endWave >= (stats.endlessBest || 0) ? " — NEW RECORD!" : "!") :
-        won ? (level === 5 ? "THE LIBRARY IS SAVED! You beat the Doomscroller!" : T.emoji + " Level " + level + (tier > 1 ? " (" + T.name + ")" : "") + " cleared!") : "The zombies reached the shelves…";
+        won ? (level === 5 ? "THE LIBRARY IS SAVED! You beat the Doomscroller!" :
+          level === 15 ? "🌅 DAWN BREAKS! The Notification King is silenced!" :
+            T.emoji + " " + lvName + (tier > 1 ? " (" + T.name + ")" : "") + " cleared!") : "The zombies reached the shelves…";
       var starRow = (won && !endless) ? '<div style="font-size:26px;margin:2px 0">' + "⭐".repeat(earned) + "☆".repeat(3 - earned) + '</div>' +
         '<div style="font-size:11px;color:#5a6b7a">win · keep all carts · use 2+ ⚡ Power Words</div>' : "";
       var payRow = '<div style="margin:6px 0;font-weight:900;color:#2f9e44;font-size:17px">+' + rw.gems + ' <img class="vbx" src="icons/vobux.png" alt="Vobux"> · +' + rw.xp + " XP" +
@@ -467,12 +538,12 @@
       end.innerHTML = '<div class="wqcard" style="text-align:center"><div style="font-size:44px">' + (won ? "🏆" : endless ? "🌙" : "🧟") + '</div>' +
         '<div class="wqtitle" style="font-size:20px">' + title + "</div>" + starRow + payRow +
         '<div style="margin:2px 0">🧟 ' + kills + " munched · 🖋 " + rushes + " ink rushes · ⚡ " + pwUsed + " power words" + (res && res.rankedUp ? "<br>🎖 RANK UP!" : "") + "</div>" +
-        '<button class="submit big-next" id="bknext">' + (won && level < 5 ? "Next level ➜" : "Level select") + "</button></div>";
+        '<button class="submit big-next" id="bknext">' + (won && (level < 5 || (level >= 11 && level < 15)) ? "Next level ➜" : "Level select") + "</button></div>";
       end.style.display = "flex";
       if (won && sfx && sfx.fanfare) sfx.fanfare();
       if (won && juice) { juice.shake(6); for (var cf = 0; cf < 5; cf++) juice.burst(W * (0.2 + cf * 0.15), H * 0.3, ["#ffd23f", "#69f0ae", "#40c4ff", "#ff6b6b", "#e040fb"][cf], 16); }
       document.getElementById("bknext").onclick = function () {
-        if (won && level < 5) beginLevel(level + 1, tier); else showSelect();
+        if (won && (level < 5 || (level >= 11 && level < 15))) beginLevel(level + 1, tier); else showSelect();
       };
     }
 
@@ -583,7 +654,25 @@
       if (def.big) { big("📺 " + def.name + " HAS ENTERED THE LIBRARY!", "#c9b6ff"); if (sfx && sfx.buzz) sfx.buzz(); }
       else if (sfx && sfx.buzz && Math.random() < 0.25) sfx.buzz();
     }
+    // 🌃 is this spot lit? (home glow near the shelves, or a Lamp Novel's pool)
+    function litAt(x, row) {
+      if (!plan || !plan.dark) return true;
+      if (x < GXv + CWv * 2.1) return true; // the reading nook stays cozy
+      for (var c = 0; c < COLS; c++) {
+        for (var r2 = Math.max(0, row - 1); r2 <= Math.min(ROWS - 1, row + 1); r2++) {
+          var p = plants[r2] && plants[r2][c];
+          if (p && bdef(p.k).light && Math.abs(x - tileX(c)) < CWv * 2.4) return true;
+        }
+      }
+      return false;
+    }
     function hurtZ(z, dmg) {
+      var zd = ZOMBIES[z.type];
+      if (zd.wordShield && z.shield) { // 📵 the King ignores damage behind his shield
+        if (juice && Math.random() < 0.3) juice.text(X(z.x, tileY(z.row) - 46), Y(z.x, tileY(z.row) - 46), "🛡 WORD-LOCKED", "#c9b6ff");
+        return;
+      }
+      if (zd.darkling && plan && plan.dark && !litAt(z.x, z.row)) dmg = Math.ceil(dmg * 0.5); // Glow-Eyes shrugs in shadow
       z.hp -= dmg;
       if (juice && Math.random() < 0.4) juice.text(X(z.x, tileY(z.row) - 40), Y(z.x, tileY(z.row) - 40), "-" + dmg, "#ffd740");
       if (z.hp <= 0) {
@@ -720,6 +809,15 @@
         var zdef = ZOMBIES[zz.type];
         zz.chill = Math.max(0, zz.chill - dt);
         var sp = zz.speed * SPD * (zz.chill > 0 ? 0.5 : 1);
+        if (plan.dark && !litAt(zz.x, zz.row)) sp *= 1.35; // darkness emboldens them
+        if (zdef.naps) { // 😴 sleepwalkers stop-and-go
+          zz.napT = (zz.napT || 0) + dt;
+          if ((zz.napT % 4.5) > 3) sp = 0;
+        }
+        if (zdef.wordShield) { // 📵 the King re-arms his shield unless kept broken
+          if (zz.shield === undefined) { zz.shield = true; big("📵 TAP THE KING and answer his word to break the shield!", "#c9b6ff"); }
+          if (!zz.shield) { zz.shieldOffT = (zz.shieldOffT || 0) - dt; if (zz.shieldOffT <= 0) { zz.shield = true; big("📵 HIS SHIELD RE-ARMS!", "#ff8a8a"); if (sfx && sfx.buzz) sfx.buzz(); } }
+        }
         var col = Math.floor((zz.x - 24 - GXv) / CWv);
         var plant = (col >= 0 && col < COLS) ? plants[zz.row][col] : null;
         var atPlant = plant && zz.x - 24 <= tileX(col) + CWv * 0.3;
@@ -857,6 +955,37 @@
         ctx.fillText("📱", zxs + zsc * 0.34, zys + zsc * 0.28); // doomscrolling, always
         bar(zxs, zys - zsc * 0.66, zsc * 0.8, z.hp / z.maxHp, "#ff8a8a");
       });
+      // 🌃 NIGHT SHIFT: darkness veils unlit tiles; lamps carve warm pools
+      if (plan.dark) {
+        var dRows = compact ? plan.rows : [0, 1, 2, 3, 4];
+        dRows.forEach(function (r) {
+          if (plan.rows.indexOf(r) < 0) return;
+          for (var c = 0; c < COLS; c++) {
+            if (litAt(tileX(c), r)) continue;
+            var dk = TR(GXv + c * CWv, tileY(r) - CHv / 2, CWv - 3, CHv - 3);
+            ctx.fillStyle = "rgba(8,10,30,.52)";
+            ctx.fillRect(dk.x, dk.y, dk.w, dk.h);
+          }
+        });
+        // lamp glows
+        for (var lr = 0; lr < ROWS; lr++) for (var lc = 0; lc < COLS; lc++) {
+          var lp = plants[lr][lc];
+          if (lp && bdef(lp.k).light) {
+            ctx.fillStyle = "rgba(255,214,110," + (0.13 + Math.sin(run * 2.2 + lc) * 0.03) + ")";
+            ctx.beginPath(); ctx.arc(X(tileX(lc), tileY(lr)), Y(tileX(lc), tileY(lr)), pz(CWv * 2.4), 0, Math.PI * 2); ctx.fill();
+          }
+        }
+      }
+      // 📵 the King's word-shield ring
+      zombies.forEach(function (z) {
+        if (ZOMBIES[z.type].wordShield && z.shield) {
+          var kx = X(z.x, tileY(z.row)), ky = Y(z.x, tileY(z.row));
+          ctx.strokeStyle = "rgba(201,182,255," + (0.55 + Math.sin(run * 6) * 0.25) + ")"; ctx.lineWidth = 4;
+          ctx.beginPath(); ctx.arc(kx, ky, spriteS * 1.05, 0, Math.PI * 2); ctx.stroke();
+          ctx.fillStyle = "#c9b6ff"; ctx.font = "bold " + Math.round(spriteS * 0.26) + "px Trebuchet MS"; ctx.textAlign = "center";
+          ctx.fillText("TAP + WORD!", kx, ky - spriteS * 1.2);
+        }
+      });
       // boss health bar across the top
       var boss = null; zombies.forEach(function (z) { if (ZOMBIES[z.type].big) boss = z; });
       if (boss) {
@@ -887,6 +1016,14 @@
           return;
         }
       }
+      // 📵 tap the King to challenge his word-shield
+      for (var ki = 0; ki < zombies.length; ki++) {
+        var kz = zombies[ki];
+        if (ZOMBIES[kz.type].wordShield && kz.shield && Math.abs(mx - kz.x) < CWv * 0.9 && Math.abs(my - tileY(kz.row)) < CHv * 0.9) {
+          kingDuel(kz);
+          return;
+        }
+      }
       var t = tileAt(mx, my);
       if (!t) return;
       // 🧹 broom: sweep a book for half its ink back
@@ -905,6 +1042,24 @@
       // a charged ⚡ Power Word supercharges one of YOUR books
       if (plants[t.r] && plants[t.r][t.c] && pw > 0 && !selected) { superCharge(t.r, t.c); return; }
       tryPlace(t.r, t.c);
+    }
+    // 📵 the King's word-duel: answer to shatter his shield for 12s
+    function kingDuel(kz) {
+      if (paused || over) return;
+      paused = true;
+      cv._lastQ = VQ.miniQuiz(document.getElementById("bkq"), words, store, {
+        title: "📵 THE KING DEMANDS A WORD! Answer to break his shield!",
+        lastFormat: lastFmt,
+        cb: function (ok, res, fmt) {
+          lastFmt = fmt; paused = false;
+          if (ok) {
+            kz.shield = false; kz.shieldOffT = 12; kz.chill = Math.max(kz.chill, 2);
+            big("💥 SHIELD SHATTERED — 12 seconds, GO GO GO!", "#69f0ae");
+            if (juice) { juice.shake(8); juice.burst(X(kz.x, tileY(kz.row)), Y(kz.x, tileY(kz.row)), "#c9b6ff", 24); }
+            if (sfx && sfx.fanfare) sfx.fanfare();
+          } else big("The King laughs at your spelling…", "#ff8a8a");
+        }
+      });
     }
     // ⚡ POWER WORDS: earned by answering (ink rush), spent by tapping a book
     function superCharge(r, c) {
@@ -976,6 +1131,8 @@
       power: function (r, c) { superCharge(r, c); },
       tapLogical: tapLogical,
       bdef: bdef,
+      litAt: litAt,
+      duel: function (z) { kingDuel(z); },
       pages: function (n) { stats.pages = (stats.pages || 0) + n; },
       upgrade: function (k) { var lv = stats.up[k] || 0; if (stats.pages >= UPG_COST[lv]) { stats.pages -= UPG_COST[lv]; stats.up[k] = lv + 1; return true; } return false; },
       almanac: function () { return { seen: stats.seen, quizDone: stats.quizDone, pages: stats.pages }; },
@@ -992,6 +1149,14 @@
       cv._books.put("blaster", 1, 1); cv._books.put("blaster", 2, 1); cv._books.put("blaster", 3, 1);
       cv._books.put("wall", 2, 4);
       cv._books.zombie("basic", 2, 700); cv._books.zombie("speedy", 1, 820); cv._books.zombie("bucket", 3, 880);
+    }, 700);
+    if (global._bvznight) setTimeout(function () { // test hook: NIGHT SHIFT with the King mid-duel
+      global._bvznight = 0;
+      beginLevel(15);
+      cv._books.give(500);
+      cv._books.put("dict", 1, 0); cv._books.put("lamp", 2, 2); cv._books.put("lamp", 1, 5);
+      cv._books.put("blaster", 1, 1); cv._books.put("blaster", 2, 1); cv._books.put("blaster", 3, 1);
+      cv._books.zombie("gloweyes", 3, 700); cv._books.zombie("pajama", 1, 840); cv._books.zombie("king", 2, 760);
     }, 700);
     lastT = performance.now(); raf = requestAnimationFrame(frame);
   }
