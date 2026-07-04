@@ -194,6 +194,73 @@
     }
   };
 
+  // ---------- players: whole-family profiles (Leo AND Liana) ----------
+  // Each player owns a complete pair of saves (word progress + Vocraft world).
+  // The CURRENT player lives in the normal keys (so no other code changes);
+  // everyone else is "parked" under voblox.player.park.<id>. Switching parks
+  // the live keys and unparks the target — the same battle-tested snapshot
+  // shape the save slots use. Caller must location.reload() after switchTo.
+  var PK = { current: "voblox.player.current", index: "voblox.player.index", park: "voblox.player.park.", pendingName: "voblox.player.pendingName", pendingSeed: "voblox.craft.pendingSeed" };
+  function readJSON(k) { try { var r = ls().getItem(k); return r ? JSON.parse(r) : null; } catch (e) { return null; } }
+  var players = {
+    // the registry, creating it on first use around whoever is playing now
+    list: function (liveName) {
+      var idx = readJSON(PK.index);
+      if (!idx || !idx.length) {
+        idx = [{ id: "p1", name: liveName || "Leo" }];
+        try { ls().setItem(PK.index, JSON.stringify(idx)); ls().setItem(PK.current, "p1"); } catch (e) {}
+      }
+      return idx;
+    },
+    current: function () { return ls().getItem(PK.current) || "p1"; },
+    create: function (name) {
+      var idx = players.list();
+      var id = "p" + (idx.length + 1) + Math.floor(Math.random() * 900 + 100);
+      idx.push({ id: id, name: name });
+      try { ls().setItem(PK.index, JSON.stringify(idx)); } catch (e) {}
+      return id;
+    },
+    rename: function (id, name) {
+      var idx = players.list().map(function (p) { if (p.id === id) p.name = name; return p; });
+      try { ls().setItem(PK.index, JSON.stringify(idx)); } catch (e) {}
+    },
+    // park the live keys under the current player, then unpark (or fresh-start) the target
+    switchTo: function (id) {
+      var idx = players.list(), cur = players.current();
+      var target = idx.filter(function (p) { return p.id === id; })[0];
+      if (!target || id === cur) return false;
+      try {
+        var liveSave = ls().getItem(SAVE_KEY), liveCraft = ls().getItem(CRAFT_KEY);
+        ls().setItem(PK.park + cur, JSON.stringify({ save: liveSave || null, craft: liveCraft || null }));
+        var parked = readJSON(PK.park + id);
+        if (parked && parked.save) {
+          ls().setItem(SAVE_KEY, parked.save);
+          if (parked.craft) ls().setItem(CRAFT_KEY, parked.craft); else ls().removeItem(CRAFT_KEY);
+        } else {
+          // brand-new player: fresh start, their name applied on next boot,
+          // and their OWN Vocraft world (random seed)
+          ls().removeItem(SAVE_KEY); ls().removeItem(CRAFT_KEY);
+          ls().setItem(PK.pendingName, target.name);
+          ls().setItem(PK.pendingSeed, String(10000 + Math.floor(Math.random() * 899999)));
+        }
+        ls().removeItem(PK.park + id);
+        ls().setItem(PK.current, id);
+        return true;
+      } catch (e) { return false; }
+    },
+    // pages call this after their Store boots: names a freshly created player
+    applyPending: function (state, save) {
+      var nm = ls().getItem(PK.pendingName);
+      if (nm && state && state.profile) {
+        state.profile.name = nm;
+        try { ls().removeItem(PK.pendingName); } catch (e) {}
+        if (save) save();
+        return nm;
+      }
+      return null;
+    }
+  };
+
   var P = {
     SCHEMA: 2,
     DEFAULT_AVATAR: DEFAULT_AVATAR,
@@ -214,6 +281,7 @@
     hashStr: hashStr,
     dayKey: dayKey,
     slots: slots,
+    players: players,
     _ls: null // test harness injects a memory shim here
   };
 

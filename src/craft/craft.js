@@ -67,7 +67,14 @@
   var SAVE = "voblox.craft.v1";
   var save = { seed: 12345, edits: {}, px: 8, py: 30, pz: 8, yaw: 0, pitch: 0 };
   (function loadSave() {
-    try { var raw = localStorage.getItem(SAVE); if (raw) { var o = JSON.parse(raw); if (o && o.edits) save = o; } } catch (e) {}
+    try {
+      var raw = localStorage.getItem(SAVE);
+      if (raw) { var o = JSON.parse(raw); if (o && o.edits) save = o; }
+      else { // a brand-new player gets their OWN world (seed set at player creation)
+        var ps = localStorage.getItem("voblox.craft.pendingSeed");
+        if (ps) { save.seed = parseInt(ps, 10) || save.seed; localStorage.removeItem("voblox.craft.pendingSeed"); }
+      }
+    } catch (e) {}
   })();
   var SEED = save.seed;
   var saveTimer = 0;

@@ -10,6 +10,11 @@
   var VOBLOX_VERSION = window.VOBLOX_VERSION || "dev";
 
   var store = new window.VobloxStore.Store(Content.allWords());
+  // players: name a freshly created player + make sure the registry exists
+  if (window.VobloxProfile && window.VobloxProfile.players) {
+    window.VobloxProfile.players.applyPending(store.state, function () { store.save(); });
+    window.VobloxProfile.players.list((store.state.profile && store.state.profile.name) || "Leo");
+  }
   var available = Content.availableLessons();
   var activeLesson = String(store.state.activeLesson || (available[0] ? available[0].lesson : 5));
   if (!Content.getLesson(activeLesson)) activeLesson = String(available[0] ? available[0].lesson : 5);
@@ -335,12 +340,36 @@
     head.position.y = 2.5; head.castShadow = true;
     var hatSpr = new THREE.Sprite(new THREE.SpriteMaterial({ map: emojiTex(cfg0.hat || " "), depthWrite: false, transparent: true }));
     hatSpr.scale.set(0.9, 0.9, 1); hatSpr.position.set(0, 3.2, 0); hatSpr.visible = !!cfg0.hat;
+    // hair — style parts toggle per config (Liana's ponytail is REAL)
+    var hairMat = new THREE.MeshLambertMaterial({ color: hex(cfg0.hairColor || "#6b4a2f") });
+    var hairCap = new THREE.Mesh(new THREE.BoxGeometry(0.94, 0.3, 0.94), hairMat); hairCap.position.y = 2.86;
+    var hairBack = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.6, 0.18), hairMat); hairBack.position.set(0, 2.45, -0.42);
+    var hairPony = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.85, 0.24), hairMat); hairPony.position.set(0, 2.2, -0.55);
+    var hairL = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.85, 0.52), hairMat); hairL.position.set(-0.54, 2.35, 0);
+    var hairR = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.85, 0.52), hairMat); hairR.position.set(0.54, 2.35, 0);
+    var tailL = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.55, 0.22), hairMat); tailL.position.set(-0.62, 2.5, -0.12);
+    var tailR = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.55, 0.22), hairMat); tailR.position.set(0.62, 2.5, -0.12);
+    var hairParts = [hairCap, hairBack, hairPony, hairL, hairR, tailL, tailR];
+    hairParts.forEach(function (m) { m.castShadow = true; g.add(m); });
+    function applyHair(cfg) {
+      hairMat.color.setHex(hex(cfg.hairColor || "#6b4a2f"));
+      var hs = cfg.hair && cfg.hair !== "none" ? cfg.hair : null;
+      hairCap.visible = !!hs;
+      hairCap.scale.y = hs === "spiky" ? 1.6 : 1;
+      hairBack.visible = !!hs && hs !== "spiky";
+      hairPony.visible = hs === "pony";
+      hairL.visible = hairR.visible = (hs === "long" || hs === "bob");
+      hairL.scale.y = hairR.scale.y = (hs === "bob" ? 0.6 : 1);
+      tailL.visible = tailR.visible = hs === "pigtails";
+    }
+    applyHair(cfg0);
     g.add(ll, rl, torso, la, ra, head, hatSpr); scene.add(g);
     function applyConfig(cfg) {
       pantsMat.color.setHex(hex(cfg.pants)); shirtMat.color.setHex(hex(cfg.shirt)); skinMat.color.setHex(hex(cfg.skin));
       faceMat.map = faceTex(cfg.skin, cfg.face); faceMat.needsUpdate = true;
       if (cfg.hat) { hatSpr.material.map = emojiTex(cfg.hat); hatSpr.material.needsUpdate = true; hatSpr.visible = true; }
       else hatSpr.visible = false;
+      applyHair(cfg);
     }
     return { group: g, ll: ll, rl: rl, la: la, ra: ra, applyConfig: applyConfig };
   })();
@@ -550,6 +579,7 @@
       '<button class="menubtn" id="m_lessons">🗺️ Choose Lesson</button>' +
       '<button class="menubtn" id="m_words">📖 Word List (all meanings)</button>' +
       '<button class="menubtn ' + (unlocked ? "" : "locked") + '" id="m_chess">♟ Chess Puzzle ' + (unlocked ? "" : "🔒 reach 90%") + '</button>' +
+      '<button class="menubtn" id="m_players" style="background:linear-gradient(#c9b6ff,#9d8df1);border-color:#6b5ac0">👥 Players — playing as <b>' + esc((store.state.profile && store.state.profile.name) || "Leo") + '</b></button>' +
       '<a class="menubtn" href="dashboard.html">👪 For Grown-ups (progress)</a>' +
       '<button class="menubtn" id="m_help">🎮 How to play</button>' +
       '<button class="menubtn" id="m_reset">🔄 Reset progress</button>' +
@@ -562,6 +592,7 @@
     document.getElementById("m_lessons").onclick = openLessons;
     document.getElementById("m_words").onclick = openWordList;
     document.getElementById("m_help").onclick = openHelp;
+    document.getElementById("m_players").onclick = openPlayers;
     document.getElementById("m_chess").onclick = function () { if (unlocked) openChess(); else flash("Reach 90% to unlock chess!"); };
     document.getElementById("m_reset").onclick = function () {
       if (!window.confirm("Reset ALL progress? This erases words, Vobux, level, items, pets, ranks AND Vocraft. (Your 3 manual save slots are kept — delete those in Backpack → Slots.)")) return;
@@ -577,6 +608,48 @@
   }
   function esc(s) { return VQ.esc(s); }
   function gradeText(p) { return p >= 90 ? "A 🌟" : p >= 80 ? "B 👍" : "keep going 💪"; }
+
+  // ---------- 👥 players: everyone in the family gets their OWN save ----------
+  function openPlayers() {
+    var PP = window.VobloxProfile;
+    var liveName = (store.state.profile && store.state.profile.name) || "Leo";
+    var list = PP.players.list(liveName);
+    var cur = PP.players.current();
+    var rows = list.map(function (pl) {
+      var isCur = pl.id === cur;
+      return '<button class="menubtn' + (isCur ? "" : "") + '" data-pl="' + pl.id + '"' + (isCur ? ' style="background:linear-gradient(#d8f7d6,#b0e8ae);border-color:#43c34a"' : "") + '>' +
+        (isCur ? "▶ " : "") + "🧒 " + esc(pl.name) + (isCur ? ' <span class="muted">— playing now</span>' : "") + "</button>";
+    }).join("");
+    openOverlay('<div class="card menucard"><h2>👥 Players <span class="x" id="gx" style="float:right">✕</span></h2>' + rows +
+      '<button class="menubtn" id="pl_new">＋ New player</button>' +
+      '<button class="menubtn" id="pl_rename">✏️ Rename ' + esc(liveName) + '</button>' +
+      '<div class="help">Every player has their OWN Vobux, words, pets, ranks and Vocraft world. Switching saves everything first — nothing is ever lost.</div></div>',
+      function (e) { if (e.key === "Escape") openMenu(); });
+    document.getElementById("gx").onclick = openMenu;
+    Array.prototype.forEach.call(obox.querySelectorAll("[data-pl]"), function (b) {
+      b.onclick = function () {
+        if (b.dataset.pl === cur) { flash("That's who's playing now!"); return; }
+        var target = list.filter(function (x) { return x.id === b.dataset.pl; })[0];
+        if (PP.players.switchTo(b.dataset.pl)) { flash("Switching to " + target.name + "…"); setTimeout(function () { location.reload(); }, 300); }
+      };
+    });
+    document.getElementById("pl_new").onclick = function () {
+      var name = (window.prompt("New player's name?") || "").trim();
+      if (!name) return;
+      if (name.length > 14) name = name.slice(0, 14);
+      var id = PP.players.create(name);
+      if (PP.players.switchTo(id)) { flash("Welcome, " + name + "! Building your world…"); setTimeout(function () { location.reload(); }, 400); }
+    };
+    document.getElementById("pl_rename").onclick = function () {
+      var name = (window.prompt("New name for this player?", liveName) || "").trim();
+      if (!name) return;
+      if (name.length > 14) name = name.slice(0, 14);
+      PP.players.rename(cur, name);
+      store.state.profile.name = name; store.save();
+      flash("You are now " + name + "!");
+      openPlayers();
+    };
+  }
 
   function openLessons() {
     var avail = Content.availableLessons();
@@ -699,5 +772,11 @@
   else if (location.hash.indexOf("#game=") === 0) { var gid = location.hash.slice(6); var gm = (window.VobloxGames || []).filter(function (x) { return x.id === gid; })[0]; if (gm) launchGame(gm); }
   else if (location.hash === "#chess") openChess();
   else if (location.hash === "#arcade") openBackpack("quests");
+  else if (location.hash.indexOf("#hair=") === 0) { // test hook: preview a hairstyle on the 3D avatar
+    var hs2 = location.hash.slice(6);
+    store.state.profile.avatar.hair = hs2; store.state.profile.avatar.hairColor = "#e884c8"; store.save();
+    if (window.VobloxAvatar) avatar.applyConfig(window.VobloxAvatar.resolve(store.state));
+  }
+  else if (location.hash === "#players") openPlayers(); // test hook: the players overlay
   if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(function () {});
 })();

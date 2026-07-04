@@ -10,7 +10,9 @@
  *             name, flip (face left) })
  */
 (function (global) {
-  var DEFAULT = { skin: "#ffcc88", shirt: "#2f7be0", pants: "#394063", face: "smile", hat: null, held: null };
+  var DEFAULT = { skin: "#ffcc88", shirt: "#2f7be0", pants: "#394063", face: "smile", hat: null, held: null, hair: null, hairColor: "#6b4a2f" };
+  // hair styles are free identity customization (not loot) — Liana gets to be Liana
+  var HAIRSTYLES = ["none", "bob", "long", "pony", "pigtails", "spiky"];
 
   function shade(hex, f) { // f<1 darkens
     try {
@@ -73,9 +75,21 @@
     limb(c, torsoW * 0.22, hipY, legW, legH, p.rl, pants, out);
     limb(c, torsoW * 0.34, shoY + armH * 0.06, armW, armH, p.ra, skin, out);
 
+    // hair BEHIND the head (tails/curtains), then head, then the cap+bangs on top
+    var hair = cfg.hair && cfg.hair !== "none" ? cfg.hair : null;
+    var hc = cfg.hairColor || DEFAULT.hairColor;
+    function hairRect(x, y, w, h, r) { rr(c, x, y, w, h, r); c.fillStyle = hc; c.fill(); c.lineWidth = out; c.strokeStyle = shade(hc, 0.62); c.stroke(); }
+    if (hair === "pony") hairRect(-headS * 0.16, headTop + headS * 0.25, headS * 0.32, headS * 1.05, headS * 0.16);
+    if (hair === "long") { hairRect(-headS * 0.72, headTop + headS * 0.1, headS * 0.3, headS * 1.15, headS * 0.14); hairRect(headS * 0.42, headTop + headS * 0.1, headS * 0.3, headS * 1.15, headS * 0.14); }
+    if (hair === "pigtails") { hairRect(-headS * 0.82, headTop + headS * 0.05, headS * 0.3, headS * 0.62, headS * 0.15); hairRect(headS * 0.52, headTop + headS * 0.05, headS * 0.3, headS * 0.62, headS * 0.15); }
     // head
     rr(c, -headS / 2, headTop, headS, headS, s * 0.03);
     c.fillStyle = skin; c.fill(); c.lineWidth = out; c.strokeStyle = shade(skin, 0.62); c.stroke();
+    if (hair) {
+      hairRect(-headS * 0.56, headTop - headS * 0.12, headS * 1.12, headS * 0.42, headS * 0.16); // top cap + bangs
+      if (hair === "bob") { hairRect(-headS * 0.56, headTop + headS * 0.1, headS * 0.16, headS * 0.72, headS * 0.08); hairRect(headS * 0.4, headTop + headS * 0.1, headS * 0.16, headS * 0.72, headS * 0.08); }
+      if (hair === "spiky") { for (var sp2 = -2; sp2 <= 2; sp2++) { c.beginPath(); c.moveTo(sp2 * headS * 0.22 - headS * 0.09, headTop - headS * 0.06); c.lineTo(sp2 * headS * 0.22, headTop - headS * 0.38); c.lineTo(sp2 * headS * 0.22 + headS * 0.09, headTop - headS * 0.06); c.closePath(); c.fillStyle = hc; c.fill(); } }
+    }
 
     // face: keyword -> drawn eyes+smile; emoji -> stamped on the head
     var face = cfg.face || "smile";
@@ -126,6 +140,11 @@
     c.save(); c.translate(o.x, o.y);
     rr(c, -s / 2, -s / 2, s, s, s * 0.14);
     c.fillStyle = cfg.skin || DEFAULT.skin; c.fill(); c.lineWidth = out; c.strokeStyle = shade(cfg.skin || DEFAULT.skin, 0.62); c.stroke();
+    if (cfg.hair && cfg.hair !== "none") {
+      var hc2 = cfg.hairColor || DEFAULT.hairColor;
+      rr(c, -s * 0.56, -s * 0.62, s * 1.12, s * 0.4, s * 0.16);
+      c.fillStyle = hc2; c.fill(); c.lineWidth = out; c.strokeStyle = shade(hc2, 0.62); c.stroke();
+    }
     var face = cfg.face || "smile";
     if (/^[a-z]+$/.test(face)) {
       c.fillStyle = "#26323a";
@@ -158,10 +177,12 @@
       face: faceIt ? faceIt.emoji : (av.face || "smile"),
       hat: hatIt ? hatIt.emoji : (av.hat || null),
       held: null,
+      hair: av.hair || null,
+      hairColor: av.hairColor || DEFAULT.hairColor,
       trail: trailIt || null,
       pet: hatchPet ? (hatchPet.shiny ? "✨" : "") + hatchPet.emoji : (petIt ? petIt.emoji : null)
     };
   }
 
-  global.VobloxAvatar = { draw: draw, drawHead: drawHead, resolve: resolve, POSES: Object.keys(POSES), DEFAULT: DEFAULT, shade: shade };
+  global.VobloxAvatar = { draw: draw, drawHead: drawHead, resolve: resolve, POSES: Object.keys(POSES), DEFAULT: DEFAULT, HAIRSTYLES: HAIRSTYLES, shade: shade };
 })(typeof window !== "undefined" ? window : globalThis);

@@ -138,11 +138,56 @@
 
   // ---------- Locker tab ----------
   var SLOTS = [
+    { k: "style", label: "💇 Style" },
     { k: "hat", label: "🎩 Hats" }, { k: "face", label: "😀 Faces" }, { k: "shirt", label: "👕 Shirts" },
     { k: "pants", label: "👖 Pants" }, { k: "trail", label: "✨ Trails" }, { k: "pet", label: "🐾 Pets" }, { k: "gear", label: "⚙️ Gear" }
   ];
+  // hair + skin are free identity choices, not loot (Liana gets to be Liana on day one)
+  var HAIRS = [
+    { id: "none", label: "🚫 None" }, { id: "bob", label: "💇 Bob" }, { id: "long", label: "👩 Long" },
+    { id: "pony", label: "🐴 Ponytail" }, { id: "pigtails", label: "🎀 Pigtails" }, { id: "spiky", label: "🦔 Spiky" }
+  ];
+  var HAIRCOLORS = ["#3a2a1a", "#6b4a2f", "#b3722f", "#e8c95a", "#1c1c22", "#c0392b", "#e884c8", "#8e6cf0"];
+  var SKINS = ["#ffcc88", "#f2b07b", "#d99562", "#b06b3f", "#8a4f2c", "#6b3a1f"];
+  function renderStyle(el) {
+    var st = state();
+    var av = st.profile.avatar = st.profile.avatar || {};
+    var hairRows = HAIRS.map(function (h) {
+      return '<button class="lchip' + ((av.hair || "none") === h.id ? " on" : "") + '" data-hair="' + h.id + '">' + h.label + "</button>";
+    }).join("");
+    function swatches(list, cur, attr) {
+      return list.map(function (col) {
+        return '<button class="lchip" data-' + attr + '="' + col + '" style="background:' + col + ';width:38px;height:32px;border-radius:9px;' +
+          (cur === col ? "outline:3px solid #ffce3a;" : "") + '" title="' + col + '"></button>';
+      }).join("");
+    }
+    el.innerHTML = headerHTML() +
+      '<div class="lockerwrap"><div class="lockerleft"><canvas id="lockerprev" width="170" height="220"></canvas>' +
+      '<div class="lname">' + esc(st.profile.name) + "</div></div>" +
+      '<div class="lockerright"><div class="lchips">' + SLOTS.map(function (s) { return '<button class="lchip' + (lockerSlot === s.k ? " on" : "") + '" data-ls="' + s.k + '">' + s.label + "</button>"; }).join("") + "</div>" +
+      '<h3 style="margin:8px 0 4px">💇 Hair</h3><div class="lchips">' + hairRows + "</div>" +
+      '<h3 style="margin:10px 0 4px">🎨 Hair color</h3><div class="lchips">' + swatches(HAIRCOLORS, av.hairColor || "#6b4a2f", "hc") + "</div>" +
+      '<h3 style="margin:10px 0 4px">🧑 Skin</h3><div class="lchips">' + swatches(SKINS, av.skin || "#ffcc88", "sk") + "</div>" +
+      '<div class="shopchest">Free forever — this is who YOU are, not stuff you buy. 💛</div></div></div>';
+    wireHeader();
+    Array.prototype.forEach.call(el.querySelectorAll("[data-ls]"), function (b) { b.onclick = function () { lockerSlot = b.dataset.ls; render(); }; });
+    Array.prototype.forEach.call(el.querySelectorAll("[data-hair]"), function (b) { b.onclick = function () { av.hair = b.dataset.hair; save(); SFX().pop(); if (env.onEquip) env.onEquip(); render(); }; });
+    Array.prototype.forEach.call(el.querySelectorAll("[data-hc]"), function (b) { b.onclick = function () { av.hairColor = b.dataset.hc; save(); SFX().pop(); if (env.onEquip) env.onEquip(); render(); }; });
+    Array.prototype.forEach.call(el.querySelectorAll("[data-sk]"), function (b) { b.onclick = function () { av.skin = b.dataset.sk; save(); SFX().pop(); if (env.onEquip) env.onEquip(); render(); }; });
+    startPreview();
+  }
+  function startPreview() {
+    var t0 = performance.now();
+    (function loop() {
+      var cv = document.getElementById("lockerprev"); if (!cv) return;
+      var c = cv.getContext("2d"); c.clearRect(0, 0, cv.width, cv.height);
+      AV().draw(c, { x: 85, y: 205, size: 150, config: AV().resolve(state()), pose: "celebrate", frame: (performance.now() - t0) / 1000 });
+      prevRaf = requestAnimationFrame(loop);
+    })();
+  }
   function renderLocker(el) {
     var st = state();
+    if (lockerSlot === "style") { renderStyle(el); return; }
     var items = IT().ALL.filter(function (it) {
       return lockerSlot === "gear" ? it.slot.indexOf("gear.") === 0 : it.slot === lockerSlot;
     });
