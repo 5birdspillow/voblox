@@ -789,8 +789,10 @@
   else if (location.hash === "#players") openPlayers(); // test hook: the players overlay
   else if (location.hash === "#locker") openBackpack("locker"); // test hook: the locker
   else if (location.hash === "#style") openBackpack("locker", "style"); // test hook: Style panel (hair + voice)
-  else if (location.hash === "#bvzdemo" || location.hash === "#bvznight") { // test hooks: BvZ boards
-    if (location.hash === "#bvznight") window._bvznight = 1; else window._bvzdemo = 1;
+  else if (location.hash === "#bvzdemo" || location.hash === "#bvznight" || location.hash === "#bvzschool") { // test hooks: BvZ boards
+    if (location.hash === "#bvznight") window._bvznight = 1;
+    else if (location.hash === "#bvzschool") window._bvzschool = 1;
+    else window._bvzdemo = 1;
     var bkgm = (window.VobloxGames || []).filter(function (x) { return x.id === "books"; })[0];
     if (bkgm) launchGame(bkgm);
   }
