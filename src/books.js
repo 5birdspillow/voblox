@@ -165,6 +165,18 @@
   };
   var UPG_COST = [3, 6];
 
+  // 🌙 LIBRARIAN BLESSINGS — roguelite perks offered every 10 endless waves
+  var BLESS = [
+    { id: "sharp", name: "Sharpened Letters", emoji: "📕", t: "all book damage +25%" },
+    { id: "golden", name: "Golden Ink", emoji: "💧", t: "ink drops worth 30 (double)" },
+    { id: "bargain", name: "Bargain Bindery", emoji: "🏷", t: "books cost 20% less" },
+    { id: "storm", name: "Ink Storm", emoji: "🖋", t: "dictionaries drip 50% faster" },
+    { id: "frost", name: "Night Frost", emoji: "❄️", t: "new zombies arrive chilled" },
+    { id: "restock", name: "Cart Restock", emoji: "🛒", t: "all used book carts RETURN" },
+    { id: "surge", name: "Word Surge", emoji: "⚡", t: "+2 Power Words right now" },
+    { id: "wide", name: "Wide Crayons", emoji: "🖍", t: "splash area +50%" }
+  ];
+
   // 📗 Normal / 📙 Hard / 📕 NIGHTMARE — Nightmare is tuned to beat GROWN-UPS
   var TIERS = {
     1: { name: "Normal", emoji: "📗", hpMul: 1, spdMul: 1, dropEvery: 9, extra: 0, inkStart: 75, gemMul: 1 },
@@ -271,6 +283,8 @@
     var selected = null, rushCd = 0, lastFmt = null, kills = 0, rushes = 0;
     var drops = [], dropT = 9, pw = 0, pwUsed = 0, zshots = [], endT = 6, endWave = 0;
     var tier = 1, adaptT = 20, banked = false, adaptWarned = false;
+    var mods = null, milestones = 0;
+    function freshMods() { return { dmgMul: 1, dropVal: 15, costMul: 1, dripMul: 1, spawnChill: 0, splashMul: 1, blessed: [] }; }
 
     var msgEl = document.getElementById("bkmsg"), bigEl = document.getElementById("bkbig");
     function big(m, col) { bigEl.textContent = m; bigEl.style.color = col || "#fff"; bigEl.style.opacity = "1"; setTimeout(function () { bigEl.style.opacity = "0"; }, 1300); }
@@ -464,6 +478,7 @@
       run = 0; ink = n === 6 ? 150 : (n >= 11 ? T.inkStart + 25 : T.inkStart); spawnIdx = 0; hugeShown = {}; kills = 0; rushes = 0;
       plants = []; zombies = []; shots = []; zshots = []; drops = []; selected = null; rushCd = 0; over = false; endShown = false;
       pw = 0; pwUsed = 0; dropT = T.dropEvery; endT = 8; endWave = 0; adaptT = 20; banked = false;
+      mods = freshMods(); milestones = 0;
       for (var r = 0; r < ROWS; r++) { plants.push([null, null, null, null, null, null, null, null, null]); }
       carts = plan.rows.map(function (r) { return { row: r, used: false, x: GXv - 52, rolling: false }; });
       resize(); // row metrics depend on how many lanes this level opens
@@ -480,7 +495,7 @@
       var endless = plan && plan.endless;
       var T = TIERS[tier] || TIERS[1];
       var studyBonus = rushes * 3; // studying always pays extra at the end
-      var gems = studyBonus + (won ? (10 + level * 5) * T.gemMul : (endless ? Math.min(30, 3 + endWave) : 5));
+      var gems = studyBonus + (won ? (10 + level * 5) * T.gemMul : (endless ? Math.min(90, 3 + endWave + milestones * 5) : 5));
       return {
         win: !!won,
         score: kills * 4 + rushes * 10 + (endless ? endWave * 8 : level * 20 * tier),
@@ -603,9 +618,10 @@
     }
     function place(k, r, c) {
       var def = bdef(k);
+      var mcost = Math.ceil(def.cost * ((mods || {}).costMul || 1));
       stats.seen["b:" + k] = 1;
       plants[r][c] = { k: k, hp: def.hp, maxHp: def.hp, cd: 1 + Math.random(), drip: def.dripCd || 0, r: r, c: c, flash: 0 };
-      ink -= def.cost; selected = null;
+      ink -= mcost; selected = null;
       if (juice) juice.burst(X(tileX(c), tileY(r)), Y(tileX(c), tileY(r)), "#9be15d", 10);
       if (sfx && sfx.pop) sfx.pop();
       if (def.boom) { // Grammar Bomb: fuse then BOOM
@@ -618,7 +634,8 @@
       if (plan.rows.indexOf(r) < 0) { big("That reading room is closed!", "#ffd740"); return; }
       if (plants[r][c]) { big("A book already lives there!", "#ffd740"); return; }
       var k = selected, def = bdef(k);
-      if (ink < def.cost) { big("Not enough ink!", "#ffd740"); return; }
+      var cost = Math.ceil(def.cost * ((mods || {}).costMul || 1));
+      if (ink < cost) { big("Not enough ink!", "#ffd740"); return; }
       if (def.word) { // 📜 Spell Book: speak the word of power to place it
         paused = true;
         cv._lastQ = VQ.miniQuiz(document.getElementById("bkq"), words, store, {
@@ -650,7 +667,7 @@
       var def = ZOMBIES[type];
       stats.seen["z:" + type] = 1;
       var T = TIERS[tier] || TIERS[1];
-      zombies.push({ type: type, row: row, x: MWv + 30, hp: Math.round(def.hp * T.hpMul), maxHp: Math.round(def.hp * T.hpMul), speed: def.speed * T.spdMul, dps: def.dps, chill: 0, groan: Math.random() * 6 });
+      zombies.push({ type: type, row: row, x: MWv + 30, hp: Math.round(def.hp * T.hpMul), maxHp: Math.round(def.hp * T.hpMul), speed: def.speed * T.spdMul, dps: def.dps, chill: (mods || {}).spawnChill || 0, groan: Math.random() * 6 });
       if (def.big) { big("📺 " + def.name + " HAS ENTERED THE LIBRARY!", "#c9b6ff"); if (sfx && sfx.buzz) sfx.buzz(); }
       else if (sfx && sfx.buzz && Math.random() < 0.25) sfx.buzz();
     }
@@ -673,6 +690,7 @@
         return;
       }
       if (zd.darkling && plan && plan.dark && !litAt(z.x, z.row)) dmg = Math.ceil(dmg * 0.5); // Glow-Eyes shrugs in shadow
+      dmg = Math.round(dmg * ((mods || {}).dmgMul || 1)); // 🌙 Sharpened Letters
       z.hp -= dmg;
       if (juice && Math.random() < 0.4) juice.text(X(z.x, tileY(z.row) - 40), Y(z.x, tileY(z.row) - 40), "-" + dmg, "#ffd740");
       if (z.hp <= 0) {
@@ -700,11 +718,12 @@
           endT = Math.max(3.5, 15 - run / 25);
           var pool = ["basic", "basic", "speedy"];
           if (run > 45) pool.push("bucket", "scooter");
-          if (run > 90) pool.push("shield", "balloon", "splitter");
-          if (run > 150) pool.push("couch", "miniboss");
+          if (run > 90) pool.push("shield", "balloon", "splitter", "pajama");
+          if (run > 150) pool.push("couch", "miniboss", "gloweyes");
           var n2 = 1 + Math.floor(run / 60);
           for (var ei = 0; ei < Math.min(4, n2); ei++) spawnZombie(pool[Math.floor(Math.random() * pool.length)], plan.rows[Math.floor(Math.random() * plan.rows.length)]);
-          if (endWave % 5 === 0) big("🌙 Wave " + endWave + " — still standing!", "#c9b6ff");
+          if (endWave % 10 === 0) offerBlessing(); // 🌙 milestone: pick a perk + bank Vobux
+          else if (endWave % 5 === 0) big("🌙 Wave " + endWave + " — still standing!", "#c9b6ff");
         }
       }
       // adaptive director: cruise with a fat ink bank and the horde smells it
@@ -741,7 +760,7 @@
         var p = plants[r][c]; if (!p) continue;
         var def = bdef(p.k);
         p.flash = Math.max(0, p.flash - dt);
-        if (def.drip) { p.drip -= dt; if (p.drip <= 0) { p.drip = def.dripCd; ink += def.drip; hud(); if (juice) juice.text(X(tileX(c), tileY(r) - 30), Y(tileX(c), tileY(r) - 30), "+" + def.drip + "🖋", "#8ecdf7"); } }
+        if (def.drip) { p.drip -= dt * ((mods || {}).dripMul || 1); if (p.drip <= 0) { p.drip = def.dripCd; ink += def.drip; hud(); if (juice) juice.text(X(tileX(c), tileY(r) - 30), Y(tileX(c), tileY(r) - 30), "+" + def.drip + "🖋", "#8ecdf7"); } }
         if (def.dmg) {
           var target = null;
           // MWv, not MW: on wide phones zombies on the right third were invisible to
@@ -794,7 +813,7 @@
             hurtZ(z2, sh.dmg);
             if (sh.slow) z2.chill = 3;
             if (sh.lob) { // splash!
-              for (var sp2 = zombies.length - 1; sp2 >= 0; sp2--) { var zn = zombies[sp2]; if (zn !== z2 && Math.abs(zn.row - sh.row) <= 1 && Math.abs(zn.x - sh.x) < CWv * 0.9) hurtZ(zn, Math.round(sh.dmg * 0.6)); }
+              for (var sp2 = zombies.length - 1; sp2 >= 0; sp2--) { var zn = zombies[sp2]; if (zn !== z2 && Math.abs(zn.row - sh.row) <= 1 && Math.abs(zn.x - sh.x) < CWv * 0.9 * ((mods || {}).splashMul || 1)) hurtZ(zn, Math.round(sh.dmg * 0.6)); }
               if (juice) juice.burst(X(sh.x, tileY(sh.row)), Y(sh.x, tileY(sh.row)), "#ff9f43", 12);
               gone = true;
             }
@@ -908,7 +927,7 @@
         ctx.font = Math.round(spriteS * 0.8 * pulse) + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
         ctx.fillText("🖋", X(d.x, d.y), Y(d.x, d.y));
         ctx.font = "bold " + Math.round(spriteS * 0.3) + "px Trebuchet MS"; ctx.fillStyle = "#8ecdf7";
-        ctx.fillText("+15", X(d.x, d.y), Y(d.x, d.y) + spriteS * 0.62);
+        ctx.fillText("+" + ((mods || {}).dropVal || 15), X(d.x, d.y), Y(d.x, d.y) + spriteS * 0.62);
       });
       // carts
       carts.forEach(function (ct) {
@@ -1010,8 +1029,9 @@
         var d = drops[di];
         if (Math.abs(mx - d.x) < CWv * 0.55 && Math.abs(my - d.y) < CHv * 0.55) {
           drops.splice(di, 1);
-          ink += 15; hud();
-          if (juice) { juice.burst(X(d.x, d.y), Y(d.x, d.y), "#8ecdf7", 10); juice.text(X(d.x, d.y), Y(d.x, d.y) - 16, "+15🖋", "#8ecdf7"); }
+          var dv = (mods || {}).dropVal || 15;
+          ink += dv; hud();
+          if (juice) { juice.burst(X(d.x, d.y), Y(d.x, d.y), "#8ecdf7", 10); juice.text(X(d.x, d.y), Y(d.x, d.y) - 16, "+" + dv + "🖋", "#8ecdf7"); }
           if (sfx && sfx.coin) sfx.coin();
           return;
         }
@@ -1042,6 +1062,43 @@
       // a charged ⚡ Power Word supercharges one of YOUR books
       if (plants[t.r] && plants[t.r][t.c] && pw > 0 && !selected) { superCharge(t.r, t.c); return; }
       tryPlace(t.r, t.c);
+    }
+    // 🌙 milestone: choose 1 of 3 Librarian Blessings; Vobux bank grows each time
+    function offerBlessing(forceIds) {
+      paused = true; milestones++;
+      var pool = BLESS.filter(function (b) { return mods.blessed.indexOf(b.id) < 0 || b.id === "restock" || b.id === "surge"; });
+      var picks = [];
+      if (forceIds) picks = BLESS.filter(function (b) { return forceIds.indexOf(b.id) >= 0; });
+      while (picks.length < 3 && pool.length) picks.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+      picks = picks.slice(0, 3);
+      var end = document.getElementById("bkend");
+      end.innerHTML = '<div class="wqcard" style="text-align:center"><div style="font-size:36px">🌙</div>' +
+        '<div class="wqtitle" style="font-size:19px">Wave ' + endWave + " survived! +" + (milestones * 5) + " Vobux banked</div>" +
+        '<div style="font-size:12px;color:#5a6b7a;margin-bottom:6px">Choose a Librarian Blessing:</div>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">' +
+        picks.map(function (b) {
+          return '<button class="embtn" style="min-width:130px" data-bl="' + b.id + '"><span class="ebl">' + b.emoji + " " + b.name + '</span><span class="ebs">' + b.t + "</span></button>";
+        }).join("") + "</div></div>";
+      end.style.display = "flex";
+      Array.prototype.forEach.call(end.querySelectorAll("[data-bl]"), function (btn) {
+        btn.onclick = function () { applyBlessing(btn.dataset.bl); end.style.display = "none"; paused = false; };
+      });
+      if (sfx && sfx.chime) sfx.chime();
+    }
+    function applyBlessing(id) {
+      mods.blessed.push(id);
+      if (id === "sharp") mods.dmgMul += 0.25;
+      else if (id === "golden") mods.dropVal = 30;
+      else if (id === "bargain") mods.costMul = 0.8;
+      else if (id === "storm") mods.dripMul = 1.5;
+      else if (id === "frost") mods.spawnChill = 2.5;
+      else if (id === "restock") carts.forEach(function (ct) { ct.used = false; ct.rolling = false; ct.x = GXv - 52; });
+      else if (id === "surge") pw = 2;
+      else if (id === "wide") mods.splashMul += 0.5;
+      var b = BLESS.filter(function (x) { return x.id === id; })[0];
+      big("🌙 " + b.emoji + " " + b.name + "!", "#c9b6ff");
+      if (juice) juice.shake(4);
+      hud(); renderBar();
     }
     // 📵 the King's word-duel: answer to shatter his shield for 12s
     function kingDuel(kz) {
@@ -1133,6 +1190,8 @@
       bdef: bdef,
       litAt: litAt,
       duel: function (z) { kingDuel(z); },
+      bless: function (ids) { offerBlessing(ids); },
+      mods: function () { return mods; },
       pages: function (n) { stats.pages = (stats.pages || 0) + n; },
       upgrade: function (k) { var lv = stats.up[k] || 0; if (stats.pages >= UPG_COST[lv]) { stats.pages -= UPG_COST[lv]; stats.up[k] = lv + 1; return true; } return false; },
       almanac: function () { return { seen: stats.seen, quizDone: stats.quizDone, pages: stats.pages }; },
