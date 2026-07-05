@@ -21,8 +21,25 @@
     shield: { hp: 130, dmg: 4, range: 16, speed: 44, cd: 1.1, emoji: "🛡️" },
     cavalry: { hp: 55, dmg: 8, range: 16, speed: 92, cd: 0.8, emoji: "🐎" },
     wizard: { hp: 35, dmg: 10, range: 110, speed: 48, cd: 1.6, splash: true, emoji: "🪄" },
-    catapult: { hp: 70, dmg: 5, range: 140, speed: 30, cd: 2.2, siege: true, emoji: "🪨" }
+    catapult: { hp: 70, dmg: 5, range: 140, speed: 30, cd: 2.2, siege: true, emoji: "🪨" },
+    frostbite: { hp: 380, dmg: 14, range: 95, speed: 40, cd: 1.4, emoji: "❄️", hero: 1, name: "LADY FROSTBITE" },
+    ignis: { hp: 540, dmg: 18, range: 26, speed: 44, cd: 1.0, emoji: "🔥", hero: 1, wordShield: true, name: "WARLORD IGNIS" }
   };
+  // 🗺 THE CONQUEST MAP — 12 territories, 3 regions, 2 generals
+  var TERR = [
+    { id: "t1", name: "Sunny Fields", region: "🌾", twist: null, hallMul: 0.8, sub: "a gentle start" },
+    { id: "t2", name: "Golden Hills", region: "🌾", twist: "goldrich", hallMul: 1, sub: "RICH mines!" },
+    { id: "t3", name: "Windmill Flats", region: "🌾", twist: "notowers", hallMul: 1, sub: "NO towers allowed" },
+    { id: "t4", name: "Meadow Keep", region: "🌾", twist: null, hallMul: 1.25, sub: "a fortified keep" },
+    { id: "t5", name: "Frost Gate", region: "🏔", twist: "frozen", hallMul: 1.1, sub: "frozen mines mine SLOW" },
+    { id: "t6", name: "Icicle Pass", region: "🏔", twist: "frozen", hallMul: 1.25, sub: "cold and colder" },
+    { id: "t7", name: "Glacier Yard", region: "🏔", twist: "notowers", hallMul: 1.3, sub: "no towers, all ice" },
+    { id: "t8", name: "FROSTBITE'S THRONE", region: "🏔", twist: "frozen", hallMul: 1.4, boss: "frostbite", sub: "❄️ she FREEZES your army" },
+    { id: "t9", name: "Ash Road", region: "🌋", twist: "lavavents", hallMul: 1.3, sub: "the ground ERUPTS" },
+    { id: "t10", name: "Cinder Mines", region: "🌋", twist: "goldrich", hallMul: 1.45, sub: "rich but burning" },
+    { id: "t11", name: "Obsidian Wall", region: "🌋", twist: "lavavents", hallMul: 1.6, sub: "vents + a mighty wall" },
+    { id: "t12", name: "IGNIS'S FORTRESS", region: "🌋", twist: "lavavents", hallMul: 1.8, boss: "ignis", sub: "🌋 word-shielded WARLORD" }
+  ];
   // ⚔️ THE COUNTER TRIANGLE — composition IS the strategy
   function dmgMul(attKind, def) {
     var d = def && def.kind;
@@ -105,6 +122,7 @@
     var rookie = (stats.plays || 0) === 0;
     var skill = P.botSkillFor(stats.rankPts);
     if (rookie) skill = Math.min(skill, 0.22);
+    var baseSkill = skill;
     var rival = Bots.pickOpponents(1, Math.max(0.25, skill))[0];
     var rivalCfg = rival.avatar;
 
@@ -115,18 +133,19 @@
     var bell = false, hintT = 50;
     var tier = 1, workerLost = 0, banked = false, sellMode = false;
     var rallyPoint = null, rallyArm = false;
+    var terr = null, ventT = 10, frostT = 25, frozenArmy = 0, hero = null;
     function applyTierPick(tr) { // multipliers onto the already-seeded battle
       tier = tr;
       var T = TIERS_E[tr];
       gold = T.startGold;
-      skill = Math.min(0.95, skill + T.skillAdd);
-      foeHall.hp = foeHall.maxHp = Math.round(BLD.hall.hp * T.hallMul);
+      skill = Math.min(0.95, baseSkill + T.skillAdd + (terr ? TERR.indexOf(terr) * 0.03 : 0));
+      foeHall.hp = foeHall.maxHp = Math.round(BLD.hall.hp * T.hallMul * (terr ? terr.hallMul : 1));
       waveT = Math.max(26, (45 + (1 - skill) * 40) / T.waveMul);
       if (tr === 3) big("📕 NIGHTMARE. " + rival.name + " shows no mercy.", "#ff8a8a");
       hud(); renderBar();
     }
     var units = [], buildings = [], effects = [];
-    var mines = [{ x: 330, y: 120, left: 900 }, { x: 300, y: 460, left: 900 }, { x: 660, y: 90, left: 900 }, { x: 690, y: 480, left: 900 }];
+    var mines = [];
     var trees = []; for (var ti = 0; ti < 14; ti++) trees.push({ x: 420 + (ti % 7) * 28 + (ti * 37 % 17), y: 200 + Math.floor(ti / 7) * 130 + (ti * 53 % 23) });
 
     function bld(team, kind, x, y) { var b = { team: team, kind: kind, x: x, y: y, hp: BLD[kind].hp, maxHp: BLD[kind].hp, cd: 0 }; buildings.push(b); return b; }
@@ -135,15 +154,42 @@
       var u = { team: team, kind: kind, x: x, y: y, hp: Math.round(UNIT[kind].hp * mul), maxHp: Math.round(UNIT[kind].hp * mul), cd: 0, carry: 0, mineT: 0, tgt: null, face: 1 };
       units.push(u); return u;
     }
-    var myHall = bld(0, "hall", 120, 280);
-    var foeHall = bld(1, "hall", 880, 280);
-    if (rookie) { foeHall.hp = foeHall.maxHp = 240; }
-    bld(1, "rax", 800, 180);
     // building pads fill in a fixed, sensible order (no fiddly placement on a phone)
     var PADS = { rax: { x: 215, y: 175 }, library: { x: 215, y: 390 }, tower: [{ x: 330, y: 220 }, { x: 330, y: 345 }] };
-    var myRax = null, myLib = null, towerCount = 0;
-    unit(0, "worker", 170, 240); unit(0, "worker", 170, 320);
-    unit(1, "worker", 830, 240); unit(1, "worker", 830, 330);
+    var myHall = null, foeHall = null, myRax = null, myLib = null, towerCount = 0;
+    // every battle (quick or territory) seeds through here — re-enterable for the map
+    function resetBattle(cfg) {
+      terr = cfg.terr || null;
+      units = []; buildings = []; effects = [];
+      gold = 120; study = 0; cap = 3; kills = 0; losses = 0; workerLost = 0;
+      meteorCd = 0; waveNum = 0; mode = "defend"; bell = false; hintT = 50; run = 0;
+      over = false; banked = false; sellMode = false; rallyPoint = null; rallyArm = false;
+      ventT = 10; frostT = 25; frozenArmy = 0; hero = null; tier = 1;
+      var mineGold = terr && terr.twist === "goldrich" ? 1400 : 900;
+      mines = [{ x: 330, y: 120, left: mineGold }, { x: 300, y: 460, left: mineGold }, { x: 660, y: 90, left: mineGold }, { x: 690, y: 480, left: mineGold }];
+      myHall = bld(0, "hall", 120, 280);
+      foeHall = bld(1, "hall", 880, 280);
+      if (rookie && !terr) { foeHall.hp = foeHall.maxHp = 240; }
+      bld(1, "rax", 800, 180);
+      myRax = null; myLib = null; towerCount = 0;
+      unit(0, "worker", 170, 240); unit(0, "worker", 170, 320);
+      unit(1, "worker", 830, 240); unit(1, "worker", 830, 330);
+      if (terr && terr.boss) { // the general guards the fortress until the raids begin
+        hero = unit(1, terr.boss, foeHall.x - 70, foeHall.y + 60);
+        hero.guard = true;
+        if (UNIT[terr.boss].wordShield) hero.shield = true;
+        big(UNIT[terr.boss].emoji + " " + UNIT[terr.boss].name + " awaits…", "#c9b6ff");
+      }
+      applyTierPick(cfg.tier || 1);
+      if (rookie && !terr) { foeHall.hp = foeHall.maxHp = 240; } // training castle stays gentle (after tier math)
+      document.getElementById("emend").style.display = "none";
+      msgEl.innerHTML = terr ? terr.region + " <b>" + terr.name + "</b>" : "🏰 <b>Word Empire</b> — vs " + rival.name;
+      if (terr && terr.twist === "notowers") big("🚫 No towers here — the army IS the wall!", "#ffd740");
+      if (terr && terr.twist === "frozen") big("🥶 Frozen mines — gold comes slow. Study hard!", "#8ecdf7");
+      if (terr && terr.twist === "lavavents") big("🌋 Watch the ground — it ERUPTS!", "#ff9f43");
+      paused = false;
+      hud(); renderBar();
+    }
 
     var msgEl = document.getElementById("emmsg"), bigEl = document.getElementById("embig");
     function big(m, col) { bigEl.textContent = m; bigEl.style.color = col || "#fff"; bigEl.style.opacity = "1"; setTimeout(function () { bigEl.style.opacity = "0"; }, 1100); }
@@ -166,7 +212,8 @@
           (myLib ? barBtn("b_wizard", "🧙 Wizard", COST.wizard + "g + word", "study") + barBtn("b_catapult", "⚙ Catapult", COST.catapult + "g") : "")
           : barBtn("b_rax", "🏯 Barracks", COST.rax + "g")) +
         (myLib ? barBtn("b_study", "📖 Study", "+2 army cap", "study") + barBtn("b_meteor", "☄️ Meteor", meteorCd > 0 ? Math.ceil(meteorCd) + "s" : "word spell", "study") : barBtn("b_library", "📚 Library", COST.library + "g")) +
-        (towerCount < 2 ? barBtn("b_tower", "🗼 Tower", COST.tower + "g + word") : "") +
+        (frozenArmy ? barBtn("b_thaw", "🔥 THAW!", "answer = un-freeze", "mode") : "") +
+        (towerCount < 2 && !(terr && terr.twist === "notowers") ? barBtn("b_tower", "🗼 Tower", COST.tower + "g + word") : "") +
         barBtn("b_bell", bell ? "⛏️ Work!" : "🔔 Garrison", bell ? "villagers come out" : "hide + castle shoots") +
         barBtn("b_sell", sellMode ? "✋ Stop" : "🔨 Dismiss", sellMode ? "tap done" : "tap unit/tower, ½ back") +
         barBtn("b_rally", rallyArm ? "📍 Tap map…" : "📍 Rally", mode === "rally" ? "holding the flag" : "tap map to hold there") +
@@ -180,6 +227,7 @@
       on("b_cavalry", function () { buy("cavalry"); });
       on("b_wizard", function () { buyWizard(); });
       on("b_catapult", function () { buy("catapult"); });
+      on("b_thaw", thaw);
       on("b_rally", function () {
         rallyArm = !rallyArm;
         if (rallyArm) big("📍 Tap anywhere on the field — the army will HOLD there.", "#8ecdf7");
@@ -320,12 +368,17 @@
 
     // ---------- combat helpers ----------
     function hurt(u, dmg, by) {
+      if (UNIT[u.kind] && UNIT[u.kind].wordShield && u.shield) { // 🌋 Ignis laughs behind his flame shield
+        if (juice && Math.random() < 0.3) juice.text(X(u.x, u.y), Y(u.x, u.y) - 20, "🔥 WORD-LOCKED", "#ff9f43");
+        return;
+      }
       u.hp -= dmg;
       if (juice) juice.text(X(u.x, u.y), Y(u.x, u.y) - 14, "-" + dmg, u.team === 1 ? "#ffd740" : "#ff8a8a");
       if (u.hp <= 0) {
         if (u.team === 1) { kills++; } else if (u.kind !== "worker") losses++; else workerLost++;
         units.splice(units.indexOf(u), 1);
         // ⭐ veterancy: survivors who rack up kills get stripes, health and bite
+        if (u === hero) { hero = null; gold += 50; big("👑 THE GENERAL FALLS! +50g", "#ffd740"); if (juice) juice.shake(10); if (sfx && sfx.fanfare) sfx.fanfare(); }
         if (by && by.team === 0 && by.kind !== "worker" && units.indexOf(by) >= 0) {
           by.vk = (by.vk || 0) + 1;
           if (by.vk === 2) { by.vet = 1; by.vetDmg = 2; by.maxHp += 15; by.hp += 15; big("⭐ " + by.kind + " earned a stripe!", "#ffd740"); if (sfx && sfx.chime) sfx.chime(); }
@@ -377,12 +430,14 @@
       if (!mine) return;
       if (bd > 26) { moveToward(u, mine.x, mine.y, dt); return; }
       u.mineT += dt;
-      if (u.mineT > 1.3) { u.mineT = 0; mine.left -= 10; u.carry = 10; }
+      var cycle = terr && terr.twist === "frozen" ? 2.6 : 1.3; // 🥶 frozen mines are stubborn
+      if (u.mineT > cycle) { u.mineT = 0; mine.left -= 10; u.carry = 10; }
     }
     function stepSoldier(u, dt) {
+      if (u.frozen > 0) { u.frozen -= dt; return; } // ❄️ statues don't march
       var home = u.team === 0 ? myHall : foeHall;
       var enemyHome = u.team === 0 ? foeHall : myHall;
-      var uMode = u.team === 0 ? mode : "attack";
+      var uMode = u.team === 0 ? mode : (u.guard && waveNum < 2 ? "defend" : "attack");
       var aggro = uMode === "attack" ? 260 : 200;
       var tgt = nearestFoe(u, aggro);
       if (!tgt && uMode === "attack") tgt = enemyHome;
@@ -464,8 +519,85 @@
       for (var i = 0; i < size; i++) unit(1, pool[Math.floor(Math.random() * pool.length)], foeHall.x - 40, foeHall.y - 40 + i * 22);
       return size;
     }
+    // territory hazards + general powers tick here
+    function terrStep(dt) {
+      if (!terr) return;
+      if (terr.twist === "lavavents") { // 🌋 the ground erupts under EVERYONE
+        ventT -= dt;
+        if (ventT <= 0) {
+          ventT = 12;
+          for (var v = 0; v < 2; v++) {
+            var vx = 250 + Math.random() * 500, vy = 100 + Math.random() * 380;
+            effects.push({ kind: "vent", x: vx, y: vy, t: 0 });
+            (function (vx2, vy2) {
+              setTimeout(function () {
+                if (over) return;
+                units.slice().forEach(function (u2) { if (!u2.inside && Math.hypot(u2.x - vx2, u2.y - vy2) < 72) hurt(u2, 15); });
+                if (juice) { juice.shake(6); juice.burst(X(vx2, vy2), Y(vx2, vy2), "#ff9f43", 18); }
+              }, 1500);
+            })(vx, vy);
+          }
+          if (sfx && sfx.buzz) sfx.buzz();
+        }
+      }
+      if (hero && UNIT[hero.kind] && hero.kind === "frostbite") { // ❄️ she freezes your whole army
+        frostT -= dt;
+        if (frostT <= 0) {
+          frostT = 25;
+          var n = 0;
+          units.forEach(function (u3) { if (u3.team === 0 && u3.kind !== "worker") { u3.frozen = 6; n++; } });
+          if (n > 0) {
+            frozenArmy = 1;
+            big("❄️ LADY FROSTBITE FREEZES YOUR ARMY — 🔥 THAW with a word!", "#8ecdf7");
+            if (sfx && sfx.buzz) sfx.buzz();
+            renderBar();
+          }
+        }
+      }
+      if (frozenArmy && !units.some(function (u4) { return u4.team === 0 && u4.frozen > 0; })) { frozenArmy = 0; renderBar(); }
+    }
+    // 🔥 THAW: answer a word, the ice shatters instantly
+    function thaw() {
+      if (over || paused) return;
+      paused = true;
+      cv._lastQ = VQ.miniQuiz(document.getElementById("emq"), words, store, {
+        title: "🔥 THAW THE ARMY — answer to shatter the ice!", lastFormat: lastFmt,
+        cb: function (ok, res, fmt) {
+          lastFmt = fmt; paused = false;
+          if (ok) {
+            units.forEach(function (u5) { u5.frozen = 0; });
+            frozenArmy = 0;
+            big("🔥 THE ICE SHATTERS! CHARGE!", "#ff9f43");
+            if (juice) juice.shake(6);
+            if (sfx && sfx.fanfare) sfx.fanfare();
+          } else big("Still frozen… brrr.", "#8ecdf7");
+          renderBar();
+        }
+      });
+    }
+    // 🌋 tap Ignis and answer to melt his word-shield for 12s
+    function heroDuel() {
+      if (!hero || !hero.shield || over || paused) return;
+      paused = true;
+      cv._lastQ = VQ.miniQuiz(document.getElementById("emq"), words, store, {
+        title: "🌋 WARLORD IGNIS DEMANDS A WORD — break his shield!", lastFormat: lastFmt,
+        cb: function (ok, res, fmt) {
+          lastFmt = fmt; paused = false;
+          if (ok && hero) {
+            hero.shield = false; hero.shieldOffT = 12;
+            big("💥 HIS SHIELD MELTS — 12 seconds, STRIKE!", "#69f0ae");
+            if (juice) { juice.shake(8); juice.burst(X(hero.x, hero.y), Y(hero.x, hero.y), "#ff9f43", 24); }
+            if (sfx && sfx.fanfare) sfx.fanfare();
+          } else big("The Warlord laughs in flames…", "#ff8a8a");
+        }
+      });
+    }
     function stepEnemy(dt) {
       waveT -= dt;
+      if (hero && hero.shieldOffT !== undefined && !hero.shield) {
+        hero.shieldOffT -= dt;
+        if (hero.shieldOffT <= 0 && units.indexOf(hero) >= 0) { hero.shield = true; big("🔥 HIS SHIELD REIGNITES!", "#ff8a8a"); }
+      }
       if (waveT <= 0) {
         waveNum++;
         waveT = Math.max(tier === 3 ? 20 : 28, (58 - skill * 26) / TIERS_E[tier].waveMul);
@@ -497,24 +629,46 @@
       var res = store.recordGame ? store.recordGame("empire", rw) : null;
       return { rw: rw, res: res };
     }
+    function tdB(bid) { // highest tier beaten for a battle (legacy tierDoneQ folds in)
+      stats.tierDoneB = stats.tierDoneB || {};
+      var v = stats.tierDoneB[bid] || 0;
+      if (bid === "q") v = Math.max(v, stats.tierDoneQ || 0);
+      return v;
+    }
+    function terrDone(id) { var st = stats.starsT || {}; return (st[id + ":1"] || 0) + (st[id + ":2"] || 0) + (st[id + ":3"] || 0) > 0; }
     function win(didWin) {
       if (over) return; over = true;
       var bank = bankRun(didWin) || { rw: runRewards(didWin), res: null };
       var rw = bank.rw, res = bank.res;
+      var bid = terr ? terr.id : "q";
       // ⭐ stars: win · lose no villagers · study 2+ words (per tier, 9/battle)
       var earned = 0, newMedals = 0;
       if (didWin) {
         earned = 1 + (workerLost === 0 ? 1 : 0) + (study >= 2 ? 1 : 0);
         stats.starsT = stats.starsT || {};
-        var key = "q:" + tier;
+        var key = bid + ":" + tier;
         var prev = stats.starsT[key] || 0;
         if (earned > prev) { stats.starsT[key] = earned; newMedals += earned - prev; } // ⚒ 1 Medal per NEW star
-        stats.tierDoneQ = stats.tierDoneQ || 0;
-        if (tier > stats.tierDoneQ) { stats.tierDoneQ = tier; newMedals += 2; }
+        stats.tierDoneB = stats.tierDoneB || {};
+        if (tier > (stats.tierDoneB[bid] || 0)) { stats.tierDoneB[bid] = tier; newMedals += 2; }
+        if (bid === "q") stats.tierDoneQ = Math.max(stats.tierDoneQ || 0, tier);
+        if (terr) {
+          stats.territories = stats.territories || {};
+          stats.territories[terr.id] = 1;
+          if (terr.id === "t12") stats.mapDone = true;
+        }
         if (newMedals > 0) stats.medals = (stats.medals || 0) + newMedals;
         store.save();
       }
       var T = TIERS_E[tier];
+      var terrIdx = terr ? TERR.indexOf(terr) : -1;
+      var nextTerr = didWin && terr && terrIdx < TERR.length - 1 ? TERR[terrIdx + 1] : null;
+      var title = didWin
+        ? (terr && terr.id === "t12" ? "🎉 THE MAP IS YOURS! Warlord Ignis kneels!"
+          : terr && terr.boss ? UNIT[terr.boss].emoji + " THE GENERAL FALLS! " + terr.name + " is conquered!"
+            : terr ? terr.region + " " + terr.name + " CONQUERED!" + (tier > 1 ? " (" + T.name + ")" : "")
+              : (tier > 1 ? T.emoji + " " + T.name + " VICTORY!" : "VICTORY! The castle is yours!"))
+        : "Your castle fell… next time!";
       var starRow = didWin ? '<div style="font-size:26px;margin:2px 0">' + "⭐".repeat(earned) + "☆".repeat(3 - earned) + '</div>' +
         '<div style="font-size:11px;color:#5a6b7a">win · keep every villager · study 2+ words</div>' : "";
       var payRow = '<div style="margin:6px 0;font-weight:900;color:#2f9e44;font-size:17px">+' + rw.gems + ' <img class="vbx" src="icons/vobux.png" alt="Vobux"> · +' + rw.xp + " XP" +
@@ -522,15 +676,60 @@
         (rw.studyBonus ? ' <span style="color:#7a4fd0;font-size:12px">(incl. 📖 study bonus +' + rw.studyBonus + ")</span>" : "") + "</div>";
       var end = document.getElementById("emend");
       end.innerHTML = '<div class="wqcard" style="text-align:center"><div style="font-size:44px">' + (didWin ? "🏆" : "💫") + '</div>' +
-        '<div class="wqtitle" style="font-size:20px">' + (didWin ? (tier > 1 ? T.emoji + " " + T.name + " VICTORY! The castle is yours!" : "VICTORY! The castle is yours!") : "Your castle fell… next time!") + "</div>" +
+        '<div class="wqtitle" style="font-size:20px">' + title + "</div>" +
         starRow + payRow +
         '<div style="margin:2px 0">⚔️ ' + kills + " foes defeated · 📖 " + study + " words studied" +
         (res && res.rankedUp ? "<br>🎖 RANK UP!" : "") + "</div>" +
-        '<button class="submit big-next" id="emok">' + (didWin ? "Claim victory ⏎" : "Back to the island ⏎") + "</button></div>";
+        (nextTerr ? '<button class="submit big-next" id="emnext">Next: ' + nextTerr.region + " " + nextTerr.name + " ➜</button> " : "") +
+        '<button class="submit' + (nextTerr ? '" style="background:#8a98a8' : ' big-next') + '" id="emok">🗺 War map</button></div>';
       end.style.display = "flex";
       if (didWin && juice) { juice.shake(6); }
       if (didWin && sfx && sfx.fanfare) sfx.fanfare();
-      document.getElementById("emok").onclick = exit;
+      var nb = document.getElementById("emnext");
+      if (nb) nb.onclick = function () { resetBattle({ terr: nextTerr, tier: 1 }); };
+      document.getElementById("emok").onclick = showMap;
+    }
+    // 🗺 THE WAR MAP — pick your battle
+    function showMap() {
+      paused = true; over = true;
+      var end = document.getElementById("emend");
+      var stT = stats.starsT || {};
+      function starSum(id) { return (stT[id + ":1"] || 0) + (stT[id + ":2"] || 0) + (stT[id + ":3"] || 0); }
+      function tIcons(bid) { var td = tdB(bid); return td >= 3 ? "📗📙📕" : td === 2 ? "📗📙" : td === 1 ? "📗" : ""; }
+      var regions = [{ key: "🌾", name: "Green Meadows" }, { key: "🏔", name: "Frostpeaks" }, { key: "🌋", name: "Obsidian Wastes" }];
+      var html = regions.map(function (rg) {
+        var terrs = TERR.filter(function (tt) { return tt.region === rg.key; });
+        var btns = terrs.map(function (tt) {
+          var idx = TERR.indexOf(tt);
+          var open = idx === 0 || terrDone(TERR[idx - 1].id);
+          var sn = starSum(tt.id);
+          return '<button class="embtn" style="min-width:124px' + (open ? "" : ";opacity:.45") + (tt.boss ? ";border:2px solid #b03a3a" : "") + '" data-terr="' + idx + '">' +
+            '<span class="ebl">' + (sn > 0 ? "⭐" + sn + "/9 " : open ? "▶ " : "🔒 ") + tt.name + " " + tIcons(tt.id) + "</span>" +
+            '<span class="ebs">' + tt.sub + "</span></button>";
+        }).join("");
+        return '<div style="margin:6px 0 2px;font-weight:900">' + rg.key + " " + rg.name + '</div><div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">' + btns + "</div>";
+      }).join("");
+      var quickBtn = '<button class="embtn mode" style="min-width:140px" id="em_quick"><span class="ebl">⚔️ Quick Battle</span><span class="ebs">vs ' + rival.name + " · " + tIcons("q") + "</span></button>";
+      end.innerHTML = '<div class="wqcard" style="text-align:center;max-height:84vh;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y">' +
+        '<div style="font-size:36px">🗺</div><div class="wqtitle" style="font-size:20px">The Conquest Map</div>' +
+        (stats.mapDone ? '<div style="color:#b06a00;font-weight:900">👑 MAP CONQUERED</div>' : "") +
+        html + '<div style="margin-top:8px">' + quickBtn + "</div>" +
+        '<div style="font-size:11px;color:#8a98a8;margin-top:6px">⭐ per battle: win · keep every villager · study 2+ words</div></div>';
+      end.style.display = "flex";
+      Array.prototype.forEach.call(end.querySelectorAll("[data-terr]"), function (b) {
+        b.onclick = function () {
+          var idx = +b.dataset.terr;
+          var tt = TERR[idx];
+          var open = idx === 0 || terrDone(TERR[idx - 1].id);
+          if (!open) { big("🔒 Conquer " + TERR[idx - 1].name + " first!", "#ffd740"); return; }
+          if (tdB(tt.id) >= 1) showTierPickE(tt.id, tt.name, function (tr) { resetBattle({ terr: tt, tier: tr }); });
+          else resetBattle({ terr: tt, tier: 1 });
+        };
+      });
+      document.getElementById("em_quick").onclick = function () {
+        if (tdB("q") >= 1) showTierPickE("q", "Quick Battle", function (tr) { resetBattle({ terr: null, tier: tr }); });
+        else resetBattle({ terr: null, tier: 1 });
+      };
     }
 
     // ---------- drawing ----------
@@ -562,12 +761,25 @@
       });
       units.forEach(function (u) {
         if (u.inside) return; // garrisoned villagers are safe inside the castle
-        var s = (compact ? 8 : 0) + (u.kind === "worker" ? 30 : 36); // bigger heroes on phones
+        var isHero = UNIT[u.kind] && UNIT[u.kind].hero;
+        var s = ((compact ? 8 : 0) + (u.kind === "worker" ? 30 : 36)) * (isHero ? 1.5 : 1);
         var cfg = u.team === 0 ? myCfg : rivalCfg;
         var held = u.kind === "worker" ? (u.carry ? "💰" : "⛏️") : UNIT[u.kind].emoji;
-        AV.draw(ctx, { x: X(u.x, u.y), y: Y(u.x, u.y) + s / 2, size: s, config: cfg, pose: "run", frame: run + u.x * 0.01, flip: u.face < 0, heldOverride: held });
+        if (u.frozen > 0) { ctx.save(); ctx.filter = "hue-rotate(160deg) saturate(2)"; }
+        AV.draw(ctx, { x: X(u.x, u.y), y: Y(u.x, u.y) + s / 2, size: s, config: cfg, pose: u.frozen > 0 ? "idle" : "run", frame: run + u.x * 0.01, flip: u.face < 0, heldOverride: held });
+        if (u.frozen > 0) { ctx.restore(); ctx.font = Math.round(s * 0.5) + "px serif"; ctx.textAlign = "center"; ctx.fillText("🧊", X(u.x, u.y), Y(u.x, u.y)); }
         hpBar(X(u.x, u.y), Y(u.x, u.y) - s * 0.75, s * 0.9, u.hp / u.maxHp, u.team);
         if (u.vet) { ctx.font = Math.round(Math.max(10, pz(12))) + "px serif"; ctx.textAlign = "center"; ctx.fillText("⭐".repeat(u.vet), X(u.x, u.y), Y(u.x, u.y) - s * 1.05); }
+        if (isHero) {
+          ctx.font = "bold " + Math.round(Math.max(10, pz(13))) + "px Trebuchet MS"; ctx.textAlign = "center"; ctx.fillStyle = "#fff";
+          ctx.fillText(UNIT[u.kind].emoji + " " + UNIT[u.kind].name, X(u.x, u.y), Y(u.x, u.y) - s * 1.25);
+          if (u.shield) {
+            ctx.strokeStyle = "rgba(255,159,67," + (0.55 + Math.sin(run * 6) * 0.25) + ")"; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.arc(X(u.x, u.y), Y(u.x, u.y), s * 0.85, 0, Math.PI * 2); ctx.stroke();
+            ctx.fillStyle = "#ff9f43"; ctx.font = "bold " + Math.round(Math.max(9, pz(11))) + "px Trebuchet MS";
+            ctx.fillText("TAP + WORD!", X(u.x, u.y), Y(u.x, u.y) + s * 1.15);
+          }
+        }
       });
       if (rallyPoint && mode === "rally") { // 📍 the flag the army holds
         ctx.font = Math.round(Math.max(20, pz(28))) + "px serif"; ctx.textAlign = "center";
@@ -585,6 +797,13 @@
           var ax2 = fx.x + (fx.tx - fx.x) * k, ay2 = fx.y + (fx.ty - fx.y) * k;
           ctx.lineTo(X(ax2, ay2), Y(ax2, ay2) - pz(Math.sin(k * Math.PI) * 18)); ctx.stroke();
           if (k >= 1) effects.splice(e, 1);
+        } else if (fx.kind === "vent") {
+          var vk2 = Math.min(1, fx.t / 1.5 * 0.05 * 30);
+          ctx.strokeStyle = "rgba(255,90,30," + (0.7 - vk2 * 0.4) + ")"; ctx.lineWidth = 4;
+          ctx.beginPath(); ctx.arc(X(fx.x, fx.y), Y(fx.x, fx.y), pz(72), 0, Math.PI * 2); ctx.stroke();
+          ctx.font = Math.round(pz(26 + vk2 * 14)) + "px serif"; ctx.textAlign = "center";
+          ctx.fillText(vk2 < 0.95 ? "⚠️" : "🌋", X(fx.x, fx.y), Y(fx.x, fx.y));
+          if (fx.t > 1.1) effects.splice(e, 1);
         } else if (fx.kind === "zap") {
           var zk = Math.min(1, fx.t * 3);
           ctx.strokeStyle = "rgba(201,182,255," + (1 - zk) + ")"; ctx.lineWidth = 3;
@@ -615,7 +834,7 @@
         run += dt;
         meteorCd = Math.max(0, meteorCd - dt);
         units.slice().forEach(function (u) { if (u.kind === "worker") stepWorker(u, dt); else stepSoldier(u, dt); });
-        stepTowers(dt); stepEnemy(dt);
+        stepTowers(dt); stepEnemy(dt); terrStep(dt);
         if (Math.floor(run) !== Math.floor(run - dt)) { hud(); if (Math.floor(run) % 5 === 0) renderBar(); }
       }
       draw();
@@ -654,6 +873,8 @@
         renderBar();
         return;
       }
+      // 🌋 tap the shielded Warlord to challenge him
+      if (hero && hero.shield && Math.hypot(hero.x - L.x, hero.y - L.y) < 60) { heroDuel(); return; }
       if (!sellMode) return;
       // nearest own tower first (bigger refund, deliberate act)
       var bestB = null, bdB = 46;
@@ -681,43 +902,43 @@
     }
     cv.addEventListener("mousedown", function (e) { var r = cv.getBoundingClientRect(); mapTap(e.clientX - r.left, e.clientY - r.top); });
     cv.addEventListener("touchstart", function (e) { // discrete tap: preventDefault kills the iOS phantom double-fire
-      if (!sellMode && !rallyArm) return;
+      if (!sellMode && !rallyArm && !(hero && hero.shield)) return;
       e.preventDefault();
       var r = cv.getBoundingClientRect(), t = e.changedTouches[0];
       mapTap(t.clientX - r.left, t.clientY - r.top);
     }, { passive: false });
 
-    // ⚔️ pick your pain: after the first win, each battle opens with a tier choice
-    function showTierPickE() {
-      var td = stats.tierDoneQ || 0;
+    // ⚔️ pick your pain: any beaten battle can be replayed HARDER
+    function showTierPickE(bid, label, beginFn) {
+      var td = tdB(bid);
       var stT = stats.starsT || {};
       paused = true;
       var end = document.getElementById("emend");
       var btns = [1, 2, 3].map(function (tr) {
         var T = TIERS_E[tr];
         var open = tr === 1 || td >= tr - 1;
-        var sn = stT["q:" + tr] || 0;
+        var sn = stT[bid + ":" + tr] || 0;
         return '<button class="embtn' + (tr === 3 ? " mode" : "") + '" style="min-width:128px' + (open ? "" : ";opacity:.45") + '" data-etr="' + tr + '">' +
           '<span class="ebl">' + T.emoji + " " + T.name + '</span>' +
           '<span class="ebs">' + (open ? ("⭐" + sn + "/3 · pays ×" + T.gemMul) : ("beat " + TIERS_E[tr - 1].name + " first")) + "</span></button>";
       }).join("");
       end.innerHTML = '<div class="wqcard" style="text-align:center"><div style="font-size:36px">⚔️</div>' +
-        '<div class="wqtitle" style="font-size:19px">Quick Battle vs ' + rival.name + " — pick your pain</div>" +
-        '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:8px 0">' + btns + "</div></div>";
+        '<div class="wqtitle" style="font-size:19px">' + label + " — pick your pain</div>" +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:8px 0">' + btns + "</div>" +
+        '<button class="wqskip" id="etp_back" type="button">back</button></div>';
       end.style.display = "flex";
       Array.prototype.forEach.call(end.querySelectorAll("[data-etr]"), function (b) {
         b.onclick = function () {
           var tr = +b.dataset.etr;
           if (tr > 1 && td < tr - 1) { big("🔒 Beat " + TIERS_E[tr - 1].name + " first!", "#ffd740"); return; }
-          applyTierPick(tr);
-          end.style.display = "none";
-          paused = false;
+          beginFn(tr);
         };
       });
+      document.getElementById("etp_back").onclick = showMap;
     }
     // test hook: deterministic control for the harness
     cv._empire = {
-      state: function () { return { gold: gold, cap: cap, study: study, units: units, buildings: buildings, myHall: myHall, foeHall: foeHall, mode: mode, over: over, tier: tier, workerLost: workerLost, banked: banked, sellMode: sellMode, vertical: vertical, medals: stats.medals || 0, starsT: stats.starsT || {}, tierDoneQ: stats.tierDoneQ || 0 }; },
+      state: function () { return { gold: gold, cap: cap, study: study, units: units, buildings: buildings, myHall: myHall, foeHall: foeHall, mode: mode, over: over, tier: tier, workerLost: workerLost, banked: banked, sellMode: sellMode, vertical: vertical, medals: stats.medals || 0, starsT: stats.starsT || {}, tierDoneQ: stats.tierDoneQ || 0, effects: effects, territories: stats.territories || {}, mapDone: !!stats.mapDone }; },
       give: function (g) { gold += g; hud(); renderBar(); },
       weakenFoe: function (hp) { foeHall.hp = hp; },
       spawn: function (team, kind, x, y) { return unit(team, kind, x, y); },
@@ -728,13 +949,24 @@
       rally: function (x, y) { rallyArm = true; mapTap(X(x, y), Y(x, y)); },
       rallyPoint: function () { return rallyPoint; },
       wave: function (n) { waveNum = n !== undefined ? n : waveNum + 1; return spawnWave(); },
-      dmgMul: dmgMul
+      dmgMul: dmgMul,
+      beginT: function (idx, tr) { resetBattle({ terr: idx > 0 ? TERR[idx - 1] : null, tier: tr || 1 }); },
+      terr: function () { return terr; },
+      hero: function () { return hero; },
+      duelHero: heroDuel,
+      thawNow: thaw,
+      map: showMap,
+      TERR: TERR
     };
 
-    msgEl.innerHTML = "🏰 <b>Word Empire</b> — vs " + rival.name;
-    big("⚔️ " + rival.name + ": " + (rival.chat && rival.chat.hi ? rival.chat.hi : "To battle!"), "#ffd740");
-    if (!rookie && (stats.wins || 0) > 0) showTierPickE(); // veterans pick their pain
-    hud(); renderBar();
+    // rookies charge straight into their training battle; veterans get the war map
+    if (rookie) {
+      resetBattle({ terr: null, tier: 1 });
+      big("⚔️ " + rival.name + ": " + (rival.chat && rival.chat.hi ? rival.chat.hi : "To battle!"), "#ffd740");
+    } else {
+      resetBattle({ terr: null, tier: 1 }); // seed a field behind the map
+      showMap();
+    }
     lastT = performance.now(); raf = requestAnimationFrame(frame);
   }
 
