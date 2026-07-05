@@ -13,12 +13,29 @@
 
   // map is a fixed logical space, scaled to the canvas (resize-safe, test-stable)
   var MW = 1000, MH = 560;
-  var COST = { worker: 50, knight: 60, archer: 80, rax: 80, library: 100, tower: 100 };
+  var COST = { worker: 50, knight: 60, archer: 80, shield: 70, cavalry: 90, wizard: 120, catapult: 140, rax: 80, library: 100, tower: 100 };
   var UNIT = {
-    worker: { hp: 30, dmg: 2, range: 16, speed: 60, cd: 1.0 },
-    knight: { hp: 65, dmg: 9, range: 18, speed: 58, cd: 0.9 },
-    archer: { hp: 40, dmg: 6, range: 125, speed: 52, cd: 1.1 }
+    worker: { hp: 30, dmg: 2, range: 16, speed: 60, cd: 1.0, emoji: "⛏️" },
+    knight: { hp: 65, dmg: 9, range: 18, speed: 58, cd: 0.9, emoji: "🗡️" },
+    archer: { hp: 40, dmg: 6, range: 125, speed: 52, cd: 1.1, emoji: "🏹" },
+    shield: { hp: 130, dmg: 4, range: 16, speed: 44, cd: 1.1, emoji: "🛡️" },
+    cavalry: { hp: 55, dmg: 8, range: 16, speed: 92, cd: 0.8, emoji: "🐎" },
+    wizard: { hp: 35, dmg: 10, range: 110, speed: 48, cd: 1.6, splash: true, emoji: "🪄" },
+    catapult: { hp: 70, dmg: 5, range: 140, speed: 30, cd: 2.2, siege: true, emoji: "🪨" }
   };
+  // ⚔️ THE COUNTER TRIANGLE — composition IS the strategy
+  function dmgMul(attKind, def) {
+    var d = def && def.kind;
+    var isB = def && BLD[d];
+    if (attKind === "catapult") return isB ? 4 : 0.6;      // ⚙ demolishes buildings, tickles men
+    if (isB) return 1;
+    if (attKind === "cavalry" && d === "archer") return 2;  // 🐎 shreds archers
+    if (attKind === "cavalry" && d === "shield") return 0.5; // …bounces off shields
+    if (attKind === "archer" && d === "shield") return 0.4;  // 🛡 blocks arrows
+    if (attKind === "knight" && d === "shield") return 1.3;  // swords crack shields
+    if (attKind === "wizard" && d === "shield") return 1.6;  // magic ignores shields
+    return 1;
+  }
   var BLD = {
     hall: { hp: 320, w: 86, h: 76, emoji: "🏰" },
     rax: { hp: 160, w: 64, h: 56, emoji: "⚔️" },
@@ -97,6 +114,7 @@
     var waveT = 45 + (1 - skill) * 40; // first raid: rookie ~76s to build, veterans ~48s
     var bell = false, hintT = 50;
     var tier = 1, workerLost = 0, banked = false, sellMode = false;
+    var rallyPoint = null, rallyArm = false;
     function applyTierPick(tr) { // multipliers onto the already-seeded battle
       tier = tr;
       var T = TIERS_E[tr];
@@ -143,17 +161,30 @@
       var bar = document.getElementById("embar");
       bar.innerHTML =
         barBtn("b_worker", "👷 Worker", COST.worker + "g" + (workerCount() >= 6 ? " · max" : "")) +
-        (myRax ? barBtn("b_knight", "⚔️ Knight", COST.knight + "g") + barBtn("b_archer", "🏹 Archer", COST.archer + "g") : barBtn("b_rax", "🏯 Barracks", COST.rax + "g")) +
+        (myRax ? barBtn("b_knight", "⚔️ Knight", COST.knight + "g") + barBtn("b_archer", "🏹 Archer", COST.archer + "g") +
+          barBtn("b_shield", "🛡 Shield", COST.shield + "g") + barBtn("b_cavalry", "🐎 Cavalry", COST.cavalry + "g") +
+          (myLib ? barBtn("b_wizard", "🧙 Wizard", COST.wizard + "g + word", "study") + barBtn("b_catapult", "⚙ Catapult", COST.catapult + "g") : "")
+          : barBtn("b_rax", "🏯 Barracks", COST.rax + "g")) +
         (myLib ? barBtn("b_study", "📖 Study", "+2 army cap", "study") + barBtn("b_meteor", "☄️ Meteor", meteorCd > 0 ? Math.ceil(meteorCd) + "s" : "word spell", "study") : barBtn("b_library", "📚 Library", COST.library + "g")) +
         (towerCount < 2 ? barBtn("b_tower", "🗼 Tower", COST.tower + "g + word") : "") +
         barBtn("b_bell", bell ? "⛏️ Work!" : "🔔 Garrison", bell ? "villagers come out" : "hide + castle shoots") +
         barBtn("b_sell", sellMode ? "✋ Stop" : "🔨 Dismiss", sellMode ? "tap done" : "tap unit/tower, ½ back") +
+        barBtn("b_rally", rallyArm ? "📍 Tap map…" : "📍 Rally", mode === "rally" ? "holding the flag" : "tap map to hold there") +
         barBtn("b_mode", mode === "defend" ? "⚔️ ATTACK!" : "🛡 Defend", mode === "defend" ? "send the army" : "come home", "mode");
       function on(id, fn) { var b = document.getElementById(id); if (b) b.onclick = fn; }
       on("b_worker", function () { buy("worker"); });
       on("b_rax", function () { buyBld("rax"); });
       on("b_knight", function () { buy("knight"); });
       on("b_archer", function () { buy("archer"); });
+      on("b_shield", function () { buy("shield"); });
+      on("b_cavalry", function () { buy("cavalry"); });
+      on("b_wizard", function () { buyWizard(); });
+      on("b_catapult", function () { buy("catapult"); });
+      on("b_rally", function () {
+        rallyArm = !rallyArm;
+        if (rallyArm) big("📍 Tap anywhere on the field — the army will HOLD there.", "#8ecdf7");
+        renderBar();
+      });
       on("b_library", function () { buyBld("library"); });
       on("b_tower", function () { buyTower(); });
       on("b_study", openStudy);
@@ -187,6 +218,27 @@
       if (juice) juice.burst(X(u.x, u.y), Y(u.x, u.y), "#9be15d", 8);
       if (sfx && sfx.coin) sfx.coin();
       hud(); renderBar();
+    }
+    // 🧙 wizards study before they serve: answering a word IS the hiring exam
+    function buyWizard() {
+      if (over || paused) return;
+      if (armyUsed() >= cap) { big("⚡ Army cap full — 📖 Study to grow it!", "#ffd740"); return; }
+      if (gold < COST.wizard) { big("Need more gold!", "#ffd740"); return; }
+      paused = true;
+      cv._lastQ = VQ.miniQuiz(document.getElementById("emq"), words, store, {
+        title: "🧙 A wizard joins only the learned — answer!", lastFormat: lastFmt,
+        cb: function (ok, res, fmt) {
+          lastFmt = fmt; paused = false;
+          if (ok) {
+            gold -= COST.wizard;
+            var u = unit(0, "wizard", myHall.x + 50, myHall.y + (Math.random() * 60 - 30));
+            if (juice) juice.burst(X(u.x, u.y), Y(u.x, u.y), "#c9b6ff", 14);
+            if (sfx && sfx.fanfare) sfx.fanfare();
+            big("🧙 The wizard bows to a fellow scholar!", "#c9b6ff");
+          } else big("The wizard is unimpressed…", "#ff8a8a");
+          hud(); renderBar();
+        }
+      });
     }
     function buyBld(kind) {
       if (over || paused || gold < COST[kind]) { if (gold < COST[kind]) big("Need more gold!", "#ffd740"); return; }
@@ -267,12 +319,18 @@
     }
 
     // ---------- combat helpers ----------
-    function hurt(u, dmg) {
+    function hurt(u, dmg, by) {
       u.hp -= dmg;
       if (juice) juice.text(X(u.x, u.y), Y(u.x, u.y) - 14, "-" + dmg, u.team === 1 ? "#ffd740" : "#ff8a8a");
       if (u.hp <= 0) {
         if (u.team === 1) { kills++; } else if (u.kind !== "worker") losses++; else workerLost++;
         units.splice(units.indexOf(u), 1);
+        // ⭐ veterancy: survivors who rack up kills get stripes, health and bite
+        if (by && by.team === 0 && by.kind !== "worker" && units.indexOf(by) >= 0) {
+          by.vk = (by.vk || 0) + 1;
+          if (by.vk === 2) { by.vet = 1; by.vetDmg = 2; by.maxHp += 15; by.hp += 15; big("⭐ " + by.kind + " earned a stripe!", "#ffd740"); if (sfx && sfx.chime) sfx.chime(); }
+          if (by.vk === 5) { by.vet = 2; by.vetDmg = 5; by.maxHp += 20; by.hp += 20; big("⭐⭐ VETERAN " + by.kind + "!", "#ffd740"); if (sfx && sfx.fanfare) sfx.fanfare(); }
+        }
         if (juice) juice.burst(X(u.x, u.y), Y(u.x, u.y), u.team === 1 ? "#ffd740" : "#ff8a8a", 10);
         hud();
       }
@@ -328,9 +386,20 @@
       var aggro = uMode === "attack" ? 260 : 200;
       var tgt = nearestFoe(u, aggro);
       if (!tgt && uMode === "attack") tgt = enemyHome;
-      if (!tgt) { // defend: hold near home
+      if (!tgt) {
+        if (uMode === "rally" && rallyPoint) { // 📍 hold the flag
+          if (Math.hypot(u.x - rallyPoint.x, u.y - rallyPoint.y) > 42) moveToward(u, rallyPoint.x + ((units.indexOf(u) % 5) - 2) * 22, rallyPoint.y + ((units.indexOf(u) % 3) - 1) * 26, dt);
+          return;
+        }
+        // defend: hold near home
         if (Math.hypot(u.x - home.x - 70, u.y - home.y) > 46) moveToward(u, home.x + (u.team === 0 ? 70 : -70), home.y + ((units.indexOf(u) % 5) - 2) * 26, dt);
         return;
+      }
+      // catapults prefer BUILDINGS when one is in reach
+      if (UNIT[u.kind].siege) {
+        var bTgt = null, bbd = 300;
+        buildings.forEach(function (b) { if (b.team !== u.team) { var dd = Math.hypot(b.x - u.x, b.y - u.y); if (dd < bbd) { bbd = dd; bTgt = b; } } });
+        if (bTgt) tgt = bTgt;
       }
       var range = UNIT[u.kind].range + (isBld(tgt) ? 26 : 0);
       var d = Math.hypot(tgt.x - u.x, tgt.y - u.y);
@@ -338,8 +407,14 @@
       u.cd -= dt;
       if (u.cd <= 0) {
         u.cd = UNIT[u.kind].cd;
-        if (u.kind === "archer") effects.push({ kind: "arrow", x: u.x, y: u.y - 12, tx: tgt.x, ty: tgt.y - 8, t: 0 });
-        if (isBld(tgt)) hurtB(tgt, UNIT[u.kind].dmg); else hurt(tgt, UNIT[u.kind].dmg);
+        var base = UNIT[u.kind].dmg + (u.vetDmg || 0);
+        var dmg = Math.max(1, Math.round(base * dmgMul(u.kind, tgt)));
+        if (u.kind === "archer" || u.kind === "catapult") effects.push({ kind: "arrow", x: u.x, y: u.y - 12, tx: tgt.x, ty: tgt.y - 8, t: 0 });
+        if (u.kind === "wizard") effects.push({ kind: "zap", x: tgt.x, y: tgt.y, t: 0 });
+        if (isBld(tgt)) hurtB(tgt, dmg); else hurt(tgt, dmg, u);
+        if (UNIT[u.kind].splash && !isBld(tgt)) { // 🪄 splash: singe everyone near the target
+          units.slice().forEach(function (v) { if (v.team !== u.team && v !== tgt && !v.inside && Math.hypot(v.x - tgt.x, v.y - tgt.y) < 48) hurt(v, Math.max(1, Math.round(dmg * 0.6)), u); });
+        }
         if (sfx && sfx.pop && Math.random() < 0.3) sfx.pop();
       }
     }
@@ -379,13 +454,22 @@
     }
 
     // ---------- enemy waves ----------
+    // the rival fields the SAME roster you do — scout the wave, counter the comp
+    function spawnWave() {
+      var pool = ["knight", "knight", "archer"];
+      if (tier >= 2 || waveNum >= 3) pool.push("shield", "cavalry");
+      if (tier === 3 && waveNum >= 3) pool.push("wizard");
+      if (tier === 3 && waveNum >= 5) pool.push("catapult");
+      var size = Math.min(rookie ? 4 : (tier === 3 ? 12 : 8), 1 + Math.floor(waveNum * (0.35 + skill * 1.15) * TIERS_E[tier].waveMul));
+      for (var i = 0; i < size; i++) unit(1, pool[Math.floor(Math.random() * pool.length)], foeHall.x - 40, foeHall.y - 40 + i * 22);
+      return size;
+    }
     function stepEnemy(dt) {
       waveT -= dt;
       if (waveT <= 0) {
         waveNum++;
         waveT = Math.max(tier === 3 ? 20 : 28, (58 - skill * 26) / TIERS_E[tier].waveMul);
-        var size = Math.min(rookie ? 4 : (tier === 3 ? 12 : 8), 1 + Math.floor(waveNum * (0.35 + skill * 1.15) * TIERS_E[tier].waveMul));
-        for (var i = 0; i < size; i++) unit(1, Math.random() < 0.65 ? "knight" : "archer", foeHall.x - 40, foeHall.y - 40 + i * 22);
+        spawnWave();
         big("⚠️ " + rival.name + "'s raid is coming!", "#ffd740");
         if (sfx && sfx.buzz) sfx.buzz();
       }
@@ -480,10 +564,15 @@
         if (u.inside) return; // garrisoned villagers are safe inside the castle
         var s = (compact ? 8 : 0) + (u.kind === "worker" ? 30 : 36); // bigger heroes on phones
         var cfg = u.team === 0 ? myCfg : rivalCfg;
-        var held = u.kind === "knight" ? "🗡️" : u.kind === "archer" ? "🏹" : (u.carry ? "💰" : "⛏️");
+        var held = u.kind === "worker" ? (u.carry ? "💰" : "⛏️") : UNIT[u.kind].emoji;
         AV.draw(ctx, { x: X(u.x, u.y), y: Y(u.x, u.y) + s / 2, size: s, config: cfg, pose: "run", frame: run + u.x * 0.01, flip: u.face < 0, heldOverride: held });
         hpBar(X(u.x, u.y), Y(u.x, u.y) - s * 0.75, s * 0.9, u.hp / u.maxHp, u.team);
+        if (u.vet) { ctx.font = Math.round(Math.max(10, pz(12))) + "px serif"; ctx.textAlign = "center"; ctx.fillText("⭐".repeat(u.vet), X(u.x, u.y), Y(u.x, u.y) - s * 1.05); }
       });
+      if (rallyPoint && mode === "rally") { // 📍 the flag the army holds
+        ctx.font = Math.round(Math.max(20, pz(28))) + "px serif"; ctx.textAlign = "center";
+        ctx.fillText("🚩", X(rallyPoint.x, rallyPoint.y), Y(rallyPoint.x, rallyPoint.y) - pz(8) + Math.sin(run * 3) * 2);
+      }
       var gc2 = garrisonCount();
       if (gc2 > 0) { ctx.font = Math.round(Math.max(13, pz(18))) + "px Trebuchet MS"; ctx.textAlign = "center"; ctx.fillStyle = "#fff"; ctx.fillText("🔔×" + gc2, X(myHall.x, myHall.y - 58), Y(myHall.x, myHall.y - 58)); }
       // effects
@@ -496,6 +585,11 @@
           var ax2 = fx.x + (fx.tx - fx.x) * k, ay2 = fx.y + (fx.ty - fx.y) * k;
           ctx.lineTo(X(ax2, ay2), Y(ax2, ay2) - pz(Math.sin(k * Math.PI) * 18)); ctx.stroke();
           if (k >= 1) effects.splice(e, 1);
+        } else if (fx.kind === "zap") {
+          var zk = Math.min(1, fx.t * 3);
+          ctx.strokeStyle = "rgba(201,182,255," + (1 - zk) + ")"; ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.arc(X(fx.x, fx.y), Y(fx.x, fx.y), pz(12 + zk * 40), 0, Math.PI * 2); ctx.stroke();
+          if (zk >= 1) effects.splice(e, 1);
         } else if (fx.kind === "meteor") {
           var mk = Math.min(1, fx.t * 1.4);
           ctx.font = Math.round(pz(30 + mk * 26)) + "px serif"; ctx.textAlign = "center";
@@ -549,8 +643,18 @@
 
     // 🔨 map taps: dismiss units / demolish towers while sell mode is on
     function mapTap(mx, my) {
-      if (!sellMode || over || paused) return;
+      if (over || paused) return;
       var L = toLogical(mx, my);
+      if (rallyArm) { // 📍 plant the flag
+        rallyArm = false;
+        rallyPoint = { x: Math.max(40, Math.min(MW - 40, L.x)), y: Math.max(50, Math.min(MH - 30, L.y)) };
+        mode = "rally";
+        big("📍 Army, HOLD THE FLAG!", "#8ecdf7");
+        if (sfx && sfx.pop) sfx.pop();
+        renderBar();
+        return;
+      }
+      if (!sellMode) return;
       // nearest own tower first (bigger refund, deliberate act)
       var bestB = null, bdB = 46;
       buildings.forEach(function (b) { if (b.team === 0 && b.kind === "tower") { var d = Math.hypot(b.x - L.x, b.y - L.y); if (d < bdB) { bdB = d; bestB = b; } } });
@@ -577,7 +681,7 @@
     }
     cv.addEventListener("mousedown", function (e) { var r = cv.getBoundingClientRect(); mapTap(e.clientX - r.left, e.clientY - r.top); });
     cv.addEventListener("touchstart", function (e) { // discrete tap: preventDefault kills the iOS phantom double-fire
-      if (!sellMode) return;
+      if (!sellMode && !rallyArm) return;
       e.preventDefault();
       var r = cv.getBoundingClientRect(), t = e.changedTouches[0];
       mapTap(t.clientX - r.left, t.clientY - r.top);
@@ -620,7 +724,11 @@
       setTier: applyTierPick,
       sell: function (on) { sellMode = on !== false; },
       tapLogical: function (lx, ly) { mapTap(X(lx, ly), Y(lx, ly)); },
-      winNow: function (didWin) { win(didWin); }
+      winNow: function (didWin) { win(didWin); },
+      rally: function (x, y) { rallyArm = true; mapTap(X(x, y), Y(x, y)); },
+      rallyPoint: function () { return rallyPoint; },
+      wave: function (n) { waveNum = n !== undefined ? n : waveNum + 1; return spawnWave(); },
+      dmgMul: dmgMul
     };
 
     msgEl.innerHTML = "🏰 <b>Word Empire</b> — vs " + rival.name;
