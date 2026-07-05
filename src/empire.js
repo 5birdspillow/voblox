@@ -59,6 +59,30 @@
     library: { hp: 140, w: 64, h: 56, emoji: "📚" },
     tower: { hp: 150, w: 40, h: 62, emoji: "🗼", range: 150, dmg: 6, cd: 0.8 }
   };
+  // 🏭 THE FORGE — permanent upgrades, paid in ⚒ Medals (stars & Manual secrets)
+  var EUPG = {
+    worker: [{ t: "+5 carry gold", d: { carry: 5 } }, { t: "+5 more", d: { carry: 5 } }],
+    knight: [{ t: "+3 sword dmg", d: { dmg: 3 } }, { t: "+20 hp", d: { hp: 20 } }],
+    archer: [{ t: "+2 arrow dmg", d: { dmg: 2 } }, { t: "+25 range", d: { range: 25 } }],
+    shield: [{ t: "+40 hp", d: { hp: 40 } }, { t: "+50 hp", d: { hp: 50 } }],
+    cavalry: [{ t: "+3 charge dmg", d: { dmg: 3 } }, { t: "+15 hp", d: { hp: 15 } }],
+    wizard: [{ t: "+4 spell dmg", d: { dmg: 4 } }, { t: "+15 hp", d: { hp: 15 } }],
+    catapult: [{ t: "+3 rock dmg", d: { dmg: 3 } }, { t: "+30 hp", d: { hp: 30 } }]
+  };
+  var EUPG_COST = [3, 6];
+  // 📕 War Manual bios — every soldier and general, collectible
+  var BIOS_E = {
+    worker: "Digs gold, hums off-key, dreams of a bigger pickaxe.",
+    knight: "Brave, loyal, and convinced the sword makes the outfit.",
+    archer: "Never misses. Except when a shield is involved. Then always misses.",
+    shield: "Carries a door into battle. Technically it IS a door.",
+    cavalry: "The horse does most of the work. Don't tell the rider.",
+    wizard: "Spells first, spelling second. Refuses to work for the unlettered.",
+    catapult: "Launches rocks and opinions. Both land HARD on castles.",
+    frostbite: "❄️ LADY FROSTBITE. Her heart is ice. Her puns are colder.",
+    ignis: "🌋 WARLORD IGNIS. Burns his toast on purpose. Fears only words."
+  };
+
   // 📗 Normal / 📙 Hard / 📕 NIGHTMARE — Nightmare is tuned to beat GROWN-UPS
   var TIERS_E = {
     1: { name: "Normal", emoji: "📗", foeHpMul: 1, hallMul: 1, skillAdd: 0, startGold: 120, waveMul: 1, gemMul: 1 },
@@ -69,6 +93,14 @@
   function start(opts) {
     var words = opts.words, store = opts.store;
     var stats = store.game("empire");
+    stats.medals = stats.medals || 0; stats.upE = stats.upE || {}; stats.seenE = stats.seenE || {}; stats.quizE = stats.quizE || {};
+    // a unit's REAL stats = base + Forge upgrades (yours only — the rival forges nothing)
+    function edef(kind) {
+      var base = UNIT[kind], lv = stats.upE[kind] || 0, out = {};
+      for (var f in base) out[f] = base[f];
+      for (var i = 0; i < lv && EUPG[kind]; i++) { var dd = (EUPG[kind][i] || {}).d || {}; for (var f2 in dd) out[f2] = (out[f2] || 0) + dd[f2]; }
+      return out;
+    }
     var wrap = document.createElement("div"); wrap.className = "gamewrap empire";
     wrap.innerHTML =
       '<canvas id="emcv"></canvas>' +
@@ -133,7 +165,12 @@
     var bell = false, hintT = 50;
     var tier = 1, workerLost = 0, banked = false, sellMode = false;
     var rallyPoint = null, rallyArm = false;
-    var terr = null, ventT = 10, frostT = 25, frozenArmy = 0, hero = null;
+    var terr = null, ventT = 10, frostT = 25, frozenArmy = 0, hero = null, heroF = null;
+    var rageT = 0, hornCharges = 0, hornsUsed = 0;
+    var siege = false, siegeMods = null, councils = 0, rush = false, rushSpawn = 0;
+    function chargeHorn() { // every correct answer in battle fills the 📯 War Horn
+      if (hornCharges < 2) { hornCharges++; big("📯 WAR HORN CHARGED! (" + hornCharges + "/2)", "#ffd740"); renderBar(); }
+    }
     function applyTierPick(tr) { // multipliers onto the already-seeded battle
       tier = tr;
       var T = TIERS_E[tr];
@@ -150,8 +187,10 @@
 
     function bld(team, kind, x, y) { var b = { team: team, kind: kind, x: x, y: y, hp: BLD[kind].hp, maxHp: BLD[kind].hp, cd: 0 }; buildings.push(b); return b; }
     function unit(team, kind, x, y) {
+      stats.seenE[kind] = 1; // 📕 the Manual records every kind that takes the field
+      var def = team === 0 ? edef(kind) : UNIT[kind];
       var mul = team === 1 ? TIERS_E[tier].foeHpMul : 1;
-      var u = { team: team, kind: kind, x: x, y: y, hp: Math.round(UNIT[kind].hp * mul), maxHp: Math.round(UNIT[kind].hp * mul), cd: 0, carry: 0, mineT: 0, tgt: null, face: 1 };
+      var u = { team: team, kind: kind, x: x, y: y, hp: Math.round(def.hp * mul), maxHp: Math.round(def.hp * mul), cd: 0, carry: 0, mineT: 0, tgt: null, face: 1 };
       units.push(u); return u;
     }
     // building pads fill in a fixed, sensible order (no fiddly placement on a phone)
@@ -164,7 +203,10 @@
       gold = 120; study = 0; cap = 3; kills = 0; losses = 0; workerLost = 0;
       meteorCd = 0; waveNum = 0; mode = "defend"; bell = false; hintT = 50; run = 0;
       over = false; banked = false; sellMode = false; rallyPoint = null; rallyArm = false;
-      ventT = 10; frostT = 25; frozenArmy = 0; hero = null; tier = 1;
+      ventT = 10; frostT = 25; frozenArmy = 0; hero = null; heroF = null; tier = 1;
+      rageT = 0; hornCharges = 0; hornsUsed = 0;
+      siege = !!cfg.siege; rush = !!cfg.rush; rushSpawn = 0; councils = 0;
+      siegeMods = { unitCost: 1, mineMul: 1, towerMul: 1, hallRegen: 0 };
       var mineGold = terr && terr.twist === "goldrich" ? 1400 : 900;
       mines = [{ x: 330, y: 120, left: mineGold }, { x: 300, y: 460, left: mineGold }, { x: 660, y: 90, left: mineGold }, { x: 690, y: 480, left: mineGold }];
       myHall = bld(0, "hall", 120, 280);
@@ -178,8 +220,11 @@
         hero = unit(1, terr.boss, foeHall.x - 70, foeHall.y + 60);
         hero.guard = true;
         if (UNIT[terr.boss].wordShield) hero.shield = true;
+        if (terr.boss === "frostbite") heroF = hero;
         big(UNIT[terr.boss].emoji + " " + UNIT[terr.boss].name + " awaits…", "#c9b6ff");
       }
+      if (siege) { foeHall.invuln = true; msgEl.innerHTML = "🏰 <b>SIEGE SURVIVAL</b>"; big("🏰 HOLD THE CASTLE. The horde never ends…", "#ffd740"); }
+      if (rush) { applyTierPick(3); msgEl.innerHTML = "👑 <b>GENERAL RUSH</b>"; big("👑 Both generals are coming. Ready?", "#ff8a8a"); }
       applyTierPick(cfg.tier || 1);
       if (rookie && !terr) { foeHall.hp = foeHall.maxHp = 240; } // training castle stays gentle (after tier math)
       document.getElementById("emend").style.display = "none";
@@ -213,6 +258,7 @@
           : barBtn("b_rax", "🏯 Barracks", COST.rax + "g")) +
         (myLib ? barBtn("b_study", "📖 Study", "+2 army cap", "study") + barBtn("b_meteor", "☄️ Meteor", meteorCd > 0 ? Math.ceil(meteorCd) + "s" : "word spell", "study") : barBtn("b_library", "📚 Library", COST.library + "g")) +
         (frozenArmy ? barBtn("b_thaw", "🔥 THAW!", "answer = un-freeze", "mode") : "") +
+        (hornCharges > 0 ? barBtn("b_horn", "📯 HORN ×" + hornCharges, "blow it!", "mode") : "") +
         (towerCount < 2 && !(terr && terr.twist === "notowers") ? barBtn("b_tower", "🗼 Tower", COST.tower + "g + word") : "") +
         barBtn("b_bell", bell ? "⛏️ Work!" : "🔔 Garrison", bell ? "villagers come out" : "hide + castle shoots") +
         barBtn("b_sell", sellMode ? "✋ Stop" : "🔨 Dismiss", sellMode ? "tap done" : "tap unit/tower, ½ back") +
@@ -228,6 +274,7 @@
       on("b_wizard", function () { buyWizard(); });
       on("b_catapult", function () { buy("catapult"); });
       on("b_thaw", thaw);
+      on("b_horn", blowHorn);
       on("b_rally", function () {
         rallyArm = !rallyArm;
         if (rallyArm) big("📍 Tap anywhere on the field — the army will HOLD there.", "#8ecdf7");
@@ -260,8 +307,9 @@
       if (over || paused) return;
       if (kind === "worker" && workerCount() >= 6) { big("Worker camp is full!", "#ffd740"); return; }
       if (kind !== "worker" && armyUsed() >= cap) { big("⚡ Army cap full — 📖 Study to grow it!", "#ffd740"); return; }
-      if (gold < COST[kind]) { big("Need more gold!", "#ffd740"); return; }
-      gold -= COST[kind];
+      var price = Math.ceil(COST[kind] * siegeMods.unitCost);
+      if (gold < price) { big("Need more gold!", "#ffd740"); return; }
+      gold -= price;
       var u = unit(0, kind, myHall.x + 50, myHall.y + (Math.random() * 60 - 30));
       if (juice) juice.burst(X(u.x, u.y), Y(u.x, u.y), "#9be15d", 8);
       if (sfx && sfx.coin) sfx.coin();
@@ -283,6 +331,7 @@
             if (juice) juice.burst(X(u.x, u.y), Y(u.x, u.y), "#c9b6ff", 14);
             if (sfx && sfx.fanfare) sfx.fanfare();
             big("🧙 The wizard bows to a fellow scholar!", "#c9b6ff");
+            chargeHorn();
           } else big("The wizard is unimpressed…", "#ff8a8a");
           hud(); renderBar();
         }
@@ -312,6 +361,7 @@
             towerCount++;
             big("🗼 Tower raised!", "#9be15d");
             if (sfx && sfx.chime) sfx.chime();
+            chargeHorn();
           } else big("The builders got confused…", "#ff8a8a");
           hud(); renderBar();
         }
@@ -328,6 +378,7 @@
             study++; cap = Math.min(25, cap + 2); gold += 15;
             big("⚡ Army cap +2! (+15g)", "#9be15d");
             if (sfx && sfx.fanfare) sfx.fanfare();
+            chargeHorn();
           }
           hud(); renderBar();
         }
@@ -361,6 +412,7 @@
             if (sfx) { sfx.tone && sfx.tone(90, 0.4, 0.09); }
           }, 650);
           big("☄️ METEOR!", "#ff9f43");
+          chargeHorn();
           renderBar();
         }
       });
@@ -389,6 +441,7 @@
       }
     }
     function hurtB(b, dmg) {
+      if (b.invuln) return; // siege: the far hall is scenery
       b.hp -= dmg;
       if (b.hp <= 0) {
         buildings.splice(buildings.indexOf(b), 1);
@@ -430,8 +483,8 @@
       if (!mine) return;
       if (bd > 26) { moveToward(u, mine.x, mine.y, dt); return; }
       u.mineT += dt;
-      var cycle = terr && terr.twist === "frozen" ? 2.6 : 1.3; // 🥶 frozen mines are stubborn
-      if (u.mineT > cycle) { u.mineT = 0; mine.left -= 10; u.carry = 10; }
+      var cycle = (terr && terr.twist === "frozen" ? 2.6 : 1.3) / (siegeMods ? siegeMods.mineMul : 1);
+      if (u.mineT > cycle) { u.mineT = 0; var haul = 10 + (edef("worker").carry || 0); mine.left -= 10; u.carry = haul; }
     }
     function stepSoldier(u, dt) {
       if (u.frozen > 0) { u.frozen -= dt; return; } // ❄️ statues don't march
@@ -456,14 +509,15 @@
         buildings.forEach(function (b) { if (b.team !== u.team) { var dd = Math.hypot(b.x - u.x, b.y - u.y); if (dd < bbd) { bbd = dd; bTgt = b; } } });
         if (bTgt) tgt = bTgt;
       }
-      var range = UNIT[u.kind].range + (isBld(tgt) ? 26 : 0);
+      var range = (u.team === 0 ? edef(u.kind).range : UNIT[u.kind].range) + (isBld(tgt) ? 26 : 0);
       var d = Math.hypot(tgt.x - u.x, tgt.y - u.y);
       if (d > range) { moveToward(u, tgt.x, tgt.y, dt); return; }
       u.cd -= dt;
       if (u.cd <= 0) {
         u.cd = UNIT[u.kind].cd;
-        var base = UNIT[u.kind].dmg + (u.vetDmg || 0);
-        var dmg = Math.max(1, Math.round(base * dmgMul(u.kind, tgt)));
+        var fdef = u.team === 0 ? edef(u.kind) : UNIT[u.kind];
+        var base = fdef.dmg + (u.vetDmg || 0);
+        var dmg = Math.max(1, Math.round(base * dmgMul(u.kind, tgt) * (u.team === 0 && rageT > 0 ? 1.5 : 1)));
         if (u.kind === "archer" || u.kind === "catapult") effects.push({ kind: "arrow", x: u.x, y: u.y - 12, tx: tgt.x, ty: tgt.y - 8, t: 0 });
         if (u.kind === "wizard") effects.push({ kind: "zap", x: tgt.x, y: tgt.y, t: 0 });
         if (isBld(tgt)) hurtB(tgt, dmg); else hurt(tgt, dmg, u);
@@ -489,7 +543,7 @@
         b.cd -= dt; if (b.cd > 0) return;
         var tgt = null, bd = BLD.tower.range;
         units.forEach(function (v) { if (v.team !== b.team && !v.inside) { var d = Math.hypot(v.x - b.x, v.y - b.y); if (d < bd) { bd = d; tgt = v; } } });
-        if (tgt) { b.cd = BLD.tower.cd; effects.push({ kind: "arrow", x: b.x, y: b.y - 30, tx: tgt.x, ty: tgt.y, t: 0 }); hurt(tgt, BLD.tower.dmg); }
+        if (tgt) { b.cd = BLD.tower.cd; effects.push({ kind: "arrow", x: b.x, y: b.y - 30, tx: tgt.x, ty: tgt.y, t: 0 }); hurt(tgt, Math.round(BLD.tower.dmg * (b.team === 0 ? siegeMods.towerMul : 1))); }
       });
       // AoE town-bell rule: a garrisoned castle SHOOTS — more villagers, more arrows
       var gc = garrisonCount();
@@ -512,17 +566,36 @@
     // the rival fields the SAME roster you do — scout the wave, counter the comp
     function spawnWave() {
       var pool = ["knight", "knight", "archer"];
-      if (tier >= 2 || waveNum >= 3) pool.push("shield", "cavalry");
-      if (tier === 3 && waveNum >= 3) pool.push("wizard");
-      if (tier === 3 && waveNum >= 5) pool.push("catapult");
+      if (tier >= 2 || waveNum >= 3 || (siege && waveNum >= 2)) pool.push("shield", "cavalry");
+      if ((tier === 3 && waveNum >= 3) || (siege && waveNum >= 4)) pool.push("wizard");
+      if ((tier === 3 && waveNum >= 5) || (siege && waveNum >= 6)) pool.push("catapult");
       var size = Math.min(rookie ? 4 : (tier === 3 ? 12 : 8), 1 + Math.floor(waveNum * (0.35 + skill * 1.15) * TIERS_E[tier].waveMul));
       for (var i = 0; i < size; i++) unit(1, pool[Math.floor(Math.random() * pool.length)], foeHall.x - 40, foeHall.y - 40 + i * 22);
       return size;
     }
-    // territory hazards + general powers tick here
+    // territory hazards + general powers + mode logic tick here
     function terrStep(dt) {
-      if (!terr) return;
-      if (terr.twist === "lavavents") { // 🌋 the ground erupts under EVERYONE
+      rageT = Math.max(0, rageT - dt);
+      if (siegeMods.hallRegen > 0 && myHall.hp < myHall.maxHp) myHall.hp = Math.min(myHall.maxHp, myHall.hp + siegeMods.hallRegen * dt);
+      if (rush && !over) { // 👑 the generals arrive on schedule
+        if (rushSpawn === 0 && run >= 10) {
+          rushSpawn = 1;
+          heroF = unit(1, "frostbite", foeHall.x - 70, foeHall.y + 60);
+          big("❄️ LADY FROSTBITE ENTERS!", "#8ecdf7");
+        }
+        if (rushSpawn === 1 && run >= 60) {
+          rushSpawn = 2;
+          hero = unit(1, "ignis", foeHall.x - 70, foeHall.y - 60);
+          hero.shield = true;
+          big("🌋 WARLORD IGNIS ENTERS!", "#ff9f43");
+        }
+        if (rushSpawn === 2) {
+          var fAlive = heroF && units.indexOf(heroF) >= 0, iAlive = hero && units.indexOf(hero) >= 0;
+          if (!fAlive && !iAlive) { stats.rushDone = true; store.save(); win(true); return; }
+        }
+      }
+      if (!terr && !siege && !rush) return;
+      if (terr && terr.twist === "lavavents") { // 🌋 the ground erupts under EVERYONE
         ventT -= dt;
         if (ventT <= 0) {
           ventT = 12;
@@ -540,7 +613,7 @@
           if (sfx && sfx.buzz) sfx.buzz();
         }
       }
-      if (hero && UNIT[hero.kind] && hero.kind === "frostbite") { // ❄️ she freezes your whole army
+      if (heroF && units.indexOf(heroF) >= 0) { // ❄️ she freezes your whole army
         frostT -= dt;
         if (frostT <= 0) {
           frostT = 25;
@@ -570,10 +643,82 @@
             big("🔥 THE ICE SHATTERS! CHARGE!", "#ff9f43");
             if (juice) juice.shake(6);
             if (sfx && sfx.fanfare) sfx.fanfare();
+            chargeHorn();
           } else big("Still frozen… brrr.", "#8ecdf7");
           renderBar();
         }
       });
+    }
+    // 🛡 WAR COUNCIL: every 5th siege wave, pick 1 of 3 lasting boons
+    var COUNCIL = [
+      { id: "bargain", emoji: "🏷", name: "Cheap Recruits", t: "units cost 20% less" },
+      { id: "veins", emoji: "⛏", name: "Deep Veins", t: "mining 50% faster" },
+      { id: "ballista", emoji: "🗼", name: "Ballista Bolts", t: "towers hit 2x" },
+      { id: "masons", emoji: "🧱", name: "Mason Crews", t: "castle self-repairs" }
+    ];
+    function showCouncil(forceIds) {
+      paused = true; councils++;
+      var pool = COUNCIL.slice();
+      var picks = forceIds ? COUNCIL.filter(function (c) { return forceIds.indexOf(c.id) >= 0; }) : [];
+      while (picks.length < 3 && pool.length) {
+        var c2 = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
+        if (picks.indexOf(c2) < 0) picks.push(c2);
+      }
+      picks = picks.slice(0, 3);
+      var end = document.getElementById("emend");
+      end.innerHTML = '<div class="wqcard" style="text-align:center"><div style="font-size:36px">🛡</div>' +
+        '<div class="wqtitle" style="font-size:19px">Wave ' + waveNum + " held! The War Council offers:</div>" +
+        '<div style="font-size:12px;color:#2f9e44;font-weight:900;margin:2px 0">+' + (councils * 5) + " Vobux banked</div>" +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:8px 0">' +
+        picks.map(function (c) { return '<button class="embtn" style="min-width:128px" data-cn="' + c.id + '"><span class="ebl">' + c.emoji + " " + c.name + '</span><span class="ebs">' + c.t + "</span></button>"; }).join("") + "</div></div>";
+      end.style.display = "flex";
+      Array.prototype.forEach.call(end.querySelectorAll("[data-cn]"), function (b) {
+        b.onclick = function () {
+          var id = b.dataset.cn;
+          if (id === "bargain") siegeMods.unitCost = 0.8;
+          else if (id === "veins") siegeMods.mineMul = 1.5;
+          else if (id === "ballista") siegeMods.towerMul = 2;
+          else if (id === "masons") siegeMods.hallRegen = 2;
+          var c3 = COUNCIL.filter(function (x) { return x.id === id; })[0];
+          big("🛡 " + c3.emoji + " " + c3.name + "!", "#9be15d");
+          end.style.display = "none"; paused = false;
+          renderBar();
+          if (sfx && sfx.chime) sfx.chime();
+        };
+      });
+    }
+    // 📯 WAR HORN: charged by ANY correct answer; blow it for a battle-turner
+    function blowHorn() {
+      if (over || paused || hornCharges <= 0) return;
+      paused = true;
+      var end = document.getElementById("emend");
+      var opts = [
+        { id: "rage", emoji: "🔥", name: "RAGE", t: "+50% damage, 10s" },
+        { id: "heal", emoji: "💚", name: "Rally Heal", t: "everyone fully healed" },
+        { id: "gold", emoji: "💰", name: "Gold Rush", t: "+100 gold now" },
+        { id: "freeze", emoji: "🥶", name: "Enemy Freeze", t: "foes frozen 5s" }
+      ];
+      end.innerHTML = '<div class="wqcard" style="text-align:center"><div style="font-size:36px">📯</div>' +
+        '<div class="wqtitle" style="font-size:19px">Blow the War Horn! (' + hornCharges + " charge" + (hornCharges > 1 ? "s" : "") + ")</div>" +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:8px 0">' +
+        opts.map(function (o) { return '<button class="embtn" style="min-width:118px" data-hn="' + o.id + '"><span class="ebl">' + o.emoji + " " + o.name + '</span><span class="ebs">' + o.t + "</span></button>"; }).join("") +
+        '</div><button class="wqskip" id="hn_back" type="button">not yet</button></div>';
+      end.style.display = "flex";
+      Array.prototype.forEach.call(end.querySelectorAll("[data-hn]"), function (b) {
+        b.onclick = function () {
+          hornCharges--; hornsUsed++;
+          var id = b.dataset.hn;
+          if (id === "rage") { rageT = 10; big("📯🔥 RAAAGE! +50% damage!", "#ff8a8a"); }
+          else if (id === "heal") { units.forEach(function (u) { if (u.team === 0) u.hp = u.maxHp; }); big("📯💚 The army stands tall again!", "#9be15d"); }
+          else if (id === "gold") { gold += 100; big("📯💰 GOLD RUSH! +100g", "#ffd740"); }
+          else if (id === "freeze") { units.forEach(function (u) { if (u.team === 1) u.frozen = 5; }); big("📯🥶 THE FOE FREEZES!", "#8ecdf7"); }
+          if (juice) juice.shake(5);
+          if (sfx && sfx.fanfare) sfx.fanfare();
+          end.style.display = "none"; paused = false;
+          hud(); renderBar();
+        };
+      });
+      document.getElementById("hn_back").onclick = function () { end.style.display = "none"; paused = false; };
     }
     // 🌋 tap Ignis and answer to melt his word-shield for 12s
     function heroDuel() {
@@ -588,6 +733,7 @@
             big("💥 HIS SHIELD MELTS — 12 seconds, STRIKE!", "#69f0ae");
             if (juice) { juice.shake(8); juice.burst(X(hero.x, hero.y), Y(hero.x, hero.y), "#ff9f43", 24); }
             if (sfx && sfx.fanfare) sfx.fanfare();
+            chargeHorn();
           } else big("The Warlord laughs in flames…", "#ff8a8a");
         }
       });
@@ -600,9 +746,10 @@
       }
       if (waveT <= 0) {
         waveNum++;
-        waveT = Math.max(tier === 3 ? 20 : 28, (58 - skill * 26) / TIERS_E[tier].waveMul);
+        waveT = siege ? Math.max(12, 34 - waveNum * 1.1) : Math.max(tier === 3 ? 20 : 28, (58 - skill * 26) / TIERS_E[tier].waveMul);
         spawnWave();
-        big("⚠️ " + rival.name + "'s raid is coming!", "#ffd740");
+        if (siege && waveNum % 5 === 0) showCouncil(); // 🛡 the War Council convenes
+        else big(siege ? "🌊 Wave " + waveNum + "!" : "⚠️ " + rival.name + "'s raid is coming!", "#ffd740");
         if (sfx && sfx.buzz) sfx.buzz();
       }
       if (hintT > 0) { hintT -= dt; if (hintT <= 0 && !myLib) big("💡 Build a 📚 Library — studying makes your army BIGGER!", "#c9b6ff"); }
@@ -614,12 +761,15 @@
     function runRewards(didWin) {
       var T = TIERS_E[tier];
       var studyBonus = study * 4;
+      var gems = siege ? Math.min(90, 5 + waveNum * 2 + councils * 5)
+        : rush && didWin ? 120
+          : (didWin ? 25 * T.gemMul : 8);
       return {
         win: !!didWin,
-        score: kills * 5 + study * 10 + (didWin ? tier * 40 : 0),
-        rankPtsDelta: didWin ? Math.min(14, 8 + Math.min(4, study) + (tier - 1) * 2) : 2,
+        score: kills * 5 + study * 10 + (siege ? waveNum * 12 : didWin ? tier * 40 : 0),
+        rankPtsDelta: didWin ? Math.min(14, 8 + Math.min(4, study) + (tier - 1) * 2) : (siege ? Math.min(8, 1 + Math.floor(waveNum / 3)) : 2),
         xp: Math.min(80, 15 + kills * 2 + study * 6 + (didWin ? tier * 8 : 0)),
-        gems: studyBonus + (didWin ? 25 * T.gemMul : 8), studyBonus: studyBonus
+        gems: studyBonus + gems, studyBonus: studyBonus
       };
     }
     function bankRun(didWin) {
@@ -643,7 +793,8 @@
       var bid = terr ? terr.id : "q";
       // ⭐ stars: win · lose no villagers · study 2+ words (per tier, 9/battle)
       var earned = 0, newMedals = 0;
-      if (didWin) {
+      if (siege && waveNum > (stats.siegeBest || 0)) { stats.siegeBest = waveNum; store.save(); }
+      if (didWin && !siege && !rush) {
         earned = 1 + (workerLost === 0 ? 1 : 0) + (study >= 2 ? 1 : 0);
         stats.starsT = stats.starsT || {};
         var key = bid + ":" + tier;
@@ -660,16 +811,19 @@
         if (newMedals > 0) stats.medals = (stats.medals || 0) + newMedals;
         store.save();
       }
+      crownECheck();
       var T = TIERS_E[tier];
       var terrIdx = terr ? TERR.indexOf(terr) : -1;
       var nextTerr = didWin && terr && terrIdx < TERR.length - 1 ? TERR[terrIdx + 1] : null;
-      var title = didWin
-        ? (terr && terr.id === "t12" ? "🎉 THE MAP IS YOURS! Warlord Ignis kneels!"
-          : terr && terr.boss ? UNIT[terr.boss].emoji + " THE GENERAL FALLS! " + terr.name + " is conquered!"
-            : terr ? terr.region + " " + terr.name + " CONQUERED!" + (tier > 1 ? " (" + T.name + ")" : "")
-              : (tier > 1 ? T.emoji + " " + T.name + " VICTORY!" : "VICTORY! The castle is yours!"))
-        : "Your castle fell… next time!";
-      var starRow = didWin ? '<div style="font-size:26px;margin:2px 0">' + "⭐".repeat(earned) + "☆".repeat(3 - earned) + '</div>' +
+      var title = siege ? "🏰 The castle held for " + waveNum + " waves" + (waveNum >= (stats.siegeBest || 0) ? " — NEW RECORD!" : "!")
+        : rush && didWin ? "👑 GENERAL RUSH CONQUERED! Both generals kneel!"
+          : didWin
+            ? (terr && terr.id === "t12" ? "🎉 THE MAP IS YOURS! Warlord Ignis kneels!"
+              : terr && terr.boss ? UNIT[terr.boss].emoji + " THE GENERAL FALLS! " + terr.name + " is conquered!"
+                : terr ? terr.region + " " + terr.name + " CONQUERED!" + (tier > 1 ? " (" + T.name + ")" : "")
+                  : (tier > 1 ? T.emoji + " " + T.name + " VICTORY!" : "VICTORY! The castle is yours!"))
+            : "Your castle fell… next time!";
+      var starRow = (didWin && !siege && !rush) ? '<div style="font-size:26px;margin:2px 0">' + "⭐".repeat(earned) + "☆".repeat(3 - earned) + '</div>' +
         '<div style="font-size:11px;color:#5a6b7a">win · keep every villager · study 2+ words</div>' : "";
       var payRow = '<div style="margin:6px 0;font-weight:900;color:#2f9e44;font-size:17px">+' + rw.gems + ' <img class="vbx" src="icons/vobux.png" alt="Vobux"> · +' + rw.xp + " XP" +
         (newMedals > 0 ? ' · <span style="color:#b06a00">+' + newMedals + " ⚒</span>" : "") +
@@ -709,11 +863,15 @@
         }).join("");
         return '<div style="margin:6px 0 2px;font-weight:900">' + rg.key + " " + rg.name + '</div><div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">' + btns + "</div>";
       }).join("");
-      var quickBtn = '<button class="embtn mode" style="min-width:140px" id="em_quick"><span class="ebl">⚔️ Quick Battle</span><span class="ebs">vs ' + rival.name + " · " + tIcons("q") + "</span></button>";
+      var quickBtn = '<button class="embtn mode" style="min-width:140px" id="em_quick"><span class="ebl">⚔️ Quick Battle</span><span class="ebs">vs ' + rival.name + " · " + tIcons("q") + "</span></button>" +
+        '<button class="embtn study" style="min-width:130px" id="em_siege"><span class="ebl">🏰 Siege Survival</span><span class="ebs">endless! best: wave ' + (stats.siegeBest || 0) + "</span></button>" +
+        (stats.mapDone ? '<button class="embtn" style="min-width:130px;border:2px solid #b06a00" id="em_rush"><span class="ebl">👑 General Rush</span><span class="ebs">' + (stats.rushDone ? "CONQUERED — again?" : "both generals, one field") + "</span></button>" : "") +
+        '<button class="embtn" style="min-width:110px" id="em_forge"><span class="ebl">🏭 Forge</span><span class="ebs">⚒ ' + (stats.medals || 0) + " Medals</span></button>" +
+        '<button class="embtn" style="min-width:110px" id="em_manual"><span class="ebl">' + (stats.crownE ? "👑 " : "📕 ") + 'War Manual</span><span class="ebs">' + Object.keys(stats.seenE).length + "/" + Object.keys(UNIT).length + " met</span></button>";
       end.innerHTML = '<div class="wqcard" style="text-align:center;max-height:84vh;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y">' +
         '<div style="font-size:36px">🗺</div><div class="wqtitle" style="font-size:20px">The Conquest Map</div>' +
         (stats.mapDone ? '<div style="color:#b06a00;font-weight:900">👑 MAP CONQUERED</div>' : "") +
-        html + '<div style="margin-top:8px">' + quickBtn + "</div>" +
+        html + '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center">' + quickBtn + "</div>" +
         '<div style="font-size:11px;color:#8a98a8;margin-top:6px">⭐ per battle: win · keep every villager · study 2+ words</div></div>';
       end.style.display = "flex";
       Array.prototype.forEach.call(end.querySelectorAll("[data-terr]"), function (b) {
@@ -730,6 +888,106 @@
         if (tdB("q") >= 1) showTierPickE("q", "Quick Battle", function (tr) { resetBattle({ terr: null, tier: tr }); });
         else resetBattle({ terr: null, tier: 1 });
       };
+      document.getElementById("em_siege").onclick = function () { resetBattle({ siege: true, tier: 1 }); };
+      var rb2 = document.getElementById("em_rush");
+      if (rb2) rb2.onclick = function () { resetBattle({ rush: true, tier: 3 }); };
+      document.getElementById("em_forge").onclick = showForge;
+      document.getElementById("em_manual").onclick = showManual;
+    }
+    // 🏭 THE FORGE — permanent unit upgrades, paid in ⚒ Medals
+    function showForge() {
+      var end = document.getElementById("emend");
+      var rows = Object.keys(EUPG).map(function (k) {
+        var lv = stats.upE[k] || 0;
+        var next = EUPG[k][lv];
+        var pips = "●".repeat(lv) + "○".repeat(2 - lv);
+        return '<div style="display:flex;align-items:center;gap:8px;background:#f4f8fc;border-radius:10px;padding:6px 10px;margin:4px 0">' +
+          '<span style="font-size:22px">' + UNIT[k].emoji + '</span>' +
+          '<div style="flex:1;text-align:left"><b style="font-size:13px">' + k + " " + pips + "</b>" +
+          '<div style="font-size:11px;color:#5a6b7a">' + (next ? "next: " + next.t : "fully forged!") + "</div></div>" +
+          (next ? '<button class="submit" style="padding:5px 10px;font-size:13px" data-fup="' + k + '">' + EUPG_COST[lv] + " ⚒</button>" : '<span style="color:#2f9e44;font-weight:900">MAX</span>') + "</div>";
+      }).join("");
+      end.innerHTML = '<div class="wqcard" style="max-height:84vh;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y">' +
+        '<div class="wqtitle">🏭 The Forge — ⚒ ' + (stats.medals || 0) + ' Medals</div>' +
+        '<div style="font-size:12px;color:#5a6b7a;margin-bottom:4px">Earn Medals from NEW stars, tier clears, and Manual secrets. Upgrades are forever.</div>' +
+        rows + '<button class="wqskip" id="fg_back" type="button">back</button></div>';
+      end.style.display = "flex";
+      document.getElementById("fg_back").onclick = showMap;
+      Array.prototype.forEach.call(end.querySelectorAll("[data-fup]"), function (b) {
+        b.onclick = function () {
+          var k = b.dataset.fup, lv = stats.upE[k] || 0, cost = EUPG_COST[lv];
+          if ((stats.medals || 0) < cost) { big("Not enough ⚒ Medals — earn stars & secrets!", "#ffd740"); return; }
+          stats.medals -= cost;
+          stats.upE[k] = lv + 1;
+          store.save();
+          big("🏭 " + k + " forged: " + EUPG[k][lv].t + "!", "#9be15d");
+          if (sfx && sfx.fanfare) sfx.fanfare();
+          showForge();
+        };
+      });
+    }
+    // 📕 THE WAR MANUAL — every soldier & general, with a Secret Word each
+    function showManual() {
+      var end = document.getElementById("emend");
+      var chips = Object.keys(UNIT).map(function (k) {
+        var seen = !!stats.seenE[k];
+        return '<button class="lchip" style="font-size:13px' + (seen ? "" : ";opacity:.5") + '" data-man="' + k + '">' +
+          (seen ? UNIT[k].emoji + " " + (UNIT[k].name || k) + (stats.quizE[k] ? " ✓" : " 📖") : "❓ ???") + "</button>";
+      }).join("");
+      var total = Object.keys(UNIT).length, found = Object.keys(stats.seenE).length;
+      end.innerHTML = '<div class="wqcard" style="max-height:84vh;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y">' +
+        '<div class="wqtitle">📕 The War Manual — ' + found + "/" + total + ' met</div>' +
+        '<div style="font-size:12px;color:#5a6b7a;margin-bottom:4px">Tap an entry · 📖 = its Secret Word still pays +5 Vobux & +1 ⚒</div>' +
+        '<div class="lchips">' + chips + "</div>" +
+        '<button class="wqskip" id="mn_back" type="button">back</button></div>';
+      end.style.display = "flex";
+      document.getElementById("mn_back").onclick = showMap;
+      Array.prototype.forEach.call(end.querySelectorAll("[data-man]"), function (b) {
+        b.onclick = function () { if (stats.seenE[b.dataset.man]) showManEntry(b.dataset.man); else big("Meet it on the battlefield first!", "#ffd740"); };
+      });
+    }
+    function showManEntry(k) {
+      var d = UNIT[k];
+      var end = document.getElementById("emend");
+      end.innerHTML = '<div class="wqcard" style="text-align:center"><div style="font-size:52px">' + d.emoji + '</div>' +
+        '<div class="wqtitle">' + (d.name || k) + '</div>' +
+        '<div style="font-size:12px;color:#5a6b7a;margin:2px 0">hp ' + d.hp + " · dmg " + d.dmg + " · speed " + d.speed + '</div>' +
+        '<div style="margin:8px 0;font-style:italic">“' + (BIOS_E[k] || "A mystery of the battlefield.") + '”</div>' +
+        (stats.quizE[k] ? '<div style="color:#2f9e44;font-weight:900">✓ Secret Word solved</div>'
+          : '<button class="submit" id="mn_quiz" type="button">🔎 Secret Word quiz (+5 Vobux, +1 ⚒)</button>') +
+        '<br><button class="wqskip" id="mn_back2" type="button">back</button></div>';
+      end.style.display = "flex";
+      document.getElementById("mn_back2").onclick = showManual;
+      var qb = document.getElementById("mn_quiz");
+      if (qb) qb.onclick = function () { manualQuiz(k); };
+    }
+    function manualQuiz(k) {
+      cv._lastQ = VQ.miniQuiz(document.getElementById("emq"), words, store, {
+        title: "🔎 Secret Word of the " + (UNIT[k].name || k) + "!",
+        lastFormat: lastFmt,
+        cb: function (ok, res, fmt) {
+          lastFmt = fmt;
+          if (ok) {
+            stats.quizE[k] = 1;
+            stats.medals = (stats.medals || 0) + 1;
+            store.state.gems += 5;
+            crownECheck();
+            store.save();
+            big("🔎 Secret solved! +5 Vobux, +1 ⚒", "#69f0ae");
+          }
+          showManEntry(k);
+        }
+      });
+    }
+    // 👑 meet EVERY unit and general → the crown + 10 Medals
+    function crownECheck() {
+      if (!stats.crownE && Object.keys(stats.seenE).length >= Object.keys(UNIT).length) {
+        stats.crownE = true;
+        stats.medals = (stats.medals || 0) + 10;
+        store.save();
+        big("👑 WAR MANUAL COMPLETE! +10 ⚒ Medals!", "#ffd23f");
+        if (sfx && sfx.fanfare) sfx.fanfare();
+      }
     }
 
     // ---------- drawing ----------
@@ -953,10 +1211,26 @@
       beginT: function (idx, tr) { resetBattle({ terr: idx > 0 ? TERR[idx - 1] : null, tier: tr || 1 }); },
       terr: function () { return terr; },
       hero: function () { return hero; },
+      heroF: function () { return heroF; },
       duelHero: heroDuel,
       thawNow: thaw,
       map: showMap,
-      TERR: TERR
+      TERR: TERR,
+      edef: edef,
+      medals: function (n) { if (n) stats.medals = (stats.medals || 0) + n; return stats.medals || 0; },
+      forgeUp: function (k) { var lv = stats.upE[k] || 0; if ((stats.medals || 0) >= EUPG_COST[lv]) { stats.medals -= EUPG_COST[lv]; stats.upE[k] = lv + 1; return true; } return false; },
+      manual: function () { return { seenE: stats.seenE, quizE: stats.quizE, crownE: !!stats.crownE, medals: stats.medals || 0 }; },
+      manualQuiz: manualQuiz,
+      seeAllE: function () { Object.keys(UNIT).forEach(function (k) { stats.seenE[k] = 1; }); crownECheck(); },
+      hornN: function () { return hornCharges; },
+      chargeHorn: chargeHorn,
+      hornBlow: blowHorn,
+      rageT: function () { return rageT; },
+      council: function (ids) { showCouncil(ids); },
+      siegeState: function () { return { siege: siege, rush: rush, waveNum: waveNum, councils: councils, mods: siegeMods, siegeBest: stats.siegeBest || 0, rushDone: !!stats.rushDone }; },
+      beginSiege: function () { resetBattle({ siege: true, tier: 1 }); },
+      beginRush: function () { resetBattle({ rush: true, tier: 3 }); },
+      setRun: function (r) { run = r; }
     };
 
     // rookies charge straight into their training battle; veterans get the war map
