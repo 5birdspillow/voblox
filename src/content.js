@@ -735,9 +735,193 @@
     ]
   };
 
+  var LESSON10 = {
+    lesson: 10,
+    title: "Lesson 10",
+    words: [
+      entry({
+        word: "ail", emoji: "🤒", pron: "AYL",
+        senses: [
+          { pos: "verb", def: "to cause sickness, pain, or trouble",
+            example: "\"What ails you?\" the doctor asked." }
+        ],
+        forms: [
+          { word: "ailment", pos: "noun", def: "an illness; a disease",
+            example: "The flu is a common childhood ailment." },
+          { word: "ailing", pos: "adj", def: "in poor health",
+            example: "I have been ailing all winter." }
+        ],
+        synonyms: ["bother", "trouble", "sicken"], antonyms: ["heal", "cure"],
+        mnemonic: "To ail is to feel ill — ail and ill both mean not well."
+      }),
+      entry({
+        word: "banish", emoji: "🚫", pron: "BAN-ish",
+        senses: [
+          { pos: "verb", def: "to force someone out of the country",
+            example: "After the revolution, France banished the royal family." },
+          { pos: "verb", def: "to get rid of completely",
+            example: "Joe was such a cheerful person, he banished gloom wherever he went." }
+        ],
+        synonyms: ["exile", "cast out", "get rid of"], antonyms: ["welcome", "invite", "keep"],
+        mnemonic: "To banish is to BAN someone and make them vanish — gone!"
+      }),
+      entry({
+        word: "communicate", emoji: "💬", pron: "kə-MYOO-ni-kayt",
+        senses: [
+          { pos: "verb", def: "to make known; to give or exchange information",
+            example: "Because I hate to write letters, we communicate mostly by telephone." }
+        ],
+        forms: [
+          { word: "communication", pos: "noun", def: "the exchange of information between people",
+            example: "The fight was caused by a lack of communication between us." },
+          { word: "communicative", pos: "adj", def: "willing to speak; eager to talk",
+            example: "When I asked her where she had been, she was not very communicative, replying only, \"Out.\"" }
+        ],
+        synonyms: ["talk", "share", "connect"], antonyms: ["ignore", "stay silent"],
+        mnemonic: "To communicate is to send a message — like using comms to talk to your team in a game."
+      }),
+      entry({
+        word: "console", emoji: "🤗", pron: "kən-SOHL",
+        senses: [
+          { pos: "verb", def: "to make less sad; to comfort",
+            example: "My parents tried to console me when my best friend moved away." }
+        ],
+        forms: [
+          { word: "consolation", pos: "noun", def: "comfort",
+            example: "I knew I could always turn to my aunt for consolation whenever I was upset." }
+        ],
+        synonyms: ["comfort", "soothe", "cheer up"], antonyms: ["upset", "sadden"],
+        mnemonic: "Console sounds like your game console, but it means to comfort someone who is sad."
+      }),
+      entry({
+        word: "cower", emoji: "😨", pron: "KOW-ər",
+        senses: [
+          { pos: "verb", def: "to shrink from, as if from fear",
+            example: "Our poor dog cowers every time Dad turns the vacuum cleaner on." }
+        ],
+        synonyms: ["shrink", "cringe", "crouch in fear"], antonyms: ["stand tall", "face bravely"],
+        mnemonic: "A coward cowers — it shrinks down low in fear."
+      }),
+      entry({
+        word: "deliberate", emoji: "🤔", pron: "di-LIB-ər-it",
+        senses: [
+          { pos: "adj", def: "carefully thought out; not hasty",
+            example: "Although my mother was angry, she spoke in a calm and deliberate manner." },
+          { pos: "verb", def: "to think carefully in order to make up one's mind",
+            example: "We deliberated a long time before deciding to move to Arizona." }
+        ],
+        synonyms: ["on purpose", "planned", "thought-out"], antonyms: ["hasty", "accidental", "rushed"],
+        mnemonic: "Something deliberate is done on purpose after careful thinking — slow and sure."
+      }),
+      entry({
+        word: "depth", emoji: "🌊", pron: "DEPTH",
+        senses: [
+          { pos: "noun", def: "distance from top to bottom or front to back; deepness",
+            example: "The floodwaters reached a depth of several feet." }
+        ],
+        forms: [
+          { word: "depths", pos: "noun", def: "the innermost part or the deepest part",
+            example: "The treasure chest lay buried in the depths of the sea." }
+        ],
+        synonyms: ["deepness", "drop"], antonyms: ["shallowness", "surface"],
+        mnemonic: "Depth is how DEEP something goes — from the top all the way down."
+      }),
+      entry({
+        word: "desire", emoji: "🤩", pron: "di-ZYR",
+        senses: [
+          { pos: "verb", def: "to wish for; to want very much",
+            example: "A person who is famished desires just one thing — food!" },
+          { pos: "noun", def: "a strong wish",
+            example: "Pizarro's desire for gold was so great he ordered the Inca king, Atahualpa, to fill three rooms with it." }
+        ],
+        forms: [
+          { word: "desirable", pos: "adj", def: "pleasing; agreeable",
+            example: "My new school is in a very desirable location." }
+        ],
+        synonyms: ["want", "crave", "wish for"], antonyms: ["dislike", "reject"],
+        mnemonic: "A desire is a strong wish — you really, really want it, like a rare item drop."
+      }),
+      entry({
+        word: "livelihood", emoji: "💼", pron: "LYV-lee-hood",
+        senses: [
+          { pos: "noun", def: "the means of supporting oneself",
+            example: "The store owners in my neighborhood depend on shoppers for their livelihood." }
+        ],
+        synonyms: ["living", "income", "way to earn"], antonyms: [],
+        mnemonic: "Your livelihood is how you make a LIVING — the work that pays for your life."
+      }),
+      entry({
+        word: "misfortune", emoji: "🌧️", pron: "mis-FOR-chən",
+        senses: [
+          { pos: "noun", def: "bad luck; trouble",
+            example: "He had the misfortune to break his leg right before the big game." },
+          { pos: "noun", def: "an unlucky event",
+            example: "Hurricane Sandy in 2012 was New Jersey's worst misfortune in many years." }
+        ],
+        synonyms: ["bad luck", "hardship", "trouble"], antonyms: ["luck", "good fortune", "blessing"],
+        mnemonic: "Misfortune is bad luck — 'mis-' means wrong, so your fortune went wrong."
+      }),
+      entry({
+        word: "orphan", emoji: "🧒", pron: "OR-fən",
+        senses: [
+          { pos: "noun", def: "a child whose parents are dead",
+            example: "Tom Sawyer lived with his Aunt Polly because he was an orphan." }
+        ],
+        synonyms: ["parentless child"], antonyms: [],
+        mnemonic: "An orphan is a child with no parents — like Tom Sawyer or Harry Potter."
+      }),
+      entry({
+        word: "precipice", emoji: "⛰️", pron: "PRES-ə-pis",
+        senses: [
+          { pos: "noun", def: "a very high and steep cliff",
+            example: "We stood watchfully on the edge of the precipice and looked down." }
+        ],
+        forms: [
+          { word: "precipitous", pos: "adj", def: "very steep",
+            example: "The waterfall hiking trail has many precipitous slopes." },
+          { word: "precipitous", pos: "adj", def: "hasty; abrupt; done without careful thought",
+            example: "Getting a kitten so suddenly was a precipitous act." }
+        ],
+        synonyms: ["cliff", "steep drop", "ledge"], antonyms: ["flatland", "plain"],
+        mnemonic: "A precipice is a scary-steep cliff edge — one step and you would drop straight down."
+      }),
+      entry({
+        word: "regain", emoji: "🔄", pron: "ri-GAYN",
+        senses: [
+          { pos: "verb", def: "to get back",
+            example: "By following the doctor's orders, I slowly regained my health." }
+        ],
+        synonyms: ["get back", "recover", "win back"], antonyms: ["lose", "give up"],
+        mnemonic: "To regain is to gain something AGAIN — get it back."
+      }),
+      entry({
+        word: "slay", emoji: "🐉", pron: "SLAY",
+        senses: [
+          { pos: "verb", def: "to kill violently",
+            example: "The scene where George slays the dragon comes right at the end of the play." }
+        ],
+        forms: [
+          { word: "slain", pos: "verb", def: "past participle of slay; killed",
+            example: "The mighty dragon was finally slain by the brave knight." }
+        ],
+        synonyms: ["defeat", "strike down", "kill"], antonyms: ["spare", "save"],
+        mnemonic: "To slay is to defeat — the hero slays the dragon at the end!"
+      }),
+      entry({
+        word: "symptom", emoji: "🩺", pron: "SIMP-təm",
+        senses: [
+          { pos: "noun", def: "a sign of something",
+            example: "Headaches can be a symptom of not enough sleep." }
+        ],
+        synonyms: ["sign", "signal", "clue"], antonyms: [],
+        mnemonic: "A symptom is a sign that something is wrong — a sneeze is a symptom of a cold."
+      })
+    ]
+  };
+
   // Registry of lessons. Only lessons with a `words` array are "available" / playable.
   // To add a lesson: define it like LESSON5/LESSON6 and add it here.
-  var LESSONS = { "5": LESSON5, "6": LESSON6, "8": LESSON8, "9": LESSON9 };
+  var LESSONS = { "5": LESSON5, "6": LESSON6, "8": LESSON8, "9": LESSON9, "10": LESSON10 };
 
   function flat() {
     var out = [], seen = {};
