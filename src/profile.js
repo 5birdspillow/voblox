@@ -48,6 +48,8 @@
     if (typeof state.chests !== "number") state.chests = 0; // legacy field = 🪵 Wooden chests
     if (!state.chestBox) state.chestBox = {};              // tiered chests: {silver, gold, diamond}
     if (typeof state.pityCount !== "number") state.pityCount = 0; // rolls since last epic+ (pity timer)
+    if (!state.setsDone) state.setsDone = {};              // themed sets whose bonus was granted
+    if (typeof state.collectionCrown !== "boolean") state.collectionCrown = false; // 100%-of-catalog badge
     state.schema = 2;
     return state;
   }

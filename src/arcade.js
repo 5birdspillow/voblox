@@ -35,7 +35,7 @@
       '<div class="card arcadecard">' +
       '<div class="atabs">' +
       tabBtn("quests", "📋 Quests") + tabBtn("locker", "🧍 Locker") + tabBtn("shop", "🛍️ Shop") +
-      tabBtn("pets", "🐾 Pets") + tabBtn("slots", "💾 Slots") +
+      tabBtn("collection", "📖 Book") + tabBtn("pets", "🐾 Pets") + tabBtn("slots", "💾 Slots") +
       '</div><div class="abody" id="abody"></div></div>';
     env.openOverlay(html, function (ev) { if (ev.key === "Escape") env.back(); });
     document.getElementById("ax").onclick = env.back;
@@ -56,8 +56,72 @@
     if (tab === "quests") renderQuests(el);
     else if (tab === "locker") renderLocker(el);
     else if (tab === "shop") renderShop(el);
+    else if (tab === "collection") renderCollection(el);
     else if (tab === "pets") renderPets(el);
     else renderSlots(el);
+  }
+  // ---- cosmetic FX drawn on the live avatar preview (auras glow, emotes pop) ----
+  function drawAura(c, st, cx, cy, r, frame) {
+    var au = st.equipped.aura, it = au && IT().byId[au];
+    if (!it) return;
+    var col = it.color || "#ffe14d";
+    var pulse = 0.55 + Math.sin(frame * 3) * 0.18;
+    var g = c.createRadialGradient(cx, cy, r * 0.15, cx, cy, r);
+    g.addColorStop(0, col + "00"); g.addColorStop(0.55, col + "66"); g.addColorStop(1, col + "00");
+    c.save(); c.globalAlpha = Math.max(0, pulse); c.fillStyle = g;
+    c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.fill(); c.restore();
+  }
+  function drawEmote(c, st, cx, cy, frame) {
+    var em = st.equipped.emote, it = em && IT().byId[em];
+    if (!it) return;
+    var bob = Math.sin(frame * 4) * 4;
+    c.font = "32px serif"; c.textAlign = "center"; c.textBaseline = "middle";
+    c.fillText(it.emoji, cx, cy + bob);
+  }
+  // ---- Collection Book: % owned overall, per rarity, and per themed set ----
+  function renderCollection(el) {
+    var st = state(), all = IT().ALL;
+    var ownedN = all.filter(function (it) { return st.inventory.indexOf(it.id) !== -1; }).length;
+    var pct = Math.round(100 * ownedN / all.length);
+    var rarRows = IT().RARITY_ORDER.slice().reverse().map(function (rk) {
+      var pool = all.filter(function (it) { return it.rarity === rk; });
+      var own = pool.filter(function (it) { return st.inventory.indexOf(it.id) !== -1; }).length;
+      var rc = IT().RARITY[rk];
+      return '<div class="colrow"><span style="color:' + rc.color + ';font-weight:900">' + rc.label + "</span>" +
+        '<span>' + own + " / " + pool.length + "</span></div>";
+    }).join("");
+    var setCards = IT().SETS.map(function (s) {
+      var p = IT().setProgress(st, s.id), bonus = IT().byId[s.bonus];
+      var pieces = s.items.map(function (id) {
+        var it = IT().byId[id], own = st.inventory.indexOf(id) !== -1;
+        return '<span class="setpiece' + (own ? " on" : "") + '" title="' + esc(it.name) + '">' + it.emoji + "</span>";
+      }).join("");
+      return '<div class="setcard' + (p.complete ? " done" : "") + '"><div class="cheshead">' + s.emoji + " <b>" + s.name + "</b> " +
+        '<span class="chesown">' + p.owned + "/" + p.total + "</span></div>" +
+        '<div class="setpieces">' + pieces + "</div>" +
+        '<div class="chesblurb">' + (p.complete ? "✓ Complete — bonus " : "Reward: ") + bonus.emoji + " " + esc(bonus.name) + "</div></div>";
+    }).join("");
+    el.innerHTML = headerHTML() +
+      '<div class="asec">📖 Collection <span class="muted2">(' + ownedN + " / " + all.length + " items · " + pct + "%)</span></div>" +
+      '<div class="colbar"><div class="colfill" style="width:' + pct + '%"></div></div>' +
+      (st.collectionCrown ? '<div class="shopchest">👑 <b>MASTER COLLECTOR!</b> You own every item in the game!</div>' : "") +
+      '<div class="colrows">' + rarRows + "</div>" +
+      '<div class="asec">🧩 Themed Sets <span class="muted2">(collect the pieces → bonus drops free!)</span></div>' +
+      '<div class="setgrid">' + setCards + "</div>";
+    wireHeader();
+  }
+  // celebrate any set completed / catalog finished after an inventory gain
+  function afterGain() {
+    var st = state();
+    IT().claimSets(st).forEach(function (c) {
+      SFX().fanfare();
+      SFX().toast("🧩 " + c.set.name + " COMPLETE! Bonus: " + c.bonus.emoji + " " + c.bonus.name);
+    });
+    if (!st.collectionCrown && IT().ALL.every(function (it) { return st.inventory.indexOf(it.id) !== -1; })) {
+      st.collectionCrown = true; st.gems = (st.gems || 0) + 20000;
+      SFX().fanfare(); SFX().toast("👑 MASTER COLLECTOR! You own everything! +20000 Vobux!");
+    }
+    save();
   }
 
   // ---------- header strip (player, level, gems, chests) ----------
@@ -121,6 +185,7 @@
     var gained = 0;
     res.results.forEach(function (r) { if (r.dupe) { var g = DUPE_GEMS[r.item.rarity] || 40; st.gems += g; gained += g; } });
     save(); SFX().fanfare();
+    afterGain(); // a chest can finish a themed set
     var best = res.results.reduce(function (m, r) { return IT().RARITY_ORDER.indexOf(r.item.rarity) < IT().RARITY_ORDER.indexOf(m) ? r.item.rarity : m; }, "common");
     var cards = res.results.map(function (r) {
       var rc = IT().RARITY[r.item.rarity];
@@ -182,7 +247,8 @@
   var SLOTS = [
     { k: "style", label: "💇 Style" },
     { k: "hat", label: "🎩 Hats" }, { k: "face", label: "😀 Faces" }, { k: "shirt", label: "👕 Shirts" },
-    { k: "pants", label: "👖 Pants" }, { k: "trail", label: "✨ Trails" }, { k: "pet", label: "🐾 Pets" }, { k: "gear", label: "⚙️ Gear" }
+    { k: "pants", label: "👖 Pants" }, { k: "aura", label: "🌟 Auras" }, { k: "emote", label: "😄 Emotes" },
+    { k: "trail", label: "✨ Trails" }, { k: "pet", label: "🐾 Pets" }, { k: "gear", label: "⚙️ Gear" }
   ];
   // hair + skin are free identity choices, not loot (Liana gets to be Liana on day one)
   var HAIRS = [
@@ -256,7 +322,10 @@
     (function loop() {
       var cv = document.getElementById("lockerprev"); if (!cv) return;
       var c = cv.getContext("2d"); c.clearRect(0, 0, cv.width, cv.height);
-      AV().draw(c, { x: 85, y: 205, size: 150, config: AV().resolve(state()), pose: "celebrate", frame: (performance.now() - t0) / 1000 });
+      var _pf = (performance.now() - t0) / 1000;
+      drawAura(c, state(), 85, 150, 95, _pf);
+      AV().draw(c, { x: 85, y: 205, size: 150, config: AV().resolve(state()), pose: "celebrate", frame: _pf });
+      drawEmote(c, state(), 138, 92, _pf);
       prevRaf = requestAnimationFrame(loop);
     })();
   }
@@ -309,7 +378,10 @@
     (function loop() {
       var cv = document.getElementById("lockerprev"); if (!cv) return;
       var c = cv.getContext("2d"); c.clearRect(0, 0, cv.width, cv.height);
-      AV().draw(c, { x: 85, y: 205, size: 150, config: AV().resolve(state()), pose: "celebrate", frame: (performance.now() - t0) / 1000 });
+      var _pf = (performance.now() - t0) / 1000;
+      drawAura(c, state(), 85, 150, 95, _pf);
+      AV().draw(c, { x: 85, y: 205, size: 150, config: AV().resolve(state()), pose: "celebrate", frame: _pf });
+      drawEmote(c, state(), 138, 92, _pf);
       prevRaf = requestAnimationFrame(loop);
     })();
   }
@@ -321,6 +393,7 @@
     st.inventory.push(it.id);
     st.equipped[it.slot] = it.id; // auto-equip what you just bought — instant gratification
     save(); SFX().coin(); SFX().toast("🎉 Got " + it.name + "!");
+    afterGain(); // may complete a themed set
     if (env.onEquip) env.onEquip();
     render();
   }

@@ -152,7 +152,24 @@
     I("pet.koala", "Eucalyptus", "🐨", "pet", "epic", 2900),
     I("pet.axolotl", "Axel", "🦎", "pet", "epic", 3100),
     I("pet.wolf", "Shadow", "🐺", "pet", "legendary", 10000),
-    I("pet.whale", "Star Whale", "🐋", "pet", "mythic", 26000)
+    I("pet.whale", "Star Whale", "🐋", "pet", "mythic", 26000),
+
+    // ---- auras (slot: aura; a colored glow ring around your avatar) ----
+    I("aura.spark", "Sparkle Aura", "✨", "aura", "common", 200, { color: "#ffe14d" }),
+    I("aura.mint", "Mint Aura", "🌿", "aura", "common", 200, { color: "#5fd38a" }),
+    I("aura.flame", "Flame Aura", "🔥", "aura", "rare", 850, { color: "#ff7a3d" }),
+    I("aura.ice", "Frost Aura", "❄️", "aura", "rare", 850, { color: "#6cc9ff" }),
+    I("aura.gold", "Golden Aura", "🌟", "aura", "epic", 3000, { color: "#ffc233" }),
+    I("aura.shadow", "Shadow Aura", "🌑", "aura", "epic", 3200, { color: "#a06bff" }),
+    I("aura.rainbow", "Rainbow Aura", "🌈", "aura", "mythic", 26000, { color: "#ff4db8" }),
+
+    // ---- emotes (slot: emote; a celebration you play when you win) ----
+    I("emote.wave", "Wave", "👋", "emote", "common", 150),
+    I("emote.flex", "Flex", "💪", "emote", "common", 160),
+    I("emote.heart", "Blow a Kiss", "💖", "emote", "rare", 700),
+    I("emote.dance", "Dance", "🕺", "emote", "rare", 750),
+    I("emote.fire", "On Fire", "🔥", "emote", "epic", 2700),
+    I("emote.crown", "Crowned", "👑", "emote", "mythic", 26000)
   ];
 
   var byId = {}; ALL.forEach(function (it) { byId[it.id] = it; });
@@ -223,6 +240,37 @@
       blurb: "5 items · Epic or better, guaranteed. Best Mythic odds!" }
   };
   var CHEST_ORDER = ["wood", "silver", "gold", "diamond"];
+
+  // ---- THEMED SETS: collect all pieces → a bonus reward auto-drops ----
+  var SETS = [
+    { id: "knight", name: "Knight Set", emoji: "🛡️", items: ["hat.knight", "face.cool", "gear.bjj.blue"], bonus: "pet.wolf" },
+    { id: "space", name: "Space Set", emoji: "🚀", items: ["face.alien", "trail.rainbow", "pet.trex"], bonus: "hat.galaxy" },
+    { id: "royal", name: "Royal Set", emoji: "👑", items: ["hat.crown", "shirt.gold", "pants.gold"], bonus: "pet.whale" },
+    { id: "rainbow", name: "Rainbow Set", emoji: "🌈", items: ["shirt.rainbow", "pants.rainbow", "aura.rainbow"], bonus: "trail.galaxy" }
+  ];
+  function setProgress(state, setId) {
+    var set = SETS.filter(function (s) { return s.id === setId; })[0];
+    if (!set) return null;
+    var inv = (state && state.inventory) || [];
+    var owned = set.items.filter(function (id) { return inv.indexOf(id) !== -1; }).length;
+    return { set: set, owned: owned, total: set.items.length, complete: owned === set.items.length };
+  }
+  // Grant bonuses for any set newly completed; idempotent via state.setsDone.
+  // Returns [{set, bonus}] so the caller can celebrate.
+  function claimSets(state) {
+    if (!state.setsDone) state.setsDone = {};
+    if (!state.inventory) state.inventory = [];
+    var claimed = [];
+    SETS.forEach(function (s) {
+      if (state.setsDone[s.id]) return;
+      var p = setProgress(state, s.id);
+      if (!p.complete) return;
+      state.setsDone[s.id] = 1;
+      if (s.bonus && state.inventory.indexOf(s.bonus) === -1) state.inventory.push(s.bonus);
+      claimed.push({ set: s, bonus: byId[s.bonus] });
+    });
+    return claimed;
+  }
   var PITY_N = 15; // a guaranteed Epic+ after this many rolls with none (kind to unlucky streaks)
   var PITY_ODDS = [["mythic", 8], ["legendary", 30], ["epic", 62]];
   var EPIC_PLUS = { mythic: 1, legendary: 1, epic: 1 };
@@ -271,6 +319,7 @@
   global.VobloxItems = {
     ALL: ALL, byId: byId, RARITY: RARITY, RARITY_ORDER: RARITY_ORDER, WOODEN_ODDS: WOODEN_ODDS,
     CHESTS: CHESTS, CHEST_ORDER: CHEST_ORDER, PITY_N: PITY_N,
+    SETS: SETS, setProgress: setProgress, claimSets: claimSets,
     canGet: canGet, shopToday: shopToday, rollChest: rollChest, openChestTier: openChestTier
   };
 })(typeof window !== "undefined" ? window : globalThis);
