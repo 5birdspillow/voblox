@@ -107,16 +107,63 @@
     I("gear.chef.apron", "Flame Apron", "🍳", "gear.chef", "rare", 650),
     I("gear.chef.gold", "Golden Spatula", "🏆", "gear.chef", "epic", 0, { unlock: { game: "chef", rankPts: 100 } }),
     I("gear.towerd.candy", "Candy Towers", "🍭", "gear.towerd", "rare", 700),
-    I("gear.towerd.space", "Space Towers", "🛸", "gear.towerd", "epic", 2500)
+    I("gear.towerd.space", "Space Towers", "🛸", "gear.towerd", "epic", 2500),
+
+    // ---- EXPANSION PACK: more to collect, topped by 🌈 MYTHIC (the ultimate chase) ----
+    // hats
+    I("hat.wizard", "Wizard Hat", "🧙", "hat", "rare", 700),
+    I("hat.cowboy", "Cowboy Hat", "🤠", "hat", "rare", 680),
+    I("hat.santa", "Santa Hat", "🎅", "hat", "rare", 720),
+    I("hat.beanie", "Cozy Beanie", "🧶", "hat", "common", 90),
+    I("hat.party", "Party Hat", "🎉", "hat", "common", 100),
+    I("hat.jester", "Jester Hat", "🃏", "hat", "epic", 2700),
+    I("hat.galaxy", "Galaxy Crown", "🌌", "hat", "mythic", 25000),
+    // faces
+    I("face.nerd", "Smarty Specs", "🤓", "face", "common", 100),
+    I("face.money", "Money Eyes", "🤑", "face", "rare", 700),
+    I("face.zombie", "Zombie Face", "🧟", "face", "rare", 780),
+    I("face.clown", "Clown Face", "🤡", "face", "rare", 760),
+    I("face.melt", "Melting", "🫠", "face", "epic", 2900),
+    I("face.dragon", "Dragon Face", "🐲", "face", "mythic", 25000),
+    // shirts (color drives the torso)
+    I("shirt.teal", "Teal Tee", "👕", "shirt", "common", 80, { color: "#17a2b8" }),
+    I("shirt.navy", "Navy Tee", "👕", "shirt", "common", 80, { color: "#2c3e6b" }),
+    I("shirt.lime", "Lime Tee", "👕", "shirt", "common", 90, { color: "#9bd644" }),
+    I("shirt.magenta", "Magenta Tee", "👕", "shirt", "rare", 620, { color: "#d6249b" }),
+    I("shirt.rainbow", "Rainbow Jersey", "👕", "shirt", "epic", 3200, { color: "#b06dff" }),
+    I("shirt.galaxy", "Galaxy Robe", "👕", "shirt", "mythic", 25000, { color: "#3a2b7a" }),
+    // pants
+    I("pants.teal", "Teal Pants", "👖", "pants", "common", 70, { color: "#178a9c" }),
+    I("pants.navy", "Navy Pants", "👖", "pants", "common", 70, { color: "#26314f" }),
+    I("pants.pink", "Pink Pants", "👖", "pants", "common", 80, { color: "#e06aa0" }),
+    I("pants.silver", "Silver Pants", "👖", "pants", "rare", 600, { color: "#aeb6c2" }),
+    I("pants.rainbow", "Rainbow Pants", "👖", "pants", "epic", 2600, { color: "#8a5ad0" }),
+    // trails
+    I("trail.music", "Music Trail", "🎵", "trail", "common", 160, { color: "#7ec8ff" }),
+    I("trail.leaf", "Leaf Trail", "🍃", "trail", "rare", 700, { color: "#7bd66a" }),
+    I("trail.candy", "Candy Trail", "🍬", "trail", "rare", 720, { color: "#ff9ecb" }),
+    I("trail.coins", "Coin Trail", "🪙", "trail", "epic", 2700, { color: "#ffd23f" }),
+    I("trail.galaxy", "Galaxy Trail", "🌌", "trail", "mythic", 25000, { color: "#a06bff" }),
+    // pets
+    I("pet.penguin", "Waddles", "🐧", "pet", "common", 220),
+    I("pet.owl", "Hoot", "🦉", "pet", "rare", 900),
+    I("pet.lion", "Leo the Lion", "🦁", "pet", "rare", 980),
+    I("pet.monkey", "Coco", "🐵", "pet", "rare", 900),
+    I("pet.koala", "Eucalyptus", "🐨", "pet", "epic", 2900),
+    I("pet.axolotl", "Axel", "🦎", "pet", "epic", 3100),
+    I("pet.wolf", "Shadow", "🐺", "pet", "legendary", 10000),
+    I("pet.whale", "Star Whale", "🐋", "pet", "mythic", 26000)
   ];
 
   var byId = {}; ALL.forEach(function (it) { byId[it.id] = it; });
   var RARITY = {
-    common: { w: 62, color: "#9aa7b0", label: "Common" },
+    common: { w: 61.5, color: "#9aa7b0", label: "Common" },
     rare: { w: 26, color: "#4aa3ff", label: "Rare" },
     epic: { w: 10, color: "#b06dff", label: "Epic" },
-    legendary: { w: 2, color: "#ffb020", label: "LEGENDARY" }
+    legendary: { w: 2, color: "#ffb020", label: "LEGENDARY" },
+    mythic: { w: 0.5, color: "#ff4db8", label: "MYTHIC" }
   };
+  var RARITY_ORDER = ["mythic", "legendary", "epic", "rare", "common"]; // rarest → most common
 
   // Can this item be obtained right now? -> { ok, why } (why explains the lock)
   function canGet(item, state) {
@@ -156,21 +203,30 @@
     return taken;
   }
 
-  // Reward-chest roll: rarity-weighted, skews to items you don't own yet.
-  // Returns { item, dupe } — dupes pay out gems instead (caller handles).
-  function rollChest(rand, state) {
+  // Default drop table (the free 🪵 Wooden chest). Tiered chests pass their own.
+  // Each entry is [rarity, weight]; weights need not sum to 100.
+  var WOODEN_ODDS = [["mythic", 0.5], ["legendary", 2], ["epic", 10], ["rare", 26], ["common", 61.5]];
+
+  // Reward-chest roll: rarity-weighted, skews HARD to items you don't own yet.
+  // `odds` is an optional [rarity, weight] table (defaults to the Wooden chest).
+  // Returns { item, dupe } — dupes pay out Vobux instead (caller handles).
+  function rollChest(rand, state, odds) {
     rand = rand || Math.random;
-    var roll = rand() * 100, rarity;
-    if (roll < RARITY.legendary.w) rarity = "legendary";
-    else if (roll < RARITY.legendary.w + RARITY.epic.w) rarity = "epic";
-    else if (roll < RARITY.legendary.w + RARITY.epic.w + RARITY.rare.w) rarity = "rare";
-    else rarity = "common";
+    odds = odds || WOODEN_ODDS;
+    var total = odds.reduce(function (s, o) { return s + o[1]; }, 0);
+    var roll = rand() * total, acc = 0, rarity = odds[odds.length - 1][0];
+    for (var i = 0; i < odds.length; i++) { acc += odds[i][1]; if (roll < acc) { rarity = odds[i][0]; break; } }
     var owned = (state && state.inventory) || [];
-    var pool = ALL.filter(function (it) { return it.rarity === rarity && !it.unlock; });
+    function poolFor(rar) { return ALL.filter(function (it) { return it.rarity === rar && !it.unlock; }); }
+    // fall DOWN the ladder if a rarity has no chest-eligible items (robustness)
+    var pool = poolFor(rarity), gi = RARITY_ORDER.indexOf(rarity);
+    while (!pool.length && gi < RARITY_ORDER.length - 1) { gi++; pool = poolFor(RARITY_ORDER[gi]); }
+    if (!pool.length) pool = ALL.filter(function (it) { return !it.unlock; });
     var fresh = pool.filter(function (it) { return owned.indexOf(it.id) === -1; });
-    var pick = (fresh.length ? fresh : pool)[Math.floor(rand() * (fresh.length ? fresh.length : pool.length))];
+    var arr = fresh.length ? fresh : pool;
+    var pick = arr[Math.floor(rand() * arr.length)];
     return { item: pick, dupe: owned.indexOf(pick.id) !== -1 };
   }
 
-  global.VobloxItems = { ALL: ALL, byId: byId, RARITY: RARITY, canGet: canGet, shopToday: shopToday, rollChest: rollChest };
+  global.VobloxItems = { ALL: ALL, byId: byId, RARITY: RARITY, RARITY_ORDER: RARITY_ORDER, WOODEN_ODDS: WOODEN_ODDS, canGet: canGet, shopToday: shopToday, rollChest: rollChest };
 })(typeof window !== "undefined" ? window : globalThis);

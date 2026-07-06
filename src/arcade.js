@@ -14,7 +14,7 @@
 
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
 
-  var DUPE_GEMS = { common: 40, rare: 150, epic: 500, legendary: 1500 };
+  var DUPE_GEMS = { common: 40, rare: 150, epic: 500, legendary: 1500, mythic: 4000 };
 
   var env = null, tab = "quests", lockerSlot = "hat", prevRaf = 0;
 
@@ -296,13 +296,30 @@
         (owned ? '<div class="ilock">✓ owned</div>' : '<button class="ibtn buy' + (st.gems >= it.price ? "" : " no") + '" data-buy="' + it.id + '">' + it.price + ' <img class="vbx" src="icons/vobux.png" alt="Vobux"></button>') +
         "</div>";
     }).join("");
+    // 🗂️ Browse the WHOLE store, not just today's featured six.
+    var RORD = { mythic: 0, legendary: 1, epic: 2, rare: 3, common: 4 };
+    var allBuy = IT().ALL.filter(function (it) { return it.price || it.unlock; }).slice().sort(function (a, b) {
+      function w(it) { return st.inventory.indexOf(it.id) !== -1 ? 2 : (IT().canGet(it, st).ok ? 0 : 1); }
+      return (w(a) - w(b)) || (RORD[a.rarity] - RORD[b.rarity]) || ((b.price || 0) - (a.price || 0));
+    });
+    var browse = allBuy.map(function (it) {
+      var owned = st.inventory.indexOf(it.id) !== -1;
+      var rc = IT().RARITY[it.rarity], cg = IT().canGet(it, st);
+      var action = owned ? '<div class="ilock">✓ owned</div>'
+        : it.price ? '<button class="ibtn buy' + (cg.ok ? "" : " no") + '" data-buy="' + it.id + '">' + it.price + ' <img class="vbx" src="icons/vobux.png" alt="Vobux"></button>'
+          : '<div class="ilock">🔒 ' + esc(cg.why) + "</div>";
+      return '<div class="icard' + (owned ? "" : " locked") + '" style="border-color:' + rc.color + '"><div class="iemoji">' + it.emoji + "</div>" +
+        '<div class="iname">' + esc(it.name) + '</div><div class="crrar" style="color:' + rc.color + ';font-size:11px">' + rc.label + "</div>" + action + "</div>";
+    }).join("");
     el.innerHTML = headerHTML() +
       '<div class="asec">🛍️ Today\'s Shop <span class="muted2">(pay with <img class="vbx" src="icons/vobux.png" alt=""> Vobux — new deals every day!)</span></div>' +
       '<div class="igrid shopgrid">' + cards + "</div>" +
       '<div class="asec">🎁 Reward Chests</div>' +
       '<div class="shopchest">' + (st.chests > 0
         ? "You have <b>" + st.chests + "</b> chest" + (st.chests > 1 ? "s" : "") + " to open! <button class='submit' id='sc_open'>Open one 🎁</button>"
-        : "Level up or finish quests to earn chests full of items!") + "</div>";
+        : "Level up or finish quests to earn chests full of items!") + "</div>" +
+      '<div class="asec">🗂️ The Whole Store <span class="muted2">(' + allBuy.length + " items — buy anything you can afford!)</span></div>" +
+      '<div class="igrid storegrid">' + browse + "</div>";
     wireHeader();
     Array.prototype.forEach.call(el.querySelectorAll("[data-buy]"), function (b) { b.onclick = function () { buy(b.dataset.buy); }; });
     var so = document.getElementById("sc_open"); if (so) so.onclick = openChest;

@@ -788,6 +788,7 @@
   }
   else if (location.hash === "#players") openPlayers(); // test hook: the players overlay
   else if (location.hash === "#locker") openBackpack("locker"); // test hook: the locker
+  else if (location.hash === "#shop") openBackpack("shop"); // test hook: the shop (daily + whole-store browse)
   else if (location.hash === "#style") openBackpack("locker", "style"); // test hook: Style panel (hair + voice)
   else if (location.hash === "#bvzdemo" || location.hash === "#bvznight" || location.hash === "#bvzschool") { // test hooks: BvZ boards
     if (location.hash === "#bvznight") window._bvznight = 1;
