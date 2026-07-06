@@ -45,9 +45,28 @@
     if (!state.pets) state.pets = [];
     if (!state.gameStats) state.gameStats = {};
     if (!state.quests) state.quests = { day: "", list: [] };
-    if (typeof state.chests !== "number") state.chests = 0;
+    if (typeof state.chests !== "number") state.chests = 0; // legacy field = 🪵 Wooden chests
+    if (!state.chestBox) state.chestBox = {};              // tiered chests: {silver, gold, diamond}
+    if (typeof state.pityCount !== "number") state.pityCount = 0; // rolls since last epic+ (pity timer)
     state.schema = 2;
     return state;
+  }
+
+  // ---- tiered chests: the legacy integer `state.chests` IS the Wooden pile ----
+  function chestCount(state) {
+    var box = state.chestBox || {};
+    return (state.chests || 0) + Object.keys(box).reduce(function (s, k) { return s + (box[k] || 0); }, 0);
+  }
+  function grantChest(state, tierId, n) {
+    n = n || 1;
+    if (!tierId || tierId === "wood") state.chests = (state.chests || 0) + n;
+    else { if (!state.chestBox) state.chestBox = {}; state.chestBox[tierId] = (state.chestBox[tierId] || 0) + n; }
+  }
+  function takeChest(state, tierId) {
+    if (!tierId || tierId === "wood") { if ((state.chests || 0) < 1) return false; state.chests -= 1; return true; }
+    var box = state.chestBox || (state.chestBox = {});
+    if ((box[tierId] || 0) < 1) return false;
+    box[tierId] -= 1; return true;
   }
 
   function addXP(state, n) {
@@ -270,6 +289,9 @@
     levelForXP: levelForXP,
     xpInto: xpInto,
     addXP: addXP,
+    chestCount: chestCount,
+    grantChest: grantChest,
+    takeChest: takeChest,
     gameStat: gameStat,
     gameRank: gameRank,
     applyGameResult: applyGameResult,

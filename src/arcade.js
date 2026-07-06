@@ -68,34 +68,75 @@
       '<div class="ahead-mid"><b>' + esc(st.profile.name) + '</b> <span class="lvltag">⭐ Lv ' + st.level + '</span>' +
       '<div class="xpbar"><div class="xpfill" style="width:' + Math.round(100 * pr.have / pr.need) + '%"></div><span>' + pr.have + " / " + pr.need + " XP</span></div></div>" +
       '<div class="ahead-right"><span class="chip"><img class="vbx" src="icons/vobux.png" alt="V"> ' + (st.gems || 0) + "</span>" +
-      (st.chests > 0 ? '<button class="chestbtn" id="openchest">🎁 ' + st.chests + "</button>" : "") +
+      (P().chestCount(st) > 0 ? '<button class="chestbtn" id="openchest">🎁 ' + P().chestCount(st) + "</button>" : "") +
       "</div></div>";
   }
   function wireHeader() {
     var cv = document.getElementById("aheadface");
     if (cv) AV().drawHead(cv.getContext("2d"), { x: 22, y: 24, size: 30, config: AV().resolve(state()) });
     var oc = document.getElementById("openchest");
-    if (oc) oc.onclick = openChest;
+    if (oc) oc.onclick = function () { tab = "shop"; markTabs(); render(); }; // the chest hub lives in the Shop
   }
-  function openChest() {
+
+  var RAR_EMOJI = { mythic: "🌈", legendary: "🟡", epic: "🟣", rare: "🔵", common: "⚪" };
+  // The chest hub: four tiers, odds shown openly, buy + open.
+  function chestHubHTML() {
     var st = state();
-    if ((st.chests || 0) < 1) return;
-    st.chests -= 1;
-    var roll = IT().rollChest(Math.random, st);
-    var got = roll.item, msg;
-    if (roll.dupe) { var g = DUPE_GEMS[got.rarity] || 40; st.gems += g; msg = "Already owned — +" + g + ' <img class="vbx" src="icons/vobux.png" alt="Vobux"> instead!'; }
-    else { st.inventory.push(got.id); msg = "NEW item added to your Locker!"; }
+    var cards = IT().CHEST_ORDER.map(function (id) {
+      var c = IT().CHESTS[id];
+      var have = id === "wood" ? (st.chests || 0) : ((st.chestBox || {})[id] || 0);
+      var odds = c.odds.map(function (o) { return RAR_EMOJI[o[0]] + " " + o[1] + "%"; }).join(" · ");
+      var openBtn = have > 0
+        ? '<button class="submit chesbtn" data-copen="' + id + '">Open ' + c.emoji + "</button>"
+        : '<span class="ilock">none yet</span>';
+      var buyBtn = c.price
+        ? '<button class="ibtn buy' + ((st.gems || 0) >= c.price ? "" : " no") + '" data-cbuy="' + id + '">Buy ' + c.price + ' <img class="vbx" src="icons/vobux.png" alt="V"></button>'
+        : '<span class="ilock">free from play</span>';
+      return '<div class="chestcard" style="border-color:' + IT().RARITY[c.odds[0][0]].color + '">' +
+        '<div class="cheshead">' + c.emoji + " <b>" + c.name + "</b>" + (have > 0 ? ' <span class="chesown">×' + have + "</span>" : "") + "</div>" +
+        '<div class="chesblurb">' + c.blurb + "</div>" +
+        '<div class="chesodds">' + odds + "</div>" +
+        '<div class="chesactions">' + openBtn + buyBtn + "</div></div>";
+    }).join("");
+    return '<div class="asec">🎁 Chests <span class="muted2">(odds shown openly — no surprises!)</span></div>' +
+      '<div class="chestgrid">' + cards + "</div>";
+  }
+  function wireChestHub(el) {
+    Array.prototype.forEach.call(el.querySelectorAll("[data-cbuy]"), function (b) { b.onclick = function () { buyChest(b.dataset.cbuy); }; });
+    Array.prototype.forEach.call(el.querySelectorAll("[data-copen]"), function (b) { b.onclick = function () { openTier(b.dataset.copen); }; });
+  }
+  function buyChest(tierId) {
+    var st = state(), c = IT().CHESTS[tierId];
+    if (!c || !c.price) return;
+    if ((st.gems || 0) < c.price) { SFX().toast(c.price + " Vobux needed — answer more words!"); return; }
+    st.gems -= c.price;
+    P().grantChest(st, tierId, 1);
+    save(); SFX().coin(); SFX().toast("🎁 " + c.name + " bought — open it!");
+    render();
+  }
+  function openTier(tierId) {
+    var st = state();
+    if (!P().takeChest(st, tierId)) { render(); return; }
+    var res = IT().openChestTier(Math.random, st, tierId);
+    var gained = 0;
+    res.results.forEach(function (r) { if (r.dupe) { var g = DUPE_GEMS[r.item.rarity] || 40; st.gems += g; gained += g; } });
     save(); SFX().fanfare();
+    var best = res.results.reduce(function (m, r) { return IT().RARITY_ORDER.indexOf(r.item.rarity) < IT().RARITY_ORDER.indexOf(m) ? r.item.rarity : m; }, "common");
+    var cards = res.results.map(function (r) {
+      var rc = IT().RARITY[r.item.rarity];
+      return '<div class="critem' + (r.item.rarity === "mythic" ? " mythicglow" : "") + '" style="border-color:' + rc.color + '">' +
+        '<div class="cremoji">' + r.item.emoji + '</div><div class="crname">' + esc(r.item.name) + "</div>" +
+        '<div class="crrar" style="color:' + rc.color + '">' + rc.label + "</div>" +
+        '<div class="crmsg">' + (r.dupe ? "dupe · +" + (DUPE_GEMS[r.item.rarity] || 40) + " 💰" : "✨ NEW!") + "</div></div>";
+    }).join("");
     var el = document.getElementById("abody");
-    var rc = IT().RARITY[got.rarity];
     el.innerHTML = headerHTML() +
-      '<div class="chestreveal"><div class="crlabel">You opened a chest…</div>' +
-      '<div class="critem" style="border-color:' + rc.color + '"><div class="cremoji">' + got.emoji + '</div>' +
-      '<div class="crname">' + esc(got.name) + '</div><div class="crrar" style="color:' + rc.color + '">' + rc.label + "</div>" +
-      '<div class="crmsg">' + msg + "</div></div>" +
-      '<button class="submit big-next" id="crok">' + (st.chests > 0 ? "Open another 🎁 (" + st.chests + " left)" : "Nice! ⏎") + "</button></div>";
+      '<div class="chestreveal"><div class="crlabel">' + res.tier.emoji + " " + res.tier.name + " opened!</div>" +
+      '<div class="crgrid">' + cards + "</div>" +
+      (gained ? '<div class="crmsg" style="text-align:center;margin-top:6px">💰 +' + gained + " Vobux from duplicates</div>" : "") +
+      '<button class="submit big-next" id="crok">' + (best === "mythic" || best === "legendary" ? "🎉 " : "") + "Awesome! ⏎</button></div>";
     wireHeader();
-    document.getElementById("crok").onclick = function () { if (st.chests > 0) openChest(); else render(); };
+    document.getElementById("crok").onclick = function () { render(); };
   }
 
   // ---------- Games tab ----------
@@ -314,15 +355,12 @@
     el.innerHTML = headerHTML() +
       '<div class="asec">🛍️ Today\'s Shop <span class="muted2">(pay with <img class="vbx" src="icons/vobux.png" alt=""> Vobux — new deals every day!)</span></div>' +
       '<div class="igrid shopgrid">' + cards + "</div>" +
-      '<div class="asec">🎁 Reward Chests</div>' +
-      '<div class="shopchest">' + (st.chests > 0
-        ? "You have <b>" + st.chests + "</b> chest" + (st.chests > 1 ? "s" : "") + " to open! <button class='submit' id='sc_open'>Open one 🎁</button>"
-        : "Level up or finish quests to earn chests full of items!") + "</div>" +
+      chestHubHTML() +
       '<div class="asec">🗂️ The Whole Store <span class="muted2">(' + allBuy.length + " items — buy anything you can afford!)</span></div>" +
       '<div class="igrid storegrid">' + browse + "</div>";
     wireHeader();
+    wireChestHub(el);
     Array.prototype.forEach.call(el.querySelectorAll("[data-buy]"), function (b) { b.onclick = function () { buy(b.dataset.buy); }; });
-    var so = document.getElementById("sc_open"); if (so) so.onclick = openChest;
   }
 
   // ---------- Pets tab ----------

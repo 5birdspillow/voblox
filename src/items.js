@@ -207,6 +207,26 @@
   // Each entry is [rarity, weight]; weights need not sum to 100.
   var WOODEN_ODDS = [["mythic", 0.5], ["legendary", 2], ["epic", 10], ["rare", 26], ["common", 61.5]];
 
+  // ---- CHEST TIERS: better chest = better odds AND more items ----
+  // Odds are shown OPENLY in the UI (parent-friendly; no hidden gambling).
+  var CHESTS = {
+    wood: { id: "wood", name: "Wooden Chest", emoji: "🪵", count: 1, price: 0, odds: WOODEN_ODDS,
+      blurb: "Earned free from level-ups & quests." },
+    silver: { id: "silver", name: "Silver Chest", emoji: "⚙️", count: 2, price: 700,
+      odds: [["mythic", 0.7], ["legendary", 3], ["epic", 14], ["rare", 45], ["common", 37.3]],
+      blurb: "2 items · better rare & epic odds." },
+    gold: { id: "gold", name: "Gold Chest", emoji: "🥇", count: 3, price: 2200,
+      odds: [["mythic", 1.2], ["legendary", 7], ["epic", 32], ["rare", 59.8]],
+      blurb: "3 items · Rare or better, guaranteed." },
+    diamond: { id: "diamond", name: "Diamond Chest", emoji: "💎", count: 5, price: 6500,
+      odds: [["mythic", 6], ["legendary", 30], ["epic", 64]],
+      blurb: "5 items · Epic or better, guaranteed. Best Mythic odds!" }
+  };
+  var CHEST_ORDER = ["wood", "silver", "gold", "diamond"];
+  var PITY_N = 15; // a guaranteed Epic+ after this many rolls with none (kind to unlucky streaks)
+  var PITY_ODDS = [["mythic", 8], ["legendary", 30], ["epic", 62]];
+  var EPIC_PLUS = { mythic: 1, legendary: 1, epic: 1 };
+
   // Reward-chest roll: rarity-weighted, skews HARD to items you don't own yet.
   // `odds` is an optional [rarity, weight] table (defaults to the Wooden chest).
   // Returns { item, dupe } — dupes pay out Vobux instead (caller handles).
@@ -228,5 +248,29 @@
     return { item: pick, dupe: owned.indexOf(pick.id) !== -1 };
   }
 
-  global.VobloxItems = { ALL: ALL, byId: byId, RARITY: RARITY, RARITY_ORDER: RARITY_ORDER, WOODEN_ODDS: WOODEN_ODDS, canGet: canGet, shopToday: shopToday, rollChest: rollChest };
+  // Open a tiered chest: roll `count` items on the tier's odds, honoring the
+  // pity timer and dupe-protection. MUTATES state (inventory + pityCount) so a
+  // multi-item chest can't hand you a dupe of an item it awarded a moment ago.
+  // Returns { tier, results: [{item, dupe}, ...] }. Caller pays dupe Vobux + UI.
+  function openChestTier(rand, state, tierId) {
+    rand = rand || Math.random;
+    var chest = CHESTS[tierId] || CHESTS.wood;
+    if (typeof state.pityCount !== "number") state.pityCount = 0;
+    if (!state.inventory) state.inventory = [];
+    var results = [];
+    for (var i = 0; i < chest.count; i++) {
+      var odds = state.pityCount >= PITY_N ? PITY_ODDS : chest.odds; // pity kicks in
+      var r = rollChest(rand, state, odds);
+      if (!r.dupe) state.inventory.push(r.item.id); // update between rolls for freshness
+      if (EPIC_PLUS[r.item.rarity]) state.pityCount = 0; else state.pityCount += 1;
+      results.push(r);
+    }
+    return { tier: chest, results: results };
+  }
+
+  global.VobloxItems = {
+    ALL: ALL, byId: byId, RARITY: RARITY, RARITY_ORDER: RARITY_ORDER, WOODEN_ODDS: WOODEN_ODDS,
+    CHESTS: CHESTS, CHEST_ORDER: CHEST_ORDER, PITY_N: PITY_N,
+    canGet: canGet, shopToday: shopToday, rollChest: rollChest, openChestTier: openChestTier
+  };
 })(typeof window !== "undefined" ? window : globalThis);

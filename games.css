@@ -372,6 +372,23 @@
 .crrar { font-weight: 900; font-size: 13px; }
 .crmsg { font-size: 13px; color: #5a6b7a; margin-top: 4px; }
 .chestreveal .submit { margin-top: 12px; }
+/* multi-item chest reveal grid */
+.crgrid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.crgrid .critem { padding: 10px 14px; }
+.crgrid .cremoji { font-size: 40px; }
+.crgrid .crname { font-size: 14px; }
+.critem.mythicglow { animation: mythshimmer 1.1s ease-in-out infinite; box-shadow: 0 0 16px 2px #ff4db8aa; }
+@keyframes mythshimmer { 0%,100% { box-shadow: 0 0 12px 1px #ff4db877; } 50% { box-shadow: 0 0 22px 5px #ff4db8; } }
+/* chest hub cards */
+.chestgrid { display: flex; flex-wrap: wrap; gap: 10px; }
+.chestcard { flex: 1 1 150px; min-width: 150px; background: #fff; border: 3px solid #cdd8e4; border-radius: 14px; padding: 10px 12px; }
+.cheshead { font-size: 15px; }
+.chesown { color: #2f9e44; font-weight: 900; }
+.chesblurb { font-size: 11px; color: #5a6b7a; margin: 3px 0; }
+.chesodds { font-size: 12px; letter-spacing: .5px; margin: 4px 0 8px; }
+.chesactions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.chesactions .chesbtn { padding: 5px 12px; font-size: 13px; }
+.chesactions .ilock { font-size: 11px; color: #8a98a8; }
 
 .slotrow { display: flex; align-items: center; gap: 8px; background: #fff; border: 3px solid #cdd8e4;
   border-radius: 12px; padding: 9px 10px; margin-bottom: 7px; color: #20303a; }

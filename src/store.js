@@ -115,10 +115,11 @@
     global.VobloxProfile.bumpQuest(this.state, "games", 1, gameId);
     if (res && res.win) global.VobloxProfile.bumpQuest(this.state, "wins", 1);
     if (res && res.gems) global.VobloxProfile.bumpQuest(this.state, "gems", res.gems);
+    if (r.rankedUp && global.VobloxProfile.grantChest) global.VobloxProfile.grantChest(this.state, "silver", 1); // ranking up earns a ⚙️ Silver chest
     this.save();
     if (global.VobloxSfx) {
       if (r.leveledUp) { global.VobloxSfx.fanfare(); global.VobloxSfx.toast("⭐ LEVEL " + r.level + "! +🎁 chest"); }
-      if (r.rankedUp) { global.VobloxSfx.chime(); global.VobloxSfx.toast(r.newRank.icon + " Rank up: " + r.newRank.name + "!"); }
+      if (r.rankedUp) { global.VobloxSfx.chime(); global.VobloxSfx.toast(r.newRank.icon + " Rank up: " + r.newRank.name + "! +⚙️ Silver chest"); }
     }
     if (global.VobloxProfile.slots) global.VobloxProfile.slots.auto();
     return r;
