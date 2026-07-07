@@ -1103,9 +1103,615 @@
     ]
   };
 
+  var LESSON12 = {
+    lesson: 12,
+    title: "Lesson 12",
+    words: [
+      entry({
+        word: "ability", emoji: "💪", pron: "ə-BIL-ə-tee",
+        senses: [{ pos: "noun", def: "the power or skill to do something",
+          example: "She has the ability to solve really hard math problems." }],
+        synonyms: ["skill", "talent", "power"], antonyms: ["inability", "weakness"],
+        mnemonic: "Your ability is what you are able to do."
+      }),
+      entry({
+        word: "amiable", emoji: "😊", pron: "AY-mee-ə-bəl",
+        senses: [{ pos: "adj", def: "friendly and pleasant",
+          example: "Our amiable neighbor always waves hello." }],
+        synonyms: ["friendly", "kind", "good-natured"], antonyms: ["grumpy", "unfriendly"],
+        mnemonic: "An amiable person makes friends easily — think 'aim to be a friend.'"
+      }),
+      entry({
+        word: "bliss", emoji: "😇", pron: "BLIS",
+        senses: [{ pos: "noun", def: "perfect happiness; great joy",
+          example: "Lying on the warm beach was pure bliss." }],
+        synonyms: ["joy", "delight", "happiness"], antonyms: ["misery", "sorrow"],
+        mnemonic: "Bliss is the biggest, blissful kind of happy."
+      }),
+      entry({
+        word: "caress", emoji: "🤗", pron: "kə-RES",
+        senses: [
+          { pos: "verb", def: "to touch or stroke gently and lovingly",
+            example: "She caressed the puppy's soft fur." },
+          { pos: "noun", def: "a gentle, loving touch",
+            example: "He gave the baby a soft caress on the cheek." }
+        ],
+        synonyms: ["stroke", "pet", "cuddle"], antonyms: ["hit", "shove"],
+        mnemonic: "A caress is a careful, loving touch."
+      }),
+      entry({
+        word: "clutch", emoji: "✊", pron: "KLUCH",
+        senses: [
+          { pos: "verb", def: "to hold on to tightly",
+            example: "He clutched his backpack as the bus bumped along." },
+          { pos: "noun", def: "a tight grasp",
+            example: "The hawk held the mouse in its clutch." }
+        ],
+        synonyms: ["grip", "grab", "clasp"], antonyms: ["release", "let go"],
+        mnemonic: "To clutch is to grab and hold tight — like clutching a prize."
+      }),
+      entry({
+        word: "coax", emoji: "🥺", pron: "KOHKS",
+        senses: [{ pos: "verb", def: "to gently and kindly persuade someone",
+          example: "I coaxed my little sister into eating her vegetables." }],
+        synonyms: ["persuade", "urge", "sweet-talk"], antonyms: ["force", "bully"],
+        mnemonic: "To coax is to softly talk someone into it."
+      }),
+      entry({
+        word: "furious", emoji: "😡", pron: "FYOOR-ee-əs",
+        senses: [{ pos: "adj", def: "very, very angry",
+          example: "Dad was furious when the dog chewed his new shoes." }],
+        forms: [{ word: "fury", pos: "noun", def: "wild, powerful anger",
+          example: "The storm hit the coast with great fury." }],
+        synonyms: ["enraged", "mad", "raging"], antonyms: ["calm", "pleased"],
+        mnemonic: "Furious is full of fury — boiling-mad angry."
+      }),
+      entry({
+        word: "gesture", emoji: "👋", pron: "JES-chər",
+        senses: [
+          { pos: "noun", def: "a movement of the body that shows a feeling or idea",
+            example: "She gave a friendly gesture — a big wave." },
+          { pos: "verb", def: "to move the body to show a feeling or idea",
+            example: "He gestured toward the door to show us the way out." }
+        ],
+        synonyms: ["signal", "motion", "sign"], antonyms: [],
+        mnemonic: "A gesture is a hand or body signal, like a wave."
+      }),
+      entry({
+        word: "mope", emoji: "😔", pron: "MOHP",
+        senses: [{ pos: "verb", def: "to be gloomy and quiet; to sulk",
+          example: "He moped around all day after losing the game." }],
+        synonyms: ["sulk", "brood", "pout"], antonyms: ["cheer up", "brighten"],
+        mnemonic: "To mope is to mooch around feeling sad and slow."
+      }),
+      entry({
+        word: "prefer", emoji: "👍", pron: "pri-FUR",
+        senses: [{ pos: "verb", def: "to like one thing better than another",
+          example: "I prefer apples to oranges." }],
+        forms: [{ word: "preference", pos: "noun", def: "the thing you like better",
+          example: "Her preference is chocolate ice cream." }],
+        synonyms: ["favor", "like better", "choose"], antonyms: ["dislike", "reject"],
+        mnemonic: "When you prefer something, you pick it first."
+      }),
+      entry({
+        word: "recover", emoji: "🩹", pron: "ri-KUV-ər",
+        senses: [
+          { pos: "verb", def: "to get well again after being sick or hurt",
+            example: "She recovered quickly after the flu." },
+          { pos: "verb", def: "to get back something that was lost",
+            example: "The police recovered the stolen bike." }
+        ],
+        forms: [{ word: "recovery", pos: "noun", def: "the act of getting well or getting back",
+          example: "His recovery from the broken leg took six weeks." }],
+        synonyms: ["heal", "get back", "regain"], antonyms: ["worsen", "lose"],
+        mnemonic: "To recover is to get better — or to cover the loss and get it back."
+      }),
+      entry({
+        word: "replace", emoji: "🔁", pron: "ri-PLAYS",
+        senses: [
+          { pos: "verb", def: "to put something back where it belongs",
+            example: "Please replace the books on the shelf when you finish." },
+          { pos: "verb", def: "to put a new thing in place of another",
+            example: "We had to replace the broken window." }
+        ],
+        forms: [{ word: "replacement", pos: "noun", def: "a new thing that takes another's place",
+          example: "The coach sent in a replacement for the tired player." }],
+        synonyms: ["swap", "switch", "put back"], antonyms: ["keep", "remove"],
+        mnemonic: "To replace is to put something back in its place — or in place of another."
+      }),
+      entry({
+        word: "request", emoji: "🙏", pron: "ri-KWEST",
+        senses: [
+          { pos: "verb", def: "to ask for something politely",
+            example: "She requested a glass of water." },
+          { pos: "noun", def: "the act of asking politely",
+            example: "He made a request for help with his homework." }
+        ],
+        synonyms: ["ask for", "appeal", "beg"], antonyms: ["demand", "refuse"],
+        mnemonic: "A request is a polite ask — you request, not demand."
+      }),
+      entry({
+        word: "separate", emoji: "✂️", pron: "SEP-ə-rayt",
+        senses: [
+          { pos: "verb", def: "to set or keep apart",
+            example: "Separate the red socks from the white ones before washing." },
+          { pos: "adj", def: "not joined; apart",
+            example: "The twins sleep in separate rooms." }
+        ],
+        forms: [{ word: "separation", pos: "noun", def: "the act of keeping apart",
+          example: "A fence marks the separation between the two yards." }],
+        synonyms: ["divide", "split", "part"], antonyms: ["join", "combine"],
+        mnemonic: "To separate is to split into apart pieces — there's 'a rat' in sepARATe."
+      }),
+      entry({
+        word: "shun", emoji: "🙅", pron: "SHUN",
+        senses: [{ pos: "verb", def: "to keep away from on purpose; to avoid",
+          example: "The other geese shunned the odd little duckling." }],
+        synonyms: ["avoid", "snub", "ignore"], antonyms: ["welcome", "include"],
+        mnemonic: "To shun someone is to shut them out on purpose."
+      })
+    ]
+  };
+
+  var LESSON13 = {
+    lesson: 13,
+    title: "Lesson 13",
+    words: [
+      entry({
+        word: "appall", emoji: "😱", pron: "ə-PAWL",
+        senses: [{ pos: "verb", def: "to shock or horrify",
+          example: "The huge mess in the kitchen appalled Mom." }],
+        forms: [{ word: "appalling", pos: "adj", def: "shocking; truly terrible",
+          example: "The flooded street was in appalling condition." }],
+        synonyms: ["horrify", "shock", "dismay"], antonyms: ["please", "delight"],
+        mnemonic: "Something appalling makes your face go pale — it's shocking."
+      }),
+      entry({
+        word: "dejected", emoji: "😞", pron: "di-JEK-tid",
+        senses: [{ pos: "adj", def: "sad and discouraged; low in spirits",
+          example: "He felt dejected after striking out in the big game." }],
+        synonyms: ["gloomy", "downhearted", "glum"], antonyms: ["cheerful", "upbeat"],
+        mnemonic: "Dejected feels down and rejected — sad and discouraged."
+      }),
+      entry({
+        word: "dependable", emoji: "🤝", pron: "di-PEN-də-bəl",
+        senses: [{ pos: "adj", def: "able to be trusted or relied on",
+          example: "A dependable friend always keeps a promise." }],
+        synonyms: ["reliable", "trustworthy", "steady"], antonyms: ["unreliable", "flaky"],
+        mnemonic: "You can depend on someone dependable."
+      }),
+      entry({
+        word: "dreary", emoji: "🌧️", pron: "DREER-ee",
+        senses: [{ pos: "adj", def: "dull, gloomy, and boring",
+          example: "It was a cold, gray, dreary day." }],
+        synonyms: ["gloomy", "dismal", "bleak"], antonyms: ["bright", "cheerful"],
+        mnemonic: "A dreary day is dull and dreary — you might feel weary."
+      }),
+      entry({
+        word: "fanatical", emoji: "🤪", pron: "fə-NAT-i-kəl",
+        senses: [{ pos: "adj", def: "having wild, extreme enthusiasm",
+          example: "He is fanatical about his favorite sports team." }],
+        forms: [{ word: "fanatic", pos: "noun", def: "a person with wild, extreme enthusiasm",
+          example: "She is such a fanatic that she never misses a single game." }],
+        synonyms: ["extreme", "obsessed", "wild"], antonyms: ["mild", "casual"],
+        mnemonic: "A fanatical fan is over-the-top crazy about something."
+      }),
+      entry({
+        word: "impact", emoji: "💥", pron: "IM-pakt",
+        senses: [
+          { pos: "noun", def: "the striking of one thing against another",
+            example: "The impact of the crash bent the car's fender." },
+          { pos: "noun", def: "a strong effect",
+            example: "The book had a big impact on the way I think." }
+        ],
+        synonyms: ["crash", "effect", "influence"], antonyms: [],
+        mnemonic: "An impact is a big hit — a crash or a strong effect."
+      }),
+      entry({
+        word: "invade", emoji: "🗡️", pron: "in-VAYD",
+        senses: [{ pos: "verb", def: "to enter with force in order to attack or take over",
+          example: "Ants invaded our picnic and marched off with the crumbs." }],
+        forms: [{ word: "invasion", pos: "noun", def: "the act of invading",
+          example: "The invasion caught the town completely by surprise." }],
+        synonyms: ["attack", "storm", "overrun"], antonyms: ["retreat", "defend"],
+        mnemonic: "To invade is to force your way IN to attack."
+      }),
+      entry({
+        word: "isolate", emoji: "🏝️", pron: "EYE-sə-layt",
+        senses: [{ pos: "verb", def: "to set apart from others; to keep alone",
+          example: "The sick calf was isolated from the rest of the herd." }],
+        forms: [
+          { word: "isolated", pos: "adj", def: "alone; far from others",
+            example: "The cabin sat on an isolated mountain with no neighbors." },
+          { word: "isolation", pos: "noun", def: "the state of being alone or apart",
+            example: "Living on the tiny island, they felt a real sense of isolation." }
+        ],
+        synonyms: ["separate", "cut off", "set apart"], antonyms: ["join", "mix in"],
+        mnemonic: "To isolate is to make into an island — all alone."
+      }),
+      entry({
+        word: "occupy", emoji: "🏠", pron: "AHK-yə-pye",
+        senses: [
+          { pos: "verb", def: "to live in or fill a space",
+            example: "A family of five occupies the house next door." },
+          { pos: "verb", def: "to take and hold by force",
+            example: "The soldiers occupied the captured town." }
+        ],
+        forms: [{ word: "occupation", pos: "noun", def: "a job, or the act of taking over a place",
+          example: "Her occupation is teaching; his is fixing cars." }],
+        synonyms: ["fill", "live in", "take over"], antonyms: ["leave", "vacate"],
+        mnemonic: "To occupy a space is to fill it or hold it."
+      }),
+      entry({
+        word: "reveal", emoji: "🎁", pron: "ri-VEEL",
+        senses: [{ pos: "verb", def: "to make known; to show something hidden",
+          example: "She finally revealed her secret birthday plan." }],
+        synonyms: ["show", "uncover", "disclose"], antonyms: ["hide", "conceal"],
+        mnemonic: "To reveal is to pull back the veil and show what was hidden."
+      }),
+      entry({
+        word: "rout", emoji: "🏃", pron: "ROWT",
+        senses: [
+          { pos: "verb", def: "to defeat completely",
+            example: "Our team routed the visitors ten to one." },
+          { pos: "noun", def: "a complete defeat",
+            example: "The game turned into a total rout by halftime." }
+        ],
+        synonyms: ["crush", "thrash", "beat badly"], antonyms: ["lose to"],
+        mnemonic: "A rout sends the losers running — a crushing defeat."
+      }),
+      entry({
+        word: "suspect", emoji: "🕵️", pron: "sə-SPEKT",
+        senses: [
+          { pos: "verb", def: "to think something is true or likely, without proof",
+            example: "I suspect it is going to rain later today." },
+          { pos: "noun", def: "a person thought to be guilty",
+            example: "The police questioned the main suspect." }
+        ],
+        synonyms: ["guess", "doubt", "distrust"], antonyms: ["trust", "know for sure"],
+        mnemonic: "To suspect is to have a hunch without proof."
+      }),
+      entry({
+        word: "temporary", emoji: "⏳", pron: "TEM-pə-rer-ee",
+        senses: [{ pos: "adj", def: "lasting only a short time; not permanent",
+          example: "We put up a temporary tent just for the night." }],
+        synonyms: ["short-term", "passing", "brief"], antonyms: ["permanent", "lasting"],
+        mnemonic: "Temporary things last only a short time — like a time-out."
+      }),
+      entry({
+        word: "terror", emoji: "😨", pron: "TER-ər",
+        senses: [{ pos: "noun", def: "very great fear",
+          example: "The loud thunder filled the puppy with terror." }],
+        forms: [{ word: "terrorize", pos: "verb", def: "to fill with great fear",
+          example: "The bully terrorized the younger kids at recess." }],
+        synonyms: ["fear", "dread", "panic"], antonyms: ["calm", "comfort"],
+        mnemonic: "Terror is terrible fear — the kind that makes you freeze."
+      }),
+      entry({
+        word: "tragic", emoji: "😢", pron: "TRAJ-ik",
+        senses: [{ pos: "adj", def: "very sad; bringing great suffering",
+          example: "The movie had a tragic ending that made everyone cry." }],
+        forms: [{ word: "tragedy", pos: "noun", def: "a very sad event",
+          example: "The flood was a tragedy for the whole town." }],
+        synonyms: ["sad", "heartbreaking", "terrible"], antonyms: ["happy", "joyful"],
+        mnemonic: "A tragic story is deeply sad — a tragedy."
+      })
+    ]
+  };
+
+  var LESSON14 = {
+    lesson: 14,
+    title: "Lesson 14",
+    words: [
+      entry({
+        word: "afford", emoji: "💰", pron: "ə-FORD",
+        senses: [
+          { pos: "verb", def: "to have enough money for",
+            example: "We can't afford a new car this year." },
+          { pos: "verb", def: "to be able to spare or give",
+            example: "Can you afford the time to help me clean up?" }
+        ],
+        synonyms: ["pay for", "manage", "spare"], antonyms: [],
+        mnemonic: "If you can afford it, you have enough to pay for it."
+      }),
+      entry({
+        word: "boast", emoji: "😤", pron: "BOHST",
+        senses: [
+          { pos: "verb", def: "to brag; to talk with too much pride",
+            example: "He boasted about winning the race." },
+          { pos: "noun", def: "bragging talk",
+            example: "Her boast about being fastest turned out to be true." }
+        ],
+        forms: [{ word: "boastful", pos: "adj", def: "always bragging",
+          example: "No one likes a boastful winner." }],
+        synonyms: ["brag", "show off", "crow"], antonyms: ["be modest"],
+        mnemonic: "To boast is to brag — both puff you up with pride."
+      }),
+      entry({
+        word: "chord", emoji: "🎸", pron: "KORD",
+        senses: [{ pos: "noun", def: "a group of musical notes played together",
+          example: "She strummed a happy chord on her guitar." }],
+        synonyms: ["harmony", "notes"], antonyms: [],
+        mnemonic: "A chord is notes played together — a 'chord' for music, a 'cord' for rope."
+      }),
+      entry({
+        word: "exceptional", emoji: "⭐", pron: "ik-SEP-shə-nəl",
+        senses: [{ pos: "adj", def: "much better than usual; unusual",
+          example: "She is an exceptional artist for her age." }],
+        synonyms: ["outstanding", "excellent", "remarkable"], antonyms: ["ordinary", "average"],
+        mnemonic: "Exceptional means so good it's the exception, not the rule."
+      }),
+      entry({
+        word: "fortunate", emoji: "🍀", pron: "FOR-chə-nit",
+        senses: [{ pos: "adj", def: "lucky",
+          example: "We were fortunate to catch the very last bus." }],
+        forms: [{ word: "fortunately", pos: "adv", def: "luckily",
+          example: "Fortunately, no one was hurt in the fall." }],
+        synonyms: ["lucky", "blessed"], antonyms: ["unlucky", "unfortunate"],
+        mnemonic: "A fortunate person has good fortune — good luck."
+      }),
+      entry({
+        word: "fringe", emoji: "🧵", pron: "FRINJ",
+        senses: [
+          { pos: "noun", def: "a border of hanging threads",
+            example: "The rug had a fringe of tassels along each edge." },
+          { pos: "noun", def: "the outer edge of something",
+            example: "They camped on the fringe of the forest." }
+        ],
+        synonyms: ["border", "edge", "trim"], antonyms: ["center", "middle"],
+        mnemonic: "The fringe is the edge — like the fringe on the rim of a rug."
+      }),
+      entry({
+        word: "humble", emoji: "🙇", pron: "HUM-bəl",
+        senses: [
+          { pos: "adj", def: "not proud; modest",
+            example: "Even after winning, she stayed humble." },
+          { pos: "adj", def: "plain or simple",
+            example: "They lived in a humble little cottage." }
+        ],
+        synonyms: ["modest", "meek", "plain"], antonyms: ["proud", "boastful"],
+        mnemonic: "A humble person doesn't brag — they stay low-key."
+      }),
+      entry({
+        word: "meadow", emoji: "🌼", pron: "MED-oh",
+        senses: [{ pos: "noun", def: "a field of grass",
+          example: "Cows grazed lazily in the green meadow." }],
+        synonyms: ["field", "pasture", "grassland"], antonyms: [],
+        mnemonic: "A meadow is a grassy field — picture cows munching in it."
+      }),
+      entry({
+        word: "melancholy", emoji: "😔", pron: "MEL-ən-kol-ee",
+        senses: [
+          { pos: "noun", def: "a feeling of deep sadness",
+            example: "A quiet melancholy came over her on the gray day." },
+          { pos: "adj", def: "sad and gloomy",
+            example: "The slow song had a melancholy tune." }
+        ],
+        synonyms: ["sadness", "gloom", "sorrow"], antonyms: ["joy", "cheer"],
+        mnemonic: "Melancholy is a heavy, deep-down sadness."
+      }),
+      entry({
+        word: "obstinate", emoji: "🐴", pron: "OB-stə-nit",
+        senses: [{ pos: "adj", def: "stubborn; refusing to change your mind",
+          example: "The obstinate mule would not move an inch." }],
+        synonyms: ["stubborn", "headstrong", "unyielding"], antonyms: ["flexible", "agreeable"],
+        mnemonic: "An obstinate person is an obstacle — they won't budge."
+      }),
+      entry({
+        word: "plead", emoji: "🙏", pron: "PLEED",
+        senses: [
+          { pos: "verb", def: "to beg earnestly",
+            example: "She pleaded with her parents for one more chance." },
+          { pos: "verb", def: "to answer a charge in a court of law",
+            example: "The driver pleaded not guilty." }
+        ],
+        synonyms: ["beg", "appeal", "implore"], antonyms: ["demand"],
+        mnemonic: "To plead is to please-please-please beg."
+      }),
+      entry({
+        word: "plunge", emoji: "🤿", pron: "PLUNJ",
+        senses: [
+          { pos: "verb", def: "to dive or throw yourself suddenly into something",
+            example: "He plunged into the cold lake with a huge splash." },
+          { pos: "noun", def: "a sudden dive",
+            example: "She took a quick plunge off the diving board." }
+        ],
+        synonyms: ["dive", "jump", "dunk"], antonyms: ["rise", "climb out"],
+        mnemonic: "To plunge is to dive down suddenly — plunk into the water!"
+      }),
+      entry({
+        word: "relent", emoji: "🕊️", pron: "ri-LENT",
+        senses: [{ pos: "verb", def: "to become less harsh or strict; to give in",
+          example: "Dad finally relented and let us stay up late." }],
+        forms: [{ word: "relentless", pos: "adj", def: "never stopping; harsh",
+          example: "The relentless rain fell for three days straight." }],
+        synonyms: ["give in", "soften", "yield"], antonyms: ["persist", "hold firm"],
+        mnemonic: "To relent is to let up and give in."
+      }),
+      entry({
+        word: "submit", emoji: "📥", pron: "səb-MIT",
+        senses: [
+          { pos: "verb", def: "to give in to power or control; to yield",
+            example: "The wrestler submitted when he was firmly pinned." },
+          { pos: "verb", def: "to hand in",
+            example: "Please submit your homework by Friday." }
+        ],
+        synonyms: ["give in", "hand in", "surrender"], antonyms: ["resist", "fight"],
+        mnemonic: "To submit is to give in — or to send in your work."
+      }),
+      entry({
+        word: "trudge", emoji: "🥾", pron: "TRUJ",
+        senses: [{ pos: "verb", def: "to walk slowly and with heavy effort",
+          example: "We trudged through the deep, wet snow." }],
+        synonyms: ["plod", "tramp", "slog"], antonyms: ["skip", "dash"],
+        mnemonic: "To trudge is to drag your feet along — slow and tiring."
+      })
+    ]
+  };
+
+  var LESSON15 = {
+    lesson: 15,
+    title: "Lesson 15",
+    words: [
+      entry({
+        word: "apparent", emoji: "👀", pron: "ə-PAIR-ənt",
+        senses: [
+          { pos: "adj", def: "easy to see or understand; clear",
+            example: "It was apparent that she was tired." },
+          { pos: "adj", def: "seeming to be true, but maybe not",
+            example: "His apparent calm hid how nervous he really was." }
+        ],
+        forms: [{ word: "apparently", pos: "adv", def: "as it seems; clearly",
+          example: "Apparently the game was canceled because of rain." }],
+        synonyms: ["clear", "obvious", "plain"], antonyms: ["hidden", "unclear"],
+        mnemonic: "If something is apparent, it appears plainly — easy to see."
+      }),
+      entry({
+        word: "ban", emoji: "🚫", pron: "BAN",
+        senses: [
+          { pos: "verb", def: "to forbid, especially by a law or rule",
+            example: "The school banned gum chewing in class." },
+          { pos: "noun", def: "an official rule against something",
+            example: "There is a ban on littering in the park." }
+        ],
+        synonyms: ["forbid", "prohibit", "outlaw"], antonyms: ["allow", "permit"],
+        mnemonic: "A ban says NO — it forbids something."
+      }),
+      entry({
+        word: "concentrate", emoji: "🧠", pron: "KON-sən-trayt",
+        senses: [
+          { pos: "verb", def: "to focus all your thoughts or effort on something",
+            example: "It's hard to concentrate on homework when the TV is on." },
+          { pos: "verb", def: "to bring together in one place",
+            example: "Most of the shops are concentrated downtown." }
+        ],
+        forms: [{ word: "concentration", pos: "noun", def: "full focus of the mind",
+          example: "Chess takes a lot of concentration." }],
+        synonyms: ["focus", "pay attention"], antonyms: ["daydream", "scatter"],
+        mnemonic: "To concentrate is to bring your focus to one center."
+      }),
+      entry({
+        word: "concern", emoji: "😟", pron: "kən-SURN",
+        senses: [
+          { pos: "verb", def: "to be about; to have to do with",
+            example: "This book concerns a boy who travels to space." },
+          { pos: "noun", def: "worry, or something that matters to you",
+            example: "Safety is our number one concern." }
+        ],
+        synonyms: ["worry", "interest", "matter"], antonyms: ["unconcern"],
+        mnemonic: "A concern is something you care or worry about."
+      }),
+      entry({
+        word: "consider", emoji: "🤔", pron: "kən-SID-ər",
+        senses: [
+          { pos: "verb", def: "to think about carefully",
+            example: "Consider all your choices before you decide." },
+          { pos: "verb", def: "to believe or regard as",
+            example: "I consider her my best friend." }
+        ],
+        forms: [{ word: "considerate", pos: "adj", def: "thoughtful of other people",
+          example: "It was considerate of you to save me a seat." }],
+        synonyms: ["think about", "weigh", "regard"], antonyms: ["ignore"],
+        mnemonic: "To consider is to think it over carefully."
+      }),
+      entry({
+        word: "contrast", emoji: "🌗", pron: "kən-TRAST",
+        senses: [
+          { pos: "verb", def: "to compare in order to show differences",
+            example: "The teacher asked us to contrast summer with winter." },
+          { pos: "noun", def: "a clear difference between things",
+            example: "There is a big contrast between the quiet twin and the loud one." }
+        ],
+        synonyms: ["difference", "compare", "distinction"], antonyms: ["similarity", "likeness"],
+        mnemonic: "A contrast shows how two things stand apart — their difference."
+      }),
+      entry({
+        word: "fragile", emoji: "🥚", pron: "FRAJ-əl",
+        senses: [{ pos: "adj", def: "easily broken or damaged; delicate",
+          example: "Handle the fragile glass ornaments with care." }],
+        synonyms: ["delicate", "breakable", "flimsy"], antonyms: ["strong", "sturdy", "tough"],
+        mnemonic: "Fragile things break easily — stamp 'FRAGILE' on the box!"
+      }),
+      entry({
+        word: "menace", emoji: "👹", pron: "MEN-is",
+        senses: [
+          { pos: "noun", def: "a threat or danger",
+            example: "That wobbly, broken step is a real menace." },
+          { pos: "verb", def: "to threaten",
+            example: "Dark storm clouds menaced the picnic." }
+        ],
+        forms: [{ word: "menacing", pos: "adj", def: "threatening; scary",
+          example: "The dog gave a low, menacing growl." }],
+        synonyms: ["threat", "danger", "hazard"], antonyms: ["safety"],
+        mnemonic: "A menace is a danger that threatens — it 'means' harm."
+      }),
+      entry({
+        word: "pounce", emoji: "🐱", pron: "POWNS",
+        senses: [
+          { pos: "verb", def: "to jump on suddenly in order to grab",
+            example: "The cat pounced on the little toy mouse." },
+          { pos: "noun", def: "a sudden leap to grab something",
+            example: "With one quick pounce, the fox caught the rabbit." }
+        ],
+        synonyms: ["leap", "spring", "swoop"], antonyms: [],
+        mnemonic: "To pounce is to bounce onto your target and grab it."
+      }),
+      entry({
+        word: "prompt", emoji: "⏰", pron: "PROMPT",
+        senses: [
+          { pos: "adj", def: "quick and on time; without delay",
+            example: "She sent a prompt reply the same day." },
+          { pos: "verb", def: "to cause someone to do something",
+            example: "The rain prompted us to run inside." }
+        ],
+        forms: [{ word: "promptly", pos: "adv", def: "quickly; right on time",
+          example: "The bus arrived promptly at eight o'clock." }],
+        synonyms: ["quick", "on time", "punctual"], antonyms: ["late", "slow"],
+        mnemonic: "Prompt means right away — a prompt reply comes fast."
+      }),
+      entry({
+        word: "recent", emoji: "🆕", pron: "REE-sənt",
+        senses: [{ pos: "adj", def: "happening a short time ago",
+          example: "In recent days it has been very hot." }],
+        forms: [{ word: "recently", pos: "adv", def: "a short time ago; not long ago",
+          example: "We recently moved to a new house." }],
+        synonyms: ["new", "latest", "fresh"], antonyms: ["old", "ancient", "long ago"],
+        mnemonic: "Recent means it just happened — brand new news."
+      }),
+      entry({
+        word: "symbol", emoji: "❤️", pron: "SIM-bəl",
+        senses: [{ pos: "noun", def: "something that stands for something else",
+          example: "A heart is a symbol of love." }],
+        synonyms: ["sign", "emblem", "mark"], antonyms: [],
+        mnemonic: "A symbol is a sign that stands for an idea — like ❤️ for love."
+      }),
+      entry({
+        word: "talon", emoji: "🦅", pron: "TAL-ən",
+        senses: [{ pos: "noun", def: "the sharp claw of a bird of prey",
+          example: "The eagle snatched the fish in its talons." }],
+        synonyms: ["claw", "clutch"], antonyms: [],
+        mnemonic: "A talon is an eagle's claw — sharp and grabbing."
+      }),
+      entry({
+        word: "trophy", emoji: "🏆", pron: "TROH-fee",
+        senses: [{ pos: "noun", def: "a prize given for winning or for a great deed",
+          example: "She lifted the gold trophy over her head." }],
+        synonyms: ["prize", "award", "cup"], antonyms: [],
+        mnemonic: "A trophy is a winner's prize — you hoist it up high."
+      }),
+      entry({
+        word: "widespread", emoji: "🌍", pron: "WYDE-spred",
+        senses: [{ pos: "adj", def: "found or spread over a large area",
+          example: "The storm caused widespread damage across the state." }],
+        synonyms: ["far-reaching", "extensive", "all over"], antonyms: ["limited", "local"],
+        mnemonic: "Widespread means spread out wide — all over the place."
+      })
+    ]
+  };
+
   // Registry of lessons. Only lessons with a `words` array are "available" / playable.
   // To add a lesson: define it like LESSON5/LESSON6 and add it here.
-  var LESSONS = { "5": LESSON5, "6": LESSON6, "8": LESSON8, "9": LESSON9, "10": LESSON10, "11": LESSON11 };
+  var LESSONS = { "5": LESSON5, "6": LESSON6, "8": LESSON8, "9": LESSON9, "10": LESSON10, "11": LESSON11, "12": LESSON12, "13": LESSON13, "14": LESSON14, "15": LESSON15 };
 
   function flat() {
     var out = [], seen = {};
