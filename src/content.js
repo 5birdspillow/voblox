@@ -919,9 +919,193 @@
     ]
   };
 
+  var LESSON11 = {
+    lesson: 11,
+    title: "Lesson 11",
+    words: [
+      entry({
+        word: "annual", emoji: "📅", pron: "AN-yoo-əl",
+        senses: [
+          { pos: "adj", def: "happening once a year",
+            example: "The school holds an annual talent show every spring." },
+          { pos: "noun", def: "a plant that lives for only one year",
+            example: "We planted annuals that bloomed all summer and then died." }
+        ],
+        forms: [
+          { word: "annually", pos: "adv", def: "once a year",
+            example: "The town fair is held annually in June." }
+        ],
+        synonyms: ["yearly", "once a year"], antonyms: ["daily", "one-time"],
+        mnemonic: "An annual event comes around once a year — like your birthday."
+      }),
+      entry({
+        word: "artificial", emoji: "🤖", pron: "ar-tə-FISH-əl",
+        senses: [
+          { pos: "adj", def: "made by people; not natural",
+            example: "The flowers looked real, but they were artificial." }
+        ],
+        synonyms: ["fake", "man-made", "not real"], antonyms: ["natural", "real"],
+        mnemonic: "Artificial things are made by people (ART), not by nature."
+      }),
+      entry({
+        word: "blend", emoji: "🥤", pron: "BLEND",
+        senses: [
+          { pos: "verb", def: "to mix together completely",
+            example: "Blend the fruit and yogurt to make a smoothie." },
+          { pos: "noun", def: "a mixture of things",
+            example: "This drink is a blend of orange and mango juice." }
+        ],
+        synonyms: ["mix", "combine", "stir together"], antonyms: ["separate", "split apart"],
+        mnemonic: "A blender blends — it mixes everything into one."
+      }),
+      entry({
+        word: "bore", emoji: "🥱", pron: "BOR",
+        senses: [
+          { pos: "verb", def: "to make someone tired by being dull",
+            example: "The long, slow movie bored me." },
+          { pos: "verb", def: "to make a hole by drilling or digging",
+            example: "Workers bored a tunnel straight through the mountain." }
+        ],
+        forms: [
+          { word: "boredom", pos: "noun", def: "the feeling of being bored",
+            example: "On the rainy day, boredom set in and we ran out of things to do." }
+        ],
+        synonyms: ["tire out", "drill", "dig"], antonyms: ["excite", "interest"],
+        mnemonic: "A boring thing makes you yawn — and a drill can bore a hole."
+      }),
+      entry({
+        word: "considerable", emoji: "🗻", pron: "kən-SID-ər-ə-bəl",
+        senses: [
+          { pos: "adj", def: "large in size or amount",
+            example: "It took a considerable amount of money to fix the car." }
+        ],
+        forms: [
+          { word: "considerably", pos: "adv", def: "by a large amount",
+            example: "She is considerably taller than her little brother." }
+        ],
+        synonyms: ["large", "big", "a lot of"], antonyms: ["tiny", "small", "slight"],
+        mnemonic: "Considerable means a large amount — big enough to think about."
+      }),
+      entry({
+        word: "crude", emoji: "🛢️", pron: "KROOD",
+        senses: [
+          { pos: "adj", def: "in a raw, natural state; not cleaned up",
+            example: "Crude oil is cleaned before it becomes gasoline." },
+          { pos: "adj", def: "rough or rude; not polite",
+            example: "He made a crude joke that upset everyone." }
+        ],
+        synonyms: ["raw", "rough", "rude"], antonyms: ["refined", "polished", "polite"],
+        mnemonic: "Crude oil is raw — and crude manners are rough."
+      }),
+      entry({
+        word: "evaporate", emoji: "💨", pron: "i-VAP-ə-rayt",
+        senses: [
+          { pos: "verb", def: "to change from a liquid into a gas or vapor",
+            example: "The puddle evaporated in the hot sun." }
+        ],
+        forms: [
+          { word: "evaporation", pos: "noun", def: "the act of changing into vapor",
+            example: "Evaporation turns water from the ocean into clouds." }
+        ],
+        synonyms: ["dry up", "vaporize"], antonyms: ["condense", "freeze"],
+        mnemonic: "A liquid evaporates — it turns to vapor and vanishes into the air."
+      }),
+      entry({
+        word: "foliage", emoji: "🍃", pron: "FOH-lee-ij",
+        senses: [
+          { pos: "noun", def: "the leaves of plants and trees",
+            example: "In the fall, the foliage turns red, orange, and gold." }
+        ],
+        synonyms: ["leaves", "greenery"], antonyms: ["bare branches"],
+        mnemonic: "Foliage is all the leaves — a forest is full of green foliage."
+      }),
+      entry({
+        word: "gash", emoji: "🩹", pron: "GASH",
+        senses: [
+          { pos: "noun", def: "a long, deep cut",
+            example: "He got a gash on his knee when he fell off his bike." },
+          { pos: "verb", def: "to make a long, deep cut",
+            example: "The sharp rock gashed the side of the boat." }
+        ],
+        synonyms: ["deep cut", "slash", "wound"], antonyms: ["scratch", "nick"],
+        mnemonic: "A gash is a big, deep cut — much worse than a scratch."
+      }),
+      entry({
+        word: "hue", emoji: "🎨", pron: "HYOO",
+        senses: [
+          { pos: "noun", def: "a color or shade",
+            example: "The sky turned a deep orange hue at sunset." }
+        ],
+        synonyms: ["color", "shade", "tint"], antonyms: [],
+        mnemonic: "A hue is a color — every shade of paint has its own hue."
+      }),
+      entry({
+        word: "increase", emoji: "📈", pron: "in-KREES",
+        senses: [
+          { pos: "verb", def: "to make or become greater in size or amount",
+            example: "The team increased their score in the last minute." },
+          { pos: "noun", def: "a rise in amount",
+            example: "There was a big increase in the number of students this year." }
+        ],
+        synonyms: ["grow", "go up", "add to"], antonyms: ["decrease", "shrink", "drop"],
+        mnemonic: "To increase is to grow bigger — the numbers go up."
+      }),
+      entry({
+        word: "nourish", emoji: "🍎", pron: "NUR-ish",
+        senses: [
+          { pos: "verb", def: "to give what is needed to live and grow; to feed",
+            example: "Healthy food nourishes your body." }
+        ],
+        forms: [
+          { word: "nourishment", pos: "noun", def: "food and other things needed to live and grow",
+            example: "Plants get their nourishment from soil, water, and sunlight." }
+        ],
+        synonyms: ["feed", "sustain", "help grow"], antonyms: ["starve"],
+        mnemonic: "Good food nourishes you — it gives your body what it needs to grow."
+      }),
+      entry({
+        word: "vary", emoji: "🔀", pron: "VAIR-ee",
+        senses: [
+          { pos: "verb", def: "to change; to be different",
+            example: "The weather varies from day to day." }
+        ],
+        forms: [
+          { word: "variety", pos: "noun", def: "a number of different things",
+            example: "The store sells a wide variety of toys." }
+        ],
+        synonyms: ["change", "differ", "mix up"], antonyms: ["stay the same", "match"],
+        mnemonic: "When things vary, they change — no two are quite the same."
+      }),
+      entry({
+        word: "vision", emoji: "👁️", pron: "VIZH-ən",
+        senses: [
+          { pos: "noun", def: "the ability to see; eyesight",
+            example: "Glasses help people with poor vision see clearly." },
+          { pos: "noun", def: "something seen in the imagination or a dream",
+            example: "She had a vision of a better, kinder future." }
+        ],
+        synonyms: ["eyesight", "sight", "imagination"], antonyms: ["blindness"],
+        mnemonic: "Your vision is your eyesight — and also a dream you picture in your mind."
+      }),
+      entry({
+        word: "yield", emoji: "🌾", pron: "YEELD",
+        senses: [
+          { pos: "verb", def: "to give or produce",
+            example: "The apple tree yields fruit every fall." },
+          { pos: "verb", def: "to give way to force or pressure",
+            example: "The old door finally yielded when we pushed hard." },
+          { pos: "noun", def: "the amount produced",
+            example: "This year's crop had a huge yield." }
+        ],
+        synonyms: ["produce", "give", "give way"], antonyms: ["resist", "hold firm"],
+        mnemonic: "A field yields crops — and you yield (give way) at a yield sign."
+      })
+    ]
+  };
+
   // Registry of lessons. Only lessons with a `words` array are "available" / playable.
   // To add a lesson: define it like LESSON5/LESSON6 and add it here.
-  var LESSONS = { "5": LESSON5, "6": LESSON6, "8": LESSON8, "9": LESSON9, "10": LESSON10 };
+  var LESSONS = { "5": LESSON5, "6": LESSON6, "8": LESSON8, "9": LESSON9, "10": LESSON10, "11": LESSON11 };
 
   function flat() {
     var out = [], seen = {};
