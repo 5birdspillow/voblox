@@ -14,8 +14,8 @@
   // Craft World, the dashboard, or the picker below); default to the earliest available.
   var _saved = loadState();
   var _avail = Content.availableLessons();
-  var LESSON_ID = String((_saved && _saved.activeLesson) || (_avail[0] ? _avail[0].lesson : 5));
-  if (!Content.getLesson(LESSON_ID)) LESSON_ID = String(_avail[0] ? _avail[0].lesson : 5);
+  var LESSON_ID = String((_saved && _saved.activeLesson) || (_avail[0] ? _avail[0].id : 5));
+  if (!Content.getLesson(LESSON_ID)) LESSON_ID = String(_avail[0] ? _avail[0].id : 5);
   var lesson = Content.getLesson(LESSON_ID);
   var WORDS = lesson.words;
 
@@ -148,9 +148,9 @@
     var avail = Content.availableLessons();
     if (avail.length < 2) return "";
     return '<div class="lessonpick">' + avail.map(function (L) {
-      var on = String(L.lesson) === LESSON_ID;
-      return '<button class="lpick' + (on ? " on" : "") + '" data-l="' + L.lesson + '">' +
-        esc(L.title) + (on ? " ✓" : "") + '</button>';
+      var on = String(L.id) === LESSON_ID;
+      return '<button class="lpick' + (on ? " on" : "") + '" data-l="' + L.id + '">' +
+        (L.book === 2 ? "📘" : "📗") + " " + esc(L.title) + (on ? " ✓" : "") + '</button>';
     }).join("") + '</div>';
   }
   function wireLessonPicker() {

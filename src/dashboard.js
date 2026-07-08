@@ -29,11 +29,16 @@
 
   if (!avail.length) html += '<div class="card">No lessons loaded yet.</div>';
 
+  var curBook = null;
   avail.forEach(function (L) {
+    if (L.book !== curBook) { // one header per book so Leo's and Liana's lessons are clearly separate
+      curBook = L.book;
+      html += '<h2 class="bookhead" style="margin:22px 4px 6px;color:#5a4fb0">' + (L.book === 2 ? "📘" : "📗") + " Book " + L.book + (L.bookName ? " · " + esc(L.bookName) : "") + "</h2>";
+    }
     var p = store.predicted(L.words);
     var ready = store.readyCount(L.words);
     var atRisk = store.atRisk(L.words);
-    var isActive = String(L.lesson) === String(s.activeLesson);
+    var isActive = String(L.id) === String(s.activeLesson);
     html += '<div class="card">' +
       '<div class="lessonhead"><h2 style="margin:0">' + esc(L.title) + (isActive ? ' <span class="pill ready">active</span>' : "") + '</h2>' +
       '<div style="text-align:right"><div class="gradebig ' + gradeClass(p) + '">' + p + '%</div>' +
@@ -51,8 +56,8 @@
     });
     html += '</table>';
 
-    html += '<div class="row2"><a class="btn" href="index.html" onclick="VOBLOX_setActive(' + L.lesson + ')">▶ Make active &amp; open game</a>' +
-      '<a class="btn alt" href="index.html#boss" onclick="VOBLOX_setActive(' + L.lesson + ')">⚔️ Boss Battle this lesson</a></div>';
+    html += '<div class="row2"><a class="btn" href="index.html" onclick="VOBLOX_setActive(\'' + L.id + '\')">▶ Make active &amp; open game</a>' +
+      '<a class="btn alt" href="index.html#boss" onclick="VOBLOX_setActive(\'' + L.id + '\')">⚔️ Boss Battle this lesson</a></div>';
     html += '</div>';
   });
 

@@ -1709,9 +1709,117 @@
     ]
   };
 
+  // ===== BOOK 2 (Liana) — 10 words per lesson =====
+  var BOOK2_L10 = {
+    lesson: 10, book: 2, title: "Lesson 10",
+    words: [
+      entry({
+        word: "astronomy", emoji: "🌠", pron: "ə-STRON-ə-mee",
+        senses: [{ pos: "noun", def: "the study of planets, stars, and space",
+          example: "Many people who take up astronomy first became interested when they were children." }],
+        forms: [{ word: "astronomer", pos: "noun", def: "a person who studies astronomy",
+          example: "An astronomer uses a telescope to study space." }],
+        synonyms: ["space science", "star study"], antonyms: [],
+        mnemonic: "Astronomy is the study of the stars — 'astro' means star."
+      }),
+      entry({
+        word: "besides", emoji: "➕", pron: "bih-SYDZ",
+        senses: [{ pos: "prep", def: "in addition to; also",
+          example: "Besides being on the soccer team, Sean loves playing basketball." }],
+        synonyms: ["also", "in addition", "plus"], antonyms: [],
+        mnemonic: "Besides means 'and also' — one more thing beside the rest."
+      }),
+      entry({
+        word: "crater", emoji: "🌋", pron: "KRAY-tər",
+        senses: [{ pos: "noun", def: "a bowl-shaped hole in the ground or at the top of a volcano",
+          example: "The hikers walked to the top of the volcano to look down into the large crater." }],
+        synonyms: ["pit", "hole", "bowl"], antonyms: ["hill", "mound"],
+        mnemonic: "A crater is a big bowl-shaped hole — like on the moon or a volcano."
+      }),
+      entry({
+        word: "degree", emoji: "🌡️", pron: "dih-GREE",
+        senses: [
+          { pos: "noun", def: "a unit for measuring how warm something is",
+            example: "Cindy heated the oven to 350 degrees before she put the bread in to bake." },
+          { pos: "noun", def: "a stage or step in a series",
+            example: "By degrees, Malcolm slowly got better at doing his math problems." }
+        ],
+        synonyms: ["unit", "step", "stage"], antonyms: [],
+        mnemonic: "A degree measures heat (like 90°) — or a step you take little by little."
+      }),
+      entry({
+        word: "diameter", emoji: "⭕", pron: "dy-AM-ə-tər",
+        senses: [{ pos: "noun", def: "the distance from side to side through the center of a circle or round object",
+          example: "The diameter of the trunk of our old oak tree was at least thirty inches." }],
+        synonyms: ["width", "distance across"], antonyms: [],
+        mnemonic: "The diameter goes straight across a circle, through the middle."
+      }),
+      entry({
+        word: "gaze", emoji: "👀", pron: "GAYZ",
+        senses: [{ pos: "verb", def: "to look steadily at something for a long time",
+          example: "Sam and Julie gazed at the polar bears swimming in a large pool at the zoo." }],
+        synonyms: ["stare", "watch", "look"], antonyms: ["glance"],
+        mnemonic: "To gaze is to look and look — a long, steady stare."
+      }),
+      entry({
+        word: "gravity", emoji: "🌍", pron: "GRAV-ih-tee",
+        senses: [
+          { pos: "noun", def: "the force that pulls things toward the center of Earth",
+            example: "Gravity causes an apple to fall to the ground." },
+          { pos: "noun", def: "the condition of being serious",
+            example: "Celia understood later the gravity of what she had done by playing too close to the large waves." }
+        ],
+        synonyms: ["pull", "force", "seriousness"], antonyms: [],
+        mnemonic: "Gravity pulls everything down — it's why things fall."
+      }),
+      entry({
+        word: "reflect", emoji: "🪞", pron: "rih-FLEKT",
+        senses: [
+          { pos: "verb", def: "to turn or throw back, such as light or sound",
+            example: "The mirror reflected Tyler's face when he looked into it." },
+          { pos: "verb", def: "to think carefully about something",
+            example: "Paul reflected on the next chess piece he would move." }
+        ],
+        synonyms: ["mirror", "bounce back", "think about"], antonyms: [],
+        mnemonic: "A mirror reflects your face — and you reflect by thinking hard."
+      }),
+      entry({
+        word: "telescope", emoji: "🔭", pron: "TEL-ə-skohp",
+        senses: [{ pos: "noun", def: "a tool that makes distant things seem closer and larger, using mirrors and lenses",
+          example: "On a cool October night, Dad and Molly set up the telescope in the backyard to view the stars." }],
+        synonyms: ["spyglass", "scope"], antonyms: [],
+        mnemonic: "A telescope lets you see far — 'tele' means far away."
+      }),
+      entry({
+        word: "universe", emoji: "🌌", pron: "YOO-nih-vurs",
+        senses: [{ pos: "noun", def: "all of space and all the objects in space",
+          example: "The Milky Way is just one of many large groups of stars in our universe." }],
+        synonyms: ["space", "cosmos", "everything"], antonyms: [],
+        mnemonic: "The universe is EVERYTHING — all the stars and space there is."
+      })
+    ]
+  };
+
   // Registry of lessons. Only lessons with a `words` array are "available" / playable.
-  // To add a lesson: define it like LESSON5/LESSON6 and add it here.
-  var LESSONS = { "5": LESSON5, "6": LESSON6, "8": LESSON8, "9": LESSON9, "10": LESSON10, "11": LESSON11, "12": LESSON12, "13": LESSON13, "14": LESSON14, "15": LESSON15 };
+  // Keys are unique lesson IDs (Book 4 uses the plain number; other books are prefixed,
+  // e.g. "b2-10") so two books can both have a "Lesson 10" without colliding.
+  var LESSONS = {
+    "5": LESSON5, "6": LESSON6, "8": LESSON8, "9": LESSON9, "10": LESSON10,
+    "11": LESSON11, "12": LESSON12, "13": LESSON13, "14": LESSON14, "15": LESSON15,
+    "b2-10": BOOK2_L10
+  };
+  // which kid each book belongs to (used to label the lesson pickers)
+  var BOOK_LABELS = { 2: "Liana", 4: "Leo" };
+  // enrich every lesson with a stable id (= registry key), a book (default 4 = Leo),
+  // and ready-made display strings for the pickers.
+  Object.keys(LESSONS).forEach(function (k) {
+    var L = LESSONS[k];
+    L.id = k;
+    if (!L.book) L.book = 4;
+    L.bookName = BOOK_LABELS[L.book] || "";
+    L.label = "Book " + L.book + (L.bookName ? " (" + L.bookName + ")" : "") + " · " + L.title;
+    L.tag = "B" + L.book + " L" + L.lesson;
+  });
 
   function flat() {
     var out = [], seen = {};
@@ -1723,12 +1831,13 @@
 
   var Content = {
     LESSONS: LESSONS,
+    BOOK_LABELS: BOOK_LABELS,
     getLesson: function (n) { return LESSONS[String(n)]; },
     listLessons: function () { return Object.keys(LESSONS).map(function (k) { return LESSONS[k]; }); },
     availableLessons: function () {
       return Object.keys(LESSONS).map(function (k) { return LESSONS[k]; })
         .filter(function (L) { return L.words && L.words.length; })
-        .sort(function (a, b) { return a.lesson - b.lesson; });
+        .sort(function (a, b) { return (a.book - b.book) || (a.lesson - b.lesson); });
     },
     allWords: flat,
     lessonOf: function (word) {

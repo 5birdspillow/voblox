@@ -17,8 +17,8 @@
   }
   window.__VOBLOX_VOICE = (store.state.profile && store.state.profile.voice) || null; // per-player voice settings
   var available = Content.availableLessons();
-  var activeLesson = String(store.state.activeLesson || (available[0] ? available[0].lesson : 5));
-  if (!Content.getLesson(activeLesson)) activeLesson = String(available[0] ? available[0].lesson : 5);
+  var activeLesson = String(store.state.activeLesson || (available[0] ? available[0].id : 5));
+  if (!Content.getLesson(activeLesson)) activeLesson = String(available[0] ? available[0].id : 5);
   store.state.activeLesson = activeLesson;
   var lesson = Content.getLesson(activeLesson);
   var WORDS = lesson.words;
@@ -572,7 +572,7 @@
     var cc = document.getElementById("combochip");
     if (store.state.combo > 1) { cc.style.display = "inline-block"; cc.textContent = "🔥 x" + store.state.combo; } else cc.style.display = "none";
     document.getElementById("meterfill").style.width = p + "%";
-    document.getElementById("meterlabel").textContent = "L" + activeLesson + " • " + p + "%";
+    document.getElementById("meterlabel").textContent = (lesson.tag || ("L" + activeLesson)) + " • " + p + "%";
   }
 
   // ---------- menu ----------
@@ -662,12 +662,17 @@
 
   function openLessons() {
     var avail = Content.availableLessons();
-    var rows = avail.map(function (L) {
+    var curBook = null, rows = "";
+    avail.forEach(function (L) {
+      if (L.book !== curBook) { // group Leo's Book 4 and Liana's Book 2 under clear headers
+        curBook = L.book;
+        rows += '<div class="lessonbook" style="font-weight:900;color:#6a5ac0;margin:10px 0 4px;font-size:15px">' + (L.book === 2 ? "📘" : "📗") + " Book " + L.book + (L.bookName ? " · " + esc(L.bookName) : "") + "</div>";
+      }
       var p = store.predicted(L.words);
-      return '<button class="menubtn" data-l="' + L.lesson + '">' + (String(L.lesson) === activeLesson ? "▶ " : "") + esc(L.title) + ' <span class="muted">— ' + p + '% · ' + L.words.length + ' words</span></button>';
-    }).join("");
+      rows += '<button class="menubtn" data-l="' + L.id + '">' + (String(L.id) === activeLesson ? "▶ " : "") + esc(L.title) + ' <span class="muted">— ' + p + '% · ' + L.words.length + ' words</span></button>';
+    });
     openOverlay('<div class="card menucard"><h2>🗺️ Choose Lesson <span class="x" id="gx" style="float:right">✕</span></h2>' + rows +
-      '<div class="help">Want Leo’s other lessons in the game? A grown-up can add any lesson from a photo of the workbook page — just ask. (Lessons must match his book exactly.)</div></div>',
+      '<div class="help">Want another lesson in the game? A grown-up can add any lesson from a photo of the workbook page — just ask. (Words must match the book exactly.)</div></div>',
       function (e) { if (e.key === "Escape") openMenu(); });
     document.getElementById("gx").onclick = openMenu;
     Array.prototype.forEach.call(obox.querySelectorAll("[data-l]"), function (b) { b.onclick = function () { switchLesson(b.dataset.l); }; });
