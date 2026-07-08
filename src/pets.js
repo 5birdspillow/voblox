@@ -205,7 +205,7 @@
           '<button class="bjcard" data-mv="2"><span class="bjemoji">💚</span><span class="bjname">Rest</span><span class="bjodds">+heal</span></button></div>' : "") +
         '<button class="wqskip" id="ptrun">🏃 Run away</button></div>';
       card().style.display = "flex";
-      document.getElementById("ptrun").onclick = function () { battle = null; closeCard(); };
+      document.getElementById("ptrun").onclick = function () { if (battle && battle.endTiming) battle.endTiming(); battle = null; closeCard(); };
       Array.prototype.forEach.call(card().querySelectorAll("[data-mv]"), function (btn) {
         btn.onclick = function () { myMove(parseInt(btn.dataset.mv, 10)); };
       });
@@ -236,19 +236,30 @@
           requestAnimationFrame(tick);
         }
         requestAnimationFrame(tick);
+        function endTiming() {
+          // remove ALL commit listeners. The touchstart one used to be anonymous and
+          // never got removed — its leftover preventDefault() then swallowed every tap
+          // on the card, so the move buttons went dead after one Big Attack.
+          card().removeEventListener("mousedown", commit);
+          card().removeEventListener("touchstart", touchCommit);
+          document.removeEventListener("keydown", keyCommit);
+          b.endTiming = null;
+        }
         function commit() {
           if (!battle || !b.waiting) return;
           b.waiting = false;
+          endTiming();
           var f = ((performance.now() - t0) / 1400) % 1;
           var crit = f > 0.38 && f < 0.62;
           var dmg = Math.round(power(mine.p) * 1.3 * typeMult(mine.p.type, foe.p.type) * (crit ? 1.6 : 0.9));
           foe.hp -= dmg;
-          card().removeEventListener("mousedown", commit); document.removeEventListener("keydown", keyCommit);
           endMyTurn((crit ? "💥 CRIT! " : "💥 ") + mine.p.name + " hits for " + dmg + "!");
         }
         function keyCommit(e) { if (e.key === " " || e.key === "Enter") { e.preventDefault(); commit(); } }
+        function touchCommit(e) { e.preventDefault(); commit(); } // named so it can be removed
+        b.endTiming = endTiming; // so Run away / battle end can clean these up too
         card().addEventListener("mousedown", commit);
-        card().addEventListener("touchstart", function (e) { e.preventDefault(); commit(e); }, { passive: false }); // suppress iOS phantom mouse tap
+        card().addEventListener("touchstart", touchCommit, { passive: false }); // suppress iOS phantom mouse tap
         document.addEventListener("keydown", keyCommit);
         return;
       }
@@ -363,6 +374,14 @@
     }
     function leave() { cleanup(); if (opts.onExit) opts.onExit(); }
     document.getElementById("quit").onclick = leave;
+
+    // test hook: drive battles deterministically in the harness
+    cv._pets = {
+      battle: function () { return battle; },
+      fight: function () { document.getElementById("ptbattle").onclick(); return battle; },
+      move: function (mv) { myMove(mv); },
+      commitTiming: function () { document.dispatchEvent(new KeyboardEvent("keydown", { key: " " })); }
+    };
 
     msgEl.innerHTML = "🐾 <b>Pet Paradise</b> — " + (state.pets.length ? state.pets.length + " pets live here!" : "hatch your first egg!");
     hud();
