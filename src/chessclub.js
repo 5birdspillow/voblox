@@ -327,6 +327,8 @@
       var bot = Bots.byId[club.id];
       var board = resume ? deser(resume.board) : initial();
       var hist = [], sel = null, targets = [], thinking = false, over = false, hintSq = null;
+      var myMoves = 0, awaitingWord = false, lastQ = null; // vocab is REQUIRED: a word gates play every few of your moves
+      var QUESTION_EVERY = 3;
 
       function save() { stats.resume = { oppId: club.id, board: ser(board) }; store.save(); }
       function clearSave() { stats.resume = null; store.save(); }
@@ -343,7 +345,7 @@
           cells += '<div class="' + cls + '" data-i="' + i + '">' + (p ? GLYPH[p] : "") + "</div>";
         }
         wrap.innerHTML =
-          '<div class="ghud"><div class="clue" id="ccmsg">' + (msg || ("♟️ vs <b>" + esc(bot.name) + "</b> (" + club.rating + ") — you're White!")) + "</div>" +
+          '<div class="ghud"><div class="clue" id="ccmsg">' + (msg || ("♟️ vs <b>" + esc(bot.name) + "</b> (" + club.rating + ") — you're White! 🧠 word breaks keep you sharp")) + "</div>" +
           '<div class="grow"><span id="cctok">🧠 ' + tokens + "</span>" +
           '<button class="replay" id="ccword" type="button" title="Answer a word for a token">🧠 Word</button>' +
           '<button class="replay" id="cchint" type="button" title="1 token">💡 Hint</button>' +
@@ -378,7 +380,7 @@
       }
 
       function tap(i) {
-        if (over || thinking || board.turn !== "w") return;
+        if (over || thinking || awaitingWord || board.turn !== "w") return;
         hintSq = null;
         var p = board.sq[i];
         if (sel === null) {
@@ -394,6 +396,7 @@
         hist.push(ser(board));
         board = apply(board, mv);
         sel = null; targets = [];
+        myMoves++;
         if (sfx) sfx.pop();
         afterMove("w");
       }
@@ -414,6 +417,7 @@
             if (st2 === "mate") return finish(false); // white to move with no moves = I'm mated
             if (st2 === "stale") return finish(null);
             render(st2 === "check" ? "⚠️ Check! Protect your king!" : undefined);
+            maybeAskRequired(); // every few of your moves, you must answer a word to keep playing
           }, 420);
         } else render(st === "check" ? "⚠️ Check!" : undefined);
       }
@@ -436,10 +440,30 @@
         render(over.text);
       }
 
-      // ---- word tokens: hint + takeback ----
+      // ---- REQUIRED words: you must answer to keep playing (gates every few moves) ----
+      function maybeAskRequired() {
+        if (over || awaitingWord) return;
+        if (myMoves > 0 && myMoves % QUESTION_EVERY === 0) requiredWord();
+      }
+      function requiredWord() {
+        awaitingWord = true;
+        lastQ = VQ.miniQuiz(document.getElementById("ccq"), words, store, {
+          title: "🧠 Brain break! Answer a word to keep playing ♟️",
+          lastFormat: lastFmt, skippable: false, // no skip — the whole point is he practices
+          cb: function (ok, res, fmt) {
+            lastFmt = fmt || lastFmt;
+            awaitingWord = false;
+            if (ok) { tokens = Math.min(3, tokens + 1); if (sfx) sfx.chime(); render("✅ Nice thinking! +🧠 token — your move!"); }
+            else render("📚 Good try — remember that one. Your move!");
+          }
+        });
+      }
+
+      // ---- word tokens (BONUS): answer any time for a hint/takeback token ----
       function askWord() {
+        if (awaitingWord) return;
         VQ.miniQuiz(document.getElementById("ccq"), words, store, {
-          title: "🧠 Chess brain! Answer for a token!",
+          title: "🧠 Chess brain! Answer for a bonus token!",
           lastFormat: lastFmt, skippable: true,
           cb: function (ok, res, fmt) {
             lastFmt = fmt || lastFmt;
@@ -464,6 +488,22 @@
         sel = null; targets = []; save();
         render("↩️ Take-back — try a different plan!");
       }
+
+      // test hook: drive the required-word gating deterministically in the harness
+      wrap._chess = {
+        state: function () { return { myMoves: myMoves, awaitingWord: awaitingWord, turn: board.turn, over: !!over, tokens: tokens }; },
+        play: function () {
+          if (board.turn !== "w" || over || awaitingWord) return false;
+          var mvs = legalMoves(board, "w"); if (!mvs.length) return false;
+          tap(mvs[0].from); tap(mvs[0].to); return true;
+        },
+        quizUp: function () { var q = document.getElementById("ccq"); return !!(q && q.style.display !== "none" && q.querySelector(".wqc")); },
+        answer: function (correct) {
+          var wq = document.querySelectorAll("#ccq .wqc"); if (!wq.length || !lastQ) return false;
+          var idx = 0; lastQ.choices.forEach(function (c, i) { if (correct ? c.correct : !c.correct) idx = i; });
+          wq[idx].click(); return true;
+        }
+      };
 
       render();
     }
