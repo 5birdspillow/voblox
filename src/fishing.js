@@ -1,9 +1,10 @@
 /*
  * Voblox arcade game — 🎣 Fishing Frenzy.
  * Cast (tap to lock the power meter), wait for the "❗", tap to hook, then HOLD
- * to keep the bobber inside the fish zone until the catch bar fills. 61 species
- * across 6 waters (ranks unlock the first four; the Lava Lagoon and Space Sea
- * unlock by FISHDEX count), a Fishdex collection log, word questions to hook
+ * to keep the bobber inside the fish zone until the catch bar fills. 81 species
+ * across 8 waters (ranks unlock the first four; Lava Lagoon, Space Sea, the
+ * ⛏️ Minecraft Blocky Depths and 🛡️ Zelda Lake Hylia unlock by FISHDEX count),
+ * a Fishdex collection log, word questions to hook
  * the epic/legendary ones, 🪱 WORD BAIT (answer a word → next bite guaranteed
  * rare-or-better), and 3-minute tournaments against AI anglers.
  */
@@ -50,7 +51,21 @@
       S("moonsnail", "Moon Snail", "🌙", "common", 5, 12), S("cometguppy", "Comet Guppy", "☄️", "common", 7, 15),
       S("nebjelly", "Nebula Jelly", "🪼", "rare", 20, 45), S("rocketfish", "Rocket Fish", "🚀", "rare", 25, 55),
       S("aliencrab", "Alien Crab", "👽", "rare", 18, 40), S("ufoturtle", "UFO Turtle", "🛸", "epic", 70, 150),
-      S("blackblob", "Black Hole Blob", "🕳️", "epic", 50, 120), S("galaxywhale", "GALAXY WHALE", "🐋", "legendary", 220, 450)] }
+      S("blackblob", "Black Hole Blob", "🕳️", "epic", 50, 120), S("galaxywhale", "GALAXY WHALE", "🐋", "legendary", 220, 450)] },
+    // ⛏️ MINECRAFT world — blocky cave critters, capped by THE WARDEN
+    { id: "blocky", name: "Blocky Depths", emoji: "⛏️", dexAt: 42, sky: ["#8fd35a", "#cdeaa0"], water: ["#3a6ea5", "#25486f"], fish: [
+      S("mcsilver", "Silverfish", "🐟", "common", 5, 12), S("mcslime", "Slime Fish", "🟢", "common", 8, 16),
+      S("mcglowsquid", "Glow Squid", "🦑", "common", 10, 22), S("mcaxolotl", "Axolotl", "🦎", "common", 6, 14),
+      S("mccod", "Blocky Cod", "🐟", "common", 8, 18), S("mcdrowned", "Drowned", "🧟", "rare", 30, 65),
+      S("mcguardian", "Guardian", "🐡", "rare", 25, 55), S("mcturtle", "Sea Turtle", "🐢", "rare", 40, 85),
+      S("mcdiamond", "Diamond Finfish", "💎", "epic", 60, 130), S("mcwarden", "THE WARDEN", "🟦", "legendary", 180, 360)] },
+    // 🛡️ ZELDA world — Lake Hylia, guarded by LORD JABU-JABU
+    { id: "hylia", name: "Lake Hylia", emoji: "🛡️", dexAt: 54, sky: ["#a8e6cf", "#e0fff4"], water: ["#2a9d8f", "#186b60"], fish: [
+      S("zbass", "Hyrule Bass", "🐟", "common", 10, 22), S("zhearty", "Hearty Salmon", "❤️", "common", 12, 26),
+      S("zsnail", "Sneaky River Snail", "🐌", "common", 6, 14), S("zkeese", "Keese", "🦇", "common", 5, 12),
+      S("zcucco", "Cucco (uh oh!)", "🐔", "common", 8, 16), S("zoctorok", "Octorok", "🐙", "rare", 25, 55),
+      S("zrupee", "Rupee Guppy", "💎", "rare", 15, 35), S("zzora", "Baby Zora", "🐟", "rare", 30, 65),
+      S("zlynel", "Lynel Ray", "🦁", "epic", 70, 150), S("zjabu", "LORD JABU-JABU", "🐋", "legendary", 220, 440)] }
   ];
   var RVAL = { common: 6, rare: 18, epic: 45, legendary: 120 };
   // generous odds: he plays for the Fishdex, so let the good ones bite
@@ -443,5 +458,5 @@
     lastT = performance.now(); raf = requestAnimationFrame(frame);
   }
 
-  global.VobloxFishing = { start: start };
+  global.VobloxFishing = { start: start, WATERS: WATERS, RWEIGHT: RWEIGHT };
 })(typeof window !== "undefined" ? window : globalThis);
