@@ -243,7 +243,9 @@
       { tab: "locker", name: "Wardrobe", emoji: "🧢", color: 0x5aa6f0, flavor: null, wall: 0xcfe0f4, roof: 0x3a6ab0 },
       { href: "craft.html", name: "Vocraft Mine", emoji: "⛏️", color: 0x6fae3e, flavor: "tower", wall: 0x8a5a3b, roof: 0x57c04a },
       { gameId: "empire", flavor: "tower", wall: 0xd8ccf4, roof: 0x6b5ac0 },
-      { gameId: "books", flavor: "awning", wall: 0xf4e8cc, roof: 0x6a8ad0 }
+      { gameId: "books", flavor: "awning", wall: 0xf4e8cc, roof: 0x6a8ad0 },
+      { gameId: "merge", flavor: "tower", wall: 0xf4d8a8, roof: 0xffb300 },
+      { gameId: "dash", flavor: "arch", wall: 0xc8f4ee, roof: 0x30c0b0 }
     ];
     var R = 18.5;
     DEFS.forEach(function (d, i) {
@@ -802,6 +804,12 @@
     else window._bvzdemo = 1;
     var bkgm = (window.VobloxGames || []).filter(function (x) { return x.id === "books"; })[0];
     if (bkgm) launchGame(bkgm);
+  }
+  else if (location.hash === "#mergedemo" || location.hash === "#dashdemo") { // test hooks: seeded new-game boards
+    if (location.hash === "#mergedemo") window._mergedemo = 1; else window._dashdemo = 1;
+    var ngid = location.hash === "#mergedemo" ? "merge" : "dash";
+    var ngm = (window.VobloxGames || []).filter(function (x) { return x.id === ngid; })[0];
+    if (ngm) launchGame(ngm);
   }
   else if (location.hash.indexOf("#enter=") === 0) { // test hook: walk in through a building's DOOR (the path that once froze)
     var wantId = location.hash.slice(7);
