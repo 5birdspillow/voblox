@@ -246,7 +246,9 @@
       { gameId: "books", flavor: "awning", wall: 0xf4e8cc, roof: 0x6a8ad0 },
       { gameId: "merge", flavor: "tower", wall: 0xf4d8a8, roof: 0xffb300 },
       { gameId: "dash", flavor: "arch", wall: 0xc8f4ee, roof: 0x30c0b0 },
-      { gameId: "dungeon", flavor: "tower", wall: 0xd8c4e8, roof: 0x5a3a7c }
+      { gameId: "dungeon", flavor: "tower", wall: 0xd8c4e8, roof: 0x5a3a7c },
+      { gameId: "clash", flavor: "board", wall: 0xf4ccd8, roof: 0xb03a5a },
+      { gameId: "park", flavor: "arch", wall: 0xd0f4c8, roof: 0x3a9c50 }
     ];
     var R = 18.5;
     DEFS.forEach(function (d, i) {
@@ -806,8 +808,8 @@
     var bkgm = (window.VobloxGames || []).filter(function (x) { return x.id === "books"; })[0];
     if (bkgm) launchGame(bkgm);
   }
-  else if (location.hash === "#mergedemo" || location.hash === "#dashdemo" || location.hash === "#dungeondemo") { // test hooks: seeded new-game boards
-    var ngid = location.hash === "#mergedemo" ? "merge" : location.hash === "#dashdemo" ? "dash" : "dungeon";
+  else if (/^#(merge|dash|dungeon|clash|park)demo$/.test(location.hash)) { // test hooks: seeded new-game boards
+    var ngid = location.hash.slice(1).replace("demo", "");
     window["_" + ngid + "demo"] = 1;
     var ngm = (window.VobloxGames || []).filter(function (x) { return x.id === ngid; })[0];
     if (ngm) launchGame(ngm);

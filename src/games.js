@@ -31,5 +31,7 @@
   add("VobloxMerge", { id: "merge", name: "Merge Forge", emoji: "🔷", color: 0xffb300, hub: true });
   add("VobloxDash", { id: "dash", name: "Word Dash", emoji: "⚡", color: 0x40e0d0, hub: true });
   add("VobloxDungeon", { id: "dungeon", name: "Word Dungeon", emoji: "🗡️", color: 0x8a4a9c, hub: true });
+  add("VobloxClash", { id: "clash", name: "Card Clash", emoji: "👑", color: 0xd04a6a, hub: true });
+  add("VobloxPark", { id: "park", name: "Word Park", emoji: "🎢", color: 0x50b06a, hub: true });
   global.VobloxGames = games;
 })(typeof window !== "undefined" ? window : globalThis);
