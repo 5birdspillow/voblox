@@ -1800,13 +1800,105 @@
     ]
   };
 
+  var BOOK2_L12 = {
+    lesson: 12, book: 2, title: "Lesson 12",
+    words: [
+      entry({
+        word: "arch", emoji: "🌉", pron: "ARCH",
+        senses: [{ pos: "noun", def: "a curved piece of wood, stone, or metal over an open space; it holds up the weight above it",
+          example: "We walked beneath the stone arch to enter the small garden." }],
+        synonyms: ["curve", "archway"], antonyms: [],
+        mnemonic: "An arch is a curve you can walk under — like a rainbow made of stone."
+      }),
+      entry({
+        word: "attention", emoji: "👂", pron: "uh-TEN-shun",
+        senses: [{ pos: "noun", def: "thinking, listening, or watching carefully",
+          example: "Nothing could draw Tan's attention away from the mystery he was reading." }],
+        synonyms: ["focus", "notice", "care"], antonyms: [],
+        mnemonic: "Pay attention — point your ears and eyes at it and really listen."
+      }),
+      entry({
+        word: "award", emoji: "🏆", pron: "uh-WORD",
+        senses: [
+          { pos: "noun", def: "something given for doing well; a prize",
+            example: "Shelley thanked the judges for the dictionary, her award for winning the state spelling contest." },
+          { pos: "verb", def: "to give something as a prize or a reward",
+            example: "The judges awarded our dog Morgan the first prize for how well he obeyed commands." }
+        ],
+        synonyms: ["prize", "reward", "trophy"], antonyms: [],
+        mnemonic: "An award is what you win for doing something well — like a shiny trophy."
+      }),
+      entry({
+        word: "collapse", emoji: "🏚️", pron: "kuh-LAPS",
+        senses: [
+          { pos: "verb", def: "to fall down suddenly or to cave in",
+            example: "My brothers and I built a tent from tree branches, but it collapsed when we all tried to crawl inside." },
+          { pos: "verb", def: "to fold together",
+            example: "These chairs collapse so they are easy to store in the closet." }
+        ],
+        synonyms: ["fall down", "cave in", "fold up"], antonyms: ["stand", "hold up"],
+        mnemonic: "Collapse = it all comes crashing down — or folds flat like a beach chair."
+      }),
+      entry({
+        word: "demolish", emoji: "🧨", pron: "dih-MOL-ish",
+        senses: [{ pos: "verb", def: "to destroy or tear something down",
+          example: "The hurricane demolished a dozen houses close to the beach." }],
+        synonyms: ["destroy", "wreck", "knock down"], antonyms: ["build", "make"],
+        mnemonic: "Demolish means smash it to bits — like a wrecking ball on a building."
+      }),
+      entry({
+        word: "excess", emoji: "🧳", pron: "EK-ses",
+        senses: [
+          { pos: "adj", def: "more than is needed or allowed",
+            example: "Dad had to pay extra for his plane ticket because he had excess baggage." },
+          { pos: "noun", def: "an amount that is too much or more than is needed",
+            example: "Charlotte quickly licked the excess from the edge of the jelly sandwich." }
+        ],
+        synonyms: ["extra", "too much", "leftover"], antonyms: ["too little", "not enough"],
+        mnemonic: "Excess is EXTRA — more than you need, spilling over the edge."
+      }),
+      entry({
+        word: "outline", emoji: "✏️", pron: "OWT-lyne",
+        senses: [
+          { pos: "noun", def: "a line showing the outside edge of an object or figure",
+            example: "Gary drew an outline of Asia, and then he filled in the different countries." },
+          { pos: "noun", def: "a short list or plan that gives the main ideas of a longer report",
+            example: "Our outline will show you what we want to do for our report on turtles." }
+        ],
+        synonyms: ["edge", "shape", "plan"], antonyms: [],
+        mnemonic: "An outline is the OUTside LINE of a shape — or a quick plan of your ideas."
+      }),
+      entry({
+        word: "sculpture", emoji: "🗿", pron: "SKULP-chur",
+        senses: [{ pos: "noun", def: "a work of art made by shaping wood, stone, or other material into a certain form",
+          example: "The sculpture of the knight on a horse stood near the entrance to the museum." }],
+        synonyms: ["statue", "carving"], antonyms: [],
+        mnemonic: "A sculpture is art you can walk around — a statue carved into a shape."
+      }),
+      entry({
+        word: "spade", emoji: "⛏️", pron: "SPAYD",
+        senses: [{ pos: "noun", def: "a tool for digging, with a long handle fastened to a flat metal blade",
+          example: "Using a spade, Omar helped his mom dig holes to plant seeds in the garden." }],
+        synonyms: ["shovel", "digger"], antonyms: [],
+        mnemonic: "A spade is a digging tool — grab it when it's time to dig in the garden."
+      }),
+      entry({
+        word: "utensil", emoji: "🍴", pron: "yoo-TEN-sul",
+        senses: [{ pos: "noun", def: "a tool or container that is used for a special purpose",
+          example: "Esperanza put the can opener in a drawer with the other kitchen utensils." }],
+        synonyms: ["tool", "gadget"], antonyms: [],
+        mnemonic: "Forks, spoons, and can openers are utensils — little tools with a job to do."
+      })
+    ]
+  };
+
   // Registry of lessons. Only lessons with a `words` array are "available" / playable.
   // Keys are unique lesson IDs (Book 4 uses the plain number; other books are prefixed,
   // e.g. "b2-10") so two books can both have a "Lesson 10" without colliding.
   var LESSONS = {
     "5": LESSON5, "6": LESSON6, "8": LESSON8, "9": LESSON9, "10": LESSON10,
     "11": LESSON11, "12": LESSON12, "13": LESSON13, "14": LESSON14, "15": LESSON15,
-    "b2-10": BOOK2_L10
+    "b2-10": BOOK2_L10, "b2-12": BOOK2_L12
   };
   // which kid each book belongs to (used to label the lesson pickers)
   var BOOK_LABELS = { 2: "Liana", 4: "Leo" };
