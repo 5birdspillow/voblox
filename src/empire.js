@@ -258,7 +258,10 @@
           : barBtn("b_rax", "🏯 Barracks", COST.rax + "g")) +
         (myLib ? barBtn("b_study", "📖 Study", "+2 army cap", "study") + barBtn("b_meteor", "☄️ Meteor", meteorCd > 0 ? Math.ceil(meteorCd) + "s" : "word spell", "study") : barBtn("b_library", "📚 Library", COST.library + "g")) +
         (frozenArmy ? barBtn("b_thaw", "🔥 THAW!", "answer = un-freeze", "mode") : "") +
-        (hornCharges > 0 ? barBtn("b_horn", "📯 HORN ×" + hornCharges, "blow it!", "mode") : "") +
+        // 📯 War Horn is ALWAYS available: answer a word to charge it, then blow it for a
+        // special ability (Rage / Heal / 💰 Gold Rush / Freeze). No Library or tower needed.
+        (hornCharges > 0 ? barBtn("b_horn", "📯 HORN ×" + hornCharges, "blow it!", "mode")
+          : barBtn("b_horn", "📯 War Horn", "answer → power!", "study")) +
         (towerCount < 2 && !(terr && terr.twist === "notowers") ? barBtn("b_tower", "🗼 Tower", COST.tower + "g + word") : "") +
         barBtn("b_bell", bell ? "⛏️ Work!" : "🔔 Garrison", bell ? "villagers come out" : "hide + castle shoots") +
         barBtn("b_sell", sellMode ? "✋ Stop" : "🔨 Dismiss", sellMode ? "tap done" : "tap unit/tower, ½ back") +
@@ -274,7 +277,7 @@
       on("b_wizard", function () { buyWizard(); });
       on("b_catapult", function () { buy("catapult"); });
       on("b_thaw", thaw);
-      on("b_horn", blowHorn);
+      on("b_horn", function () { if (hornCharges > 0) blowHorn(); else earnHorn(); });
       on("b_rally", function () {
         rallyArm = !rallyArm;
         if (rallyArm) big("📍 Tap anywhere on the field — the army will HOLD there.", "#8ecdf7");
@@ -685,6 +688,20 @@
           renderBar();
           if (sfx && sfx.chime) sfx.chime();
         };
+      });
+    }
+    // 📯 answer a word to CHARGE the horn — always available, so a special ability is
+    // reachable on every level (even the no-towers one, where the tower word-gate is gone).
+    function earnHorn() {
+      if (over || paused) return;
+      if (hornCharges >= 2) { big("📯 Horn already full — blow it!", "#ffd740"); return; }
+      paused = true;
+      cv._lastQ = VQ.miniQuiz(document.getElementById("emq"), words, store, {
+        title: "📯 Answer a word to charge your War Horn!", lastFormat: lastFmt,
+        cb: function (ok, res, fmt) {
+          lastFmt = fmt; paused = false;
+          if (ok) chargeHorn(); else { big("The horn stays quiet… try again!", "#ff8a8a"); renderBar(); }
+        }
       });
     }
     // 📯 WAR HORN: charged by ANY correct answer; blow it for a battle-turner
@@ -1224,6 +1241,7 @@
       seeAllE: function () { Object.keys(UNIT).forEach(function (k) { stats.seenE[k] = 1; }); crownECheck(); },
       hornN: function () { return hornCharges; },
       chargeHorn: chargeHorn,
+      hornEarn: earnHorn,
       hornBlow: blowHorn,
       rageT: function () { return rageT; },
       council: function (ids) { showCouncil(ids); },
