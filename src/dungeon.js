@@ -1,0 +1,884 @@
+/*
+ * Voblox arcade game — 🗡️ Word Dungeon (a top-down Zelda-lite crawler).
+ * THREE dungeons of escalating menace, each a 5×5 grid of hand-authored rooms.
+ * One room fills the screen at a time; walk through a doorway and it slides to
+ * the neighbor. Monsters, keys, treasure, and a boss in the far corner.
+ * VOCAB IS THE KEY — literally:
+ *   - 📜 WORD-DOORS: some doorways are runed shut; answer a word (miniQuiz,
+ *     NOT skippable) to open them forever. Shortcuts + treasure gates.
+ *   - BOSS WORD-DUEL: the boss wears a WORD SHIELD. Tap him (or press E near
+ *     him) and answer to drop it for 10s — the proven duel pattern.
+ *   - 💰 Treasure chests ask NOTHING — pure reward for exploring.
+ * recordGame("dungeon") ONCE per run (win, quit, or tab-close), rewards SHOWN.
+ * Kind, not punishing: 0 hearts respawns you at the entrance, everything you
+ * already cleared/unlocked STAYS cleared. (Au: Leo should feel brave, not sad.)
+ */
+(function (global) {
+  var VQ = global.VobloxQuestions, AV = global.VobloxAvatar;
+
+  // ONE square logical space (rooms are square-ish; HUD lives outside it).
+  var MW = 480, MH = 480;          // logical room size
+  var GRID = 5;                    // 5×5 rooms per dungeon
+  var TILE = MW / 12;              // wall thickness / doorway math reference
+  var PR = 20;                     // player radius (logical)
+  var ER = 18;                     // enemy radius (logical)
+
+  // ---------- enemy archetypes ----------
+  var MOBS = {
+    slime: { emoji: "🟢", hp: 1, speed: 42, r: 18, kind: "wander", touch: 1 },
+    bat: { emoji: "🦇", hp: 1, speed: 70, r: 16, kind: "swoop", touch: 1 },
+    skel: { emoji: "💀", hp: 2, speed: 52, r: 19, kind: "chase", touch: 1 }
+  };
+  // bosses: 8-12 hp, a charge-then-pause pattern, and a re-arming WORD SHIELD
+  var BOSSES = {
+    1: { emoji: "👹", name: "GRUMP", hp: 8, speed: 60, r: 40, touch: 1 },
+    2: { emoji: "🐍", name: "FANG", hp: 10, speed: 78, r: 42, touch: 1 },
+    3: { emoji: "🐲", name: "VOWELZILLA", hp: 12, speed: 92, r: 46, touch: 1 }
+  };
+
+  // ---------- hand-authored dungeon layouts (deterministic → tests are stable) ----------
+  // Each dungeon is a 5×5 map. Rooms addressed [r][c], r=row (0 top), c=col.
+  // Room fields:
+  //   t: "start" | "normal" | "key" | "treasure" | "boss"
+  //   mobs: [{type,x,y}] spawn offsets in logical room space (defaults center-ish)
+  //   doors: which neighbors connect: any of "N","S","E","W". A door object may
+  //          carry {word:true} (📜 rune-locked) or {lock:true} (needs the 🗝️ key).
+  //   Doors are authored on BOTH sides for the pair (mirror) so travel is symmetric.
+  // Design rule the prompt demands: there is ALWAYS a non-word path to the key
+  // and to the boss. Word-doors are shortcuts + treasure gates, never a wall.
+  var OPP = { N: "S", S: "N", E: "W", W: "E" };
+  var STEP = { N: { dr: -1, dc: 0 }, S: { dr: 1, dc: 0 }, E: { dr: 0, dc: 1 }, W: { dr: 0, dc: -1 } };
+  function layout(n) {
+    // helper builders keep the data terse and readable
+    function room(t, mobs, extra) { var o = { t: t, doors: {}, mobs: mobs || [] }; if (extra) for (var k in extra) o[k] = extra[k]; return o; }
+    function m(type, x, y) { return { type: type, x: x, y: y }; }
+    var G = [], r, c;
+    for (r = 0; r < GRID; r++) { G.push([]); for (c = 0; c < GRID; c++) G[r].push(null); }
+    // link(r,c,dir,flags): opens a door BOTH ways so travel is always symmetric.
+    // flags: {word:true} 📜 rune-locked · {lock:true} 🗝️ key-locked.
+    function link(fr, fc, dir, flags) {
+      var st = STEP[dir], tr = fr + st.dr, tc = fc + st.dc;
+      if (!G[fr][fc] || tr < 0 || tr >= GRID || tc < 0 || tc >= GRID || !G[tr][tc]) return;
+      var a = { open: true }, b = { open: true };
+      if (flags) for (var k in flags) { a[k] = flags[k]; b[k] = flags[k]; }
+      G[fr][fc].doors[dir] = a;
+      G[tr][tc].doors[OPP[dir]] = b;
+    }
+
+    if (n === 1) {
+      // Dungeon 1 — gentle. Entrance bottom-left; boss top-right.
+      G[4][0] = room("start");
+      G[4][1] = room("normal", [m("slime", 200, 240), m("slime", 300, 200)]);
+      G[4][2] = room("key", [m("slime", 240, 240)]);                       // holds the 🗝️
+      G[3][0] = room("normal", [m("bat", 260, 220)]);
+      G[3][2] = room("treasure", []);                                      // 💰 pure reward
+      G[2][0] = room("normal", [m("slime", 220, 260), m("bat", 300, 200)]);
+      G[2][1] = room("normal", [m("skel", 260, 240)]);
+      G[2][2] = room("normal", [m("slime", 240, 240)]);
+      G[1][2] = room("normal", [m("bat", 240, 220)]);
+      G[1][3] = room("normal", [m("skel", 260, 240)]);
+      G[1][4] = room("normal", [m("slime", 260, 240)]);
+      G[0][4] = room("boss");
+      // the plain path: start → key → up the left, across the middle, to the boss
+      link(4, 0, "E"); link(4, 1, "E");
+      link(4, 0, "N"); link(3, 0, "N"); link(2, 0, "E");
+      link(2, 1, "E"); link(2, 2, "N"); link(1, 2, "E"); link(1, 3, "E"); link(1, 4, "N");
+      // 📜 word-door SHORTCUT to the treasure (a detour, never the only way)
+      link(4, 2, "N"); link(3, 2, "N", { word: true });
+    } else if (n === 2) {
+      // Dungeon 2 — a loop with a heart-treasure behind a 🗝️ locked door.
+      G[4][0] = room("start");
+      G[4][1] = room("normal", [m("skel", 220, 240), m("slime", 320, 220)]);
+      G[4][2] = room("normal", [m("bat", 240, 200), m("bat", 300, 260)]);
+      G[3][0] = room("normal", [m("slime", 240, 240)]);
+      G[3][2] = room("key", [m("skel", 260, 240)]);                        // 🗝️
+      G[2][0] = room("normal", [m("bat", 260, 220), m("skel", 320, 260)]);
+      G[2][1] = room("normal", [m("slime", 240, 240)]);
+      G[2][2] = room("treasure", [], { heart: true });                     // 💰 + ❤️ behind a lock
+      G[1][2] = room("normal", [m("skel", 240, 240)]);
+      G[1][3] = room("normal", [m("bat", 240, 220), m("slime", 300, 260)]);
+      G[1][4] = room("normal", [m("skel", 260, 240)]);
+      G[0][4] = room("boss");
+      link(4, 0, "E"); link(4, 1, "E"); link(4, 2, "N");                   // reach the key
+      link(4, 0, "N"); link(3, 0, "N"); link(2, 0, "E"); link(2, 1, "E"); // the plain path up-left
+      link(3, 2, "N");                                                     // key room straight up to the boss column (no word)
+      link(2, 2, "S");                                                     // 💰 room down to (3,2)
+      link(2, 2, "W", { lock: true });                                     // 🗝️ locked heart-treasure door
+      link(1, 2, "E"); link(1, 3, "E"); link(1, 4, "N");                   // across the top to the boss
+      link(2, 2, "N", { word: true });                                     // 📜 shortcut up from the treasure
+    } else {
+      // Dungeon 3 — the gauntlet: more mobs, a heart treasure, two 📜 word-doors.
+      G[4][0] = room("start");
+      G[4][1] = room("normal", [m("skel", 220, 240), m("skel", 320, 220), m("bat", 260, 300)]);
+      G[4][2] = room("key", [m("slime", 220, 240), m("bat", 300, 260)]);   // 🗝️
+      G[3][0] = room("normal", [m("bat", 240, 220), m("skel", 300, 260)]);
+      G[3][2] = room("normal", [m("skel", 260, 240), m("slime", 320, 220)]);
+      G[2][0] = room("normal", [m("bat", 240, 220), m("bat", 300, 260)]);
+      G[2][1] = room("treasure", [], { heart: true });                     // 💰 + ❤️
+      G[2][2] = room("normal", [m("skel", 240, 240), m("slime", 300, 260)]);
+      G[1][2] = room("normal", [m("skel", 240, 240), m("bat", 300, 220)]);
+      G[1][3] = room("normal", [m("skel", 240, 240), m("skel", 300, 260)]);
+      G[1][4] = room("normal", [m("bat", 260, 240)]);
+      G[0][4] = room("boss");
+      link(4, 0, "E"); link(4, 1, "E");                                    // reach the key
+      link(4, 0, "N"); link(3, 0, "N"); link(2, 0, "E");                   // plain path up-left
+      link(2, 1, "E"); link(2, 2, "N"); link(1, 2, "E"); link(1, 3, "E"); link(1, 4, "N"); // across to the boss
+      link(4, 2, "N"); link(3, 2, "N", { word: true });                    // 📜 shortcut #1 (key col → middle)
+      link(2, 2, "W", { word: true });                                     // 📜 shortcut #2 into the treasure
+    }
+    return G;
+  }
+
+  function start(opts) {
+    var words = opts.words, store = opts.store;
+    var stats = store.game("dungeon");
+    if (!stats.lvl) stats.lvl = 1;         // highest dungeon unlocked (start 1). NOT stats.best.
+    stats.clears = stats.clears || 0;
+    stats.deaths = stats.deaths || 0;
+
+    var cfg = AV && AV.resolve ? AV.resolve(store.state) : { skin: "#ffcc88", shirt: "#2f7be0", pants: "#394063", face: "smile" };
+
+    var wrap = document.createElement("div"); wrap.className = "gamewrap dungeon";
+    wrap.innerHTML =
+      '<canvas id="dgcv"></canvas>' +
+      '<div class="ghud"><div class="clue" id="dgmsg">🗡️ Word Dungeon</div>' +
+      '<div class="grow"><span id="dghearts">❤️❤️❤️</span><span id="dgkeys">🗝️ 0</span>' +
+      '<span id="dgcoins">💰 0</span><button class="bossquit" id="quit">Leave</button></div></div>' +
+      '<div class="gmsg" id="dgbig"></div>' +
+      '<div class="gover" id="dgq" style="display:none"></div>' +
+      '<div class="gover" id="dgend" style="display:none"></div>';
+    document.body.appendChild(wrap);
+    var cv = wrap.querySelector("#dgcv"), ctx = cv.getContext("2d");
+
+    // ---------- responsive letterbox (both orientations fit the SAME square) ----------
+    var W, H, S, OX, OY, compact = false;
+    function resize() {
+      W = cv.width = wrap.clientWidth || 480;
+      H = cv.height = wrap.clientHeight || 640;
+      compact = Math.min(W, H) < 520;
+      // reserve room top (HUD) and a little bottom breathing space; then fit the
+      // square uniformly and center it. No transpose — a square reads fine in
+      // portrait OR landscape; the mini-map/HUD never overlap the room.
+      var top = compact ? 88 : 118, bot = 14;
+      var availW = W - 12, availH = H - top - bot;
+      S = Math.min(availW / MW, availH / MH);
+      if (S <= 0) S = 1;
+      OX = Math.max(0, (W - MW * S) / 2);
+      OY = top + Math.max(0, (availH - MH * S) / 2);
+    }
+    resize(); window.addEventListener("resize", resize);
+    // logical → screen. Square space, so this is a plain scale+offset (no swap).
+    function X(x) { return OX + x * S; }
+    function Y(y) { return OY + y * S; }
+    function pz(n) { return n * S; }
+
+    var juice = global.VobloxJuice ? global.VobloxJuice() : null;
+    var sfx = global.VobloxSfx || null;
+
+    // ---------- run state ----------
+    var running = true, raf = 0, lastT = performance.now();
+    var dungeon = 0, map = null, over = false, won = false, banked = false, paused = false;
+    var room = { r: 4, c: 0 }, entrance = { r: 4, c: 0 };
+    var player = { x: MW / 2, y: MH / 2, dir: "N", inv: 0 };
+    var hearts = 3, maxHearts = 3, deaths = 0, keys = 0, coins = 0, roomsCleared = 0;
+    var mobs = [], swingT = 0, swingCd = 0, kb = { x: 0, y: 0 };
+    var moveVec = { x: 0, y: 0 };            // current movement input (-1..1)
+    var cleared = {}, doorsUnlocked = {}, visited = {}, chestOpened = {};
+    var trans = null;                        // room-slide transition {dr,dc,t}
+    var lastFmt = null;
+    var keyHeld = {};                        // WASD/arrow state
+
+    function big(m, col) { var e = document.getElementById("dgbig"); e.textContent = m; e.style.color = col || "#fff"; e.style.opacity = "1"; setTimeout(function () { e.style.opacity = "0"; }, 1200); }
+    function roomKey(r, c) { return dungeon + ":" + r + ":" + c; }
+    function curRoom() { return map && map[room.r] && map[room.r][room.c]; }
+    function hud() {
+      document.getElementById("dghearts").textContent = "❤️".repeat(hearts) + "🖤".repeat(Math.max(0, maxHearts - hearts));
+      document.getElementById("dgkeys").textContent = "🗝️ " + keys;
+      document.getElementById("dgcoins").textContent = "💰 " + coins;
+    }
+
+    // ---------- dungeon select ----------
+    function showSelect() {
+      dungeon = 0; map = null; paused = true; over = false; won = false;
+      var end = document.getElementById("dgend");
+      var rows = [1, 2, 3].map(function (n) {
+        var open = n <= stats.lvl;
+        var name = ["The Slime Cellar", "The Fang Warren", "VOWELZILLA'S Lair"][n - 1];
+        var boss = ["👹 GRUMP", "🐍 FANG", "🐲 VOWELZILLA"][n - 1];
+        return '<button class="embtn" style="min-width:140px' + (open ? "" : ";opacity:.45") + '" data-dg="' + n + '">' +
+          '<span class="ebl">' + (open ? "🗡️ " : "🔒 ") + "Dungeon " + n + '</span>' +
+          '<span class="ebs">' + name + " · " + boss + "</span></button>";
+      }).join("");
+      end.innerHTML = '<div class="wqcard" style="text-align:center;max-width:560px"><div style="font-size:40px">🗡️🏰</div>' +
+        '<div class="wqtitle" style="font-size:20px">Word Dungeon</div>' +
+        '<div style="margin:4px 0 10px;color:#5a6b7a;font-weight:bold">Crawl the dungeon. Runed doors 📜 open for a WORD. Beat the boss to unlock the next.</div>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">' + rows + "</div>" +
+        '<div style="font-size:11px;color:#8a98a8;margin-top:8px">Move: drag / WASD · Sword: tap / Space · Doors 📜 & the boss ask a word</div></div>';
+      end.style.display = "flex";
+      Array.prototype.forEach.call(end.querySelectorAll("[data-dg]"), function (b) {
+        b.onclick = function () {
+          var n = +b.dataset.dg;
+          if (n > stats.lvl) { big("🔒 Beat Dungeon " + (n - 1) + " first!", "#ffd740"); return; }
+          begin(n);
+        };
+      });
+    }
+
+    // ---------- start a dungeon ----------
+    function begin(n) {
+      dungeon = n; map = layout(n);
+      over = false; won = false; banked = false; paused = false;
+      hearts = 3; maxHearts = 3; deaths = 0; keys = 0; coins = 0; roomsCleared = 0;
+      cleared = {}; doorsUnlocked = {}; visited = {}; chestOpened = {};
+      swingT = 0; swingCd = 0; kb = { x: 0, y: 0 }; moveVec = { x: 0, y: 0 };
+      trans = null; player.inv = 0;
+      // find the start room
+      for (var r = 0; r < GRID; r++) for (var c = 0; c < GRID; c++) {
+        if (map[r][c] && map[r][c].t === "start") { entrance = { r: r, c: c }; }
+      }
+      room = { r: entrance.r, c: entrance.c };
+      player.x = MW / 2; player.y = MH - TILE * 1.6; player.dir = "N";
+      document.getElementById("dgend").style.display = "none";
+      enterRoom(true);
+      big("🗡️ " + ["", "The Slime Cellar", "The Fang Warren", "VOWELZILLA'S Lair"][n], "#ffe14d");
+      document.getElementById("dgmsg").innerHTML = "🗡️ <b>Dungeon " + n + "</b> — find the 🗝️, open the 📜, beat the boss!";
+      hud();
+    }
+
+    // ---------- room entry: spawn (or restore) this room's monsters ----------
+    function enterRoom(fresh) {
+      var rm = curRoom(); if (!rm) return;
+      visited[roomKey(room.r, room.c)] = true;
+      mobs = [];
+      if (rm.t === "boss") {
+        // face the boss from a safe distance (the arena is tall enough to breathe)
+        player.x = MW / 2; player.y = MH - TILE * 2; player.dir = "N";
+        if (!cleared[roomKey(room.r, room.c)]) spawnBoss();
+      } else if (!cleared[roomKey(room.r, room.c)]) {
+        rm.mobs.forEach(function (s) {
+          var d = MOBS[s.type];
+          mobs.push({ type: s.type, x: s.x, y: s.y, hp: d.hp, maxHp: d.hp, phase: Math.random() * 6, hit: 0 });
+        });
+      }
+      // an empty room counts as cleared the moment you set foot in it
+      if (mobs.length === 0 && rm.t !== "boss" && !cleared[roomKey(room.r, room.c)]) markCleared();
+      hud();
+    }
+
+    function spawnBoss() {
+      var b = BOSSES[dungeon];
+      mobs = [{ type: "boss", x: MW / 2, y: MH / 2 - 30, hp: b.hp, maxHp: b.hp, phase: 0, hit: 0,
+        shield: true, shieldT: 0, charge: 0, chargeCd: 1.5, cvx: 0, cvy: 0 }];
+      big("⚔️ " + b.emoji + " " + b.name + " — tap him & answer a word to drop his shield!", "#c9b6ff");
+      if (sfx && sfx.buzz) sfx.buzz();
+    }
+    function boss() { for (var i = 0; i < mobs.length; i++) if (mobs[i].type === "boss") return mobs[i]; return null; }
+
+    function markCleared() {
+      var k = roomKey(room.r, room.c);
+      if (cleared[k]) return;
+      cleared[k] = true; roomsCleared++;
+      var rm = curRoom();
+      if (rm.t === "key") { keys++; big("🗝️ You found a KEY!", "#ffe14d"); if (sfx && sfx.coin) sfx.coin(); hud(); }
+    }
+
+    // ---------- movement input helpers ----------
+    function setDir(dx, dy) {
+      if (Math.abs(dx) > Math.abs(dy)) player.dir = dx < 0 ? "W" : "E";
+      else if (Math.abs(dy) > 0.001) player.dir = dy < 0 ? "N" : "S";
+    }
+
+    // ---------- sword swing ----------
+    function swing() {
+      if (over || paused || trans || swingCd > 0) return;
+      swingT = 0.3; swingCd = 0.3;                 // ~0.3s arc + ~0.3s cooldown
+      if (sfx && sfx.whoosh) sfx.whoosh();
+      // a short arc in the facing direction; enemies within range + arc take 1 hit
+      var ax = { N: 0, S: 0, E: 1, W: -1 }[player.dir], ay = { N: -1, S: 1, E: 0, W: 0 }[player.dir];
+      var reach = PR + 42;
+      for (var i = mobs.length - 1; i >= 0; i--) {
+        var mob = mobs[i];
+        var mr = mob.type === "boss" ? BOSSES[dungeon].r : MOBS[mob.type].r;
+        var dx = mob.x - player.x, dy = mob.y - player.y, dist = Math.hypot(dx, dy);
+        if (dist > reach + mr) continue;
+        var dot = dist > 0 ? (dx * ax + dy * ay) / dist : 1;
+        if (dot < 0.35) continue;                  // roughly a forward cone
+        hitMob(mob, 1);
+      }
+      if (juice) juice.burst(X(player.x + ax * 30), Y(player.y + ay * 30), "#e8f0ff", 6);
+    }
+    function hitMob(mob, dmg) {
+      if (mob.type === "boss" && mob.shield) {     // WORD SHIELD blocks everything
+        if (juice && Math.random() < 0.5) juice.text(X(mob.x), Y(mob.y - 50), "🛡 WORD-LOCKED", "#c9b6ff");
+        return;
+      }
+      mob.hp -= dmg; mob.hit = 0.15;
+      if (juice) juice.text(X(mob.x), Y(mob.y - 30), "-" + dmg, "#ffd740");
+      if (mob.hp <= 0) killMob(mob);
+    }
+    function killMob(mob) {
+      var i = mobs.indexOf(mob); if (i >= 0) mobs.splice(i, 1);
+      if (juice) juice.burst(X(mob.x), Y(mob.y), "#9aa86a", 10);
+      if (sfx && sfx.pop && Math.random() < 0.6) sfx.pop();
+      if (mob.type === "boss") { bossDefeated(); return; }
+      // loot: a heart (25%) or coins
+      var roll = Math.random();
+      if (roll < 0.25 && hearts < maxHearts) { hearts = Math.min(maxHearts, hearts + 1); big("❤️ +1 heart!", "#ff6b6b"); hud(); }
+      else if (roll < 0.6) { var c = 3 + Math.floor(Math.random() * 5); coins += c; big("💰 +" + c, "#ffd23f"); hud(); }
+      // room cleared?
+      if (mobs.length === 0) markCleared();
+    }
+
+    // ---------- taking damage / respawn ----------
+    function hurt(n) {
+      if (over || player.inv > 0) return;
+      n = n || 1;
+      hearts -= n; player.inv = 1.1;               // invulnerability blink window
+      if (juice) juice.shake(6);
+      if (sfx && sfx.buzz) sfx.buzz();
+      hud();
+      if (hearts <= 0) respawn();
+    }
+    function respawn() {
+      // KIND death: back to the entrance, hearts restored, everything cleared STAYS.
+      deaths++; stats.deaths = (stats.deaths || 0) + 1; store.save();
+      hearts = maxHearts; player.inv = 1.2; trans = null;
+      room = { r: entrance.r, c: entrance.c };
+      player.x = MW / 2; player.y = MH - TILE * 1.6; player.dir = "N";
+      enterRoom(false);
+      big("💫 You fainted — back to the entrance (nothing lost)", "#8ecdf7");
+      if (sfx && sfx.buzz) sfx.buzz();
+      hud();
+    }
+
+    // ---------- doors ----------
+    // door geometry: a gap centered on each wall. Returns the door object or null.
+    function doorOf(rm, dir) { return rm && rm.doors && rm.doors[dir]; }
+    function doorCenter(dir) {
+      if (dir === "N") return { x: MW / 2, y: 0 };
+      if (dir === "S") return { x: MW / 2, y: MH };
+      if (dir === "E") return { x: MW, y: MH / 2 };
+      return { x: 0, y: MH / 2 };
+    }
+    function doorUnlockedKey(dir) { return roomKey(room.r, room.c) + ":" + dir; }
+    // nudge the player back off a door threshold so a gate can't re-fire every frame
+    function pushOff(dir) {
+      var bump = TILE * 0.9;
+      if (dir === "N") player.y = bump; else if (dir === "S") player.y = MH - bump;
+      else if (dir === "W") player.x = bump; else player.x = MW - bump;
+    }
+    // walk toward a door: gate it (word/key) or slide to the neighbor. returns
+    // true only when a slide actually started.
+    function tryDoor(dir) {
+      var rm = curRoom(), d = doorOf(rm, dir); if (!d || !d.open) return false;
+      if (mobs.length > 0 && !cleared[roomKey(room.r, room.c)]) { pushOff(dir); big("Clear the room first!", "#ffd740"); return false; }
+      var uk = doorUnlockedKey(dir);
+      if (d.word && !doorsUnlocked[uk]) { pushOff(dir); openWordDoor(dir); return false; }
+      if (d.lock && !doorsUnlocked[uk]) {
+        pushOff(dir);
+        if (keys > 0) { keys--; doorsUnlocked[uk] = true; big("🗝️ Unlocked!", "#ffe14d"); if (sfx && sfx.coin) sfx.coin(); hud(); slideTo(dir); return true; }
+        big("🔒 You need a 🗝️ key!", "#ffd740");
+        return false;
+      }
+      slideTo(dir);
+      return true;
+    }
+    function slideTo(dir) {
+      var v = STEP[dir], nr = room.r + v.dr, nc = room.c + v.dc;
+      if (nr < 0 || nr >= GRID || nc < 0 || nc >= GRID || !map[nr][nc]) return;
+      trans = { dr: v.dr, dc: v.dc, dir: dir, t: 0 };
+      if (sfx && sfx.whoosh) sfx.whoosh();
+    }
+    // 📜 WORD-DOOR: the rune asks a word. NOT skippable. Correct → open forever.
+    function openWordDoor(dir) {
+      if (paused || over) return;
+      paused = true;
+      var uk = doorUnlockedKey(dir);
+      cv._lastQ = VQ.miniQuiz(document.getElementById("dgq"), words, store, {
+        title: "📜 The rune asks a word…",
+        lastFormat: lastFmt,
+        cb: function (ok, res, fmt) {
+          lastFmt = fmt; paused = false;
+          if (ok) {
+            doorsUnlocked[uk] = true;
+            big("📜 The rune glows and the door swings open!", "#c9b6ff");
+            if (juice) juice.burst(W / 2, H / 2, "#c9b6ff", 18);
+            if (sfx && sfx.fanfare) sfx.fanfare();
+          } else big("📜 The rune stays sealed — try another route or word.", "#ff8a8a");
+        }
+      });
+    }
+
+    // ---------- boss word-duel ----------
+    function duel() {
+      var b = boss(); if (!b || !b.shield || paused || over) return;
+      paused = true;
+      cv._lastQ = VQ.miniQuiz(document.getElementById("dgq"), words, store, {
+        title: "⚔️ The boss demands a WORD! Answer to drop his shield!",
+        lastFormat: lastFmt,
+        cb: function (ok, res, fmt) {
+          lastFmt = fmt; paused = false;
+          if (ok) {
+            b.shield = false; b.shieldT = 10;      // shield down for 10s, then re-arms
+            big("💥 SHIELD DOWN — 10 seconds, GO!", "#69f0ae");
+            if (juice) { juice.shake(8); juice.burst(X(b.x), Y(b.y), "#c9b6ff", 24); }
+            if (sfx && sfx.fanfare) sfx.fanfare();
+          } else big("The boss laughs at your spelling…", "#ff8a8a");
+        }
+      });
+    }
+
+    function bossDefeated() {
+      cleared[roomKey(room.r, room.c)] = true;
+      won = true;
+      if (dungeon >= stats.lvl && dungeon < 3) { stats.lvl = dungeon + 1; store.save(); }
+      if (dungeon === 3) { stats.beatAll = true; store.save(); }
+      stats.clears = (stats.clears || 0) + 1; store.save();
+      endRun(true);
+    }
+
+    // ---------- reward economy (books.js bankRun pattern) ----------
+    function runRewards(w) {
+      var gems = (w ? 25 + dungeon * 8 : Math.min(18, 4 + roomsCleared * 2)) + coins;
+      var xp = Math.min(90, (w ? 20 + dungeon * 8 : 6 + roomsCleared * 2) + coins);
+      var rankPtsDelta = w ? Math.min(12, 4 + dungeon * 2) : Math.min(6, 1 + Math.floor(roomsCleared / 2));
+      return { win: !!w, score: roomsCleared * 20 + coins * 2 + (w ? dungeon * 120 : 0), rankPtsDelta: rankPtsDelta, xp: xp, gems: gems };
+    }
+    function bankRun(w) {
+      if (banked) return null;
+      banked = true;
+      var rw = runRewards(w);
+      var res = store.recordGame ? store.recordGame("dungeon", rw) : null;
+      return { rw: rw, res: res };
+    }
+    function bankExit() {
+      if (!map || over || (roomsCleared === 0 && coins === 0)) return;
+      var b = bankRun(false);
+      if (b && sfx && sfx.toast) sfx.toast("🗡️ Dungeon run banked: +" + b.rw.gems + " Vobux · +" + b.rw.xp + " XP");
+    }
+
+    function endRun(w) {
+      if (over) return; over = true; paused = true; won = w;
+      var bank = bankRun(w) || { rw: runRewards(w), res: null };
+      var rw = bank.rw, res = bank.res;
+      var end = document.getElementById("dgend");
+      var title = w ? (dungeon === 3 ? "🐲 VOWELZILLA IS SLAIN! You cleared every dungeon!" : "🏆 " + BOSSES[dungeon].emoji + " " + BOSSES[dungeon].name + " is defeated!") : "💀 The dungeon was too much…";
+      var payRow = '<div style="margin:6px 0;font-weight:900;color:#2f9e44;font-size:17px">+' + rw.gems + ' <img class="vbx" src="icons/vobux.png" alt="Vobux"> · +' + rw.xp + " XP</div>";
+      end.innerHTML = '<div class="wqcard" style="text-align:center"><div style="font-size:44px">' + (w ? "🏆" : "💀") + '</div>' +
+        '<div class="wqtitle" style="font-size:20px">' + title + "</div>" + payRow +
+        '<div style="margin:2px 0">🚪 ' + roomsCleared + " rooms cleared · 💀 " + deaths + " faints · 📜 " + Object.keys(doorsUnlocked).length + " doors opened" + (res && res.rankedUp ? "<br>🎖 RANK UP!" : "") + "</div>" +
+        '<button class="submit big-next" id="dgnext">' + (w && dungeon < 3 ? "Next dungeon ➜" : "Dungeon select") + "</button></div>";
+      end.style.display = "flex";
+      if (w && sfx && sfx.fanfare) sfx.fanfare();
+      if (w && juice) { juice.shake(6); for (var i = 0; i < 5; i++) juice.burst(W * (0.2 + i * 0.15), H * 0.35, ["#ffd23f", "#69f0ae", "#40c4ff", "#ff6b6b", "#e040fb"][i], 16); }
+      document.getElementById("dgnext").onclick = function () {
+        if (w && dungeon < 3) begin(dungeon + 1); else showSelect();
+      };
+    }
+
+    // ---------- treasure chest (asks nothing — pure reward) ----------
+    function openChest() {
+      var rm = curRoom(); if (!rm || rm.t !== "treasure") return;
+      var k = roomKey(room.r, room.c);
+      if (chestOpened[k]) return;
+      chestOpened[k] = true;
+      var pay = 8 + dungeon * 4 + Math.floor(Math.random() * 6);
+      coins += pay;
+      big("💰 Treasure! +" + pay + (rm.heart ? " and a ❤️!" : ""), "#ffd23f");
+      if (rm.heart) { maxHearts = Math.min(5, maxHearts + 1); hearts = Math.min(maxHearts, hearts + 1); }
+      if (juice) juice.burst(X(MW / 2), Y(MH / 2), "#ffd23f", 20);
+      if (sfx && sfx.coin) sfx.coin();
+      hud();
+    }
+
+    // ---------- simulation ----------
+    function step(dt) {
+      player.inv = Math.max(0, player.inv - dt);
+      swingT = Math.max(0, swingT - dt);
+      swingCd = Math.max(0, swingCd - dt);
+
+      // room transition slide: freeze play, glide the camera, then land the player
+      if (trans) {
+        trans.t += dt / 0.32;
+        if (trans.t >= 1) {
+          room.r += trans.dr; room.c += trans.dc;
+          // land just inside the opposite door
+          var dir = trans.dir;
+          if (dir === "N") { player.y = MH - PR * 2; player.x = MW / 2; }
+          else if (dir === "S") { player.y = PR * 2; player.x = MW / 2; }
+          else if (dir === "E") { player.x = PR * 2; player.y = MH / 2; }
+          else { player.x = MW - PR * 2; player.y = MH / 2; }
+          trans = null;
+          enterRoom(false);
+        }
+        return;
+      }
+
+      // ---------- movement (keyboard OR drag stick, unified into moveVec) ----------
+      var mvx = moveVec.x, mvy = moveVec.y;
+      if (keyHeld.W || keyHeld.ArrowUp) mvy -= 1;
+      if (keyHeld.S || keyHeld.ArrowDown) mvy += 1;
+      if (keyHeld.A || keyHeld.ArrowLeft) mvx -= 1;
+      if (keyHeld.D || keyHeld.ArrowRight) mvx += 1;
+      var mag = Math.hypot(mvx, mvy);
+      if (mag > 1) { mvx /= mag; mvy /= mag; mag = 1; }
+      if (mag > 0.05) {
+        setDir(mvx, mvy);
+        var SPD = 180;
+        player.x += mvx * SPD * dt;
+        player.y += mvy * SPD * dt;
+      }
+      // knockback decays
+      if (kb.x || kb.y) {
+        player.x += kb.x * dt; player.y += kb.y * dt;
+        kb.x *= Math.max(0, 1 - dt * 8); kb.y *= Math.max(0, 1 - dt * 8);
+        if (Math.abs(kb.x) < 4 && Math.abs(kb.y) < 4) { kb.x = 0; kb.y = 0; }
+      }
+
+      // walls + doorway crossing. A wall margin; a gap centered on each door.
+      // In a door gap: pushing past the threshold triggers tryDoor (which slides
+      // or asks the word/key). Otherwise the wall stops you flat.
+      var margin = TILE * 0.7, doorHalf = TILE * 1.1, cross = margin * 0.4;
+      var rm = curRoom();
+      function inHGap() { return Math.abs(player.x - MW / 2) < doorHalf; }
+      function inVGap() { return Math.abs(player.y - MH / 2) < doorHalf; }
+      if (player.y < margin) {
+        if (inHGap() && doorOf(rm, "N")) { if (player.y < cross) tryDoor("N"); }
+        else player.y = margin;
+      }
+      if (player.y > MH - margin) {
+        if (inHGap() && doorOf(rm, "S")) { if (player.y > MH - cross) tryDoor("S"); }
+        else player.y = MH - margin;
+      }
+      if (player.x < margin) {
+        if (inVGap() && doorOf(rm, "W")) { if (player.x < cross) tryDoor("W"); }
+        else player.x = margin;
+      }
+      if (player.x > MW - margin) {
+        if (inVGap() && doorOf(rm, "E")) { if (player.x > MW - cross) tryDoor("E"); }
+        else player.x = MW - margin;
+      }
+
+      // treasure: standing near the chest opens it
+      if (rm && rm.t === "treasure" && !chestOpened[roomKey(room.r, room.c)]) {
+        if (Math.hypot(player.x - MW / 2, player.y - MH / 2) < 50) openChest();
+      }
+
+      // ---------- enemies ----------
+      // snapshot the list: a touch can trigger respawn(), which swaps in a whole
+      // new room's mobs mid-loop — iterating the fresh array would read garbage.
+      var bdef = BOSSES[dungeon], list = mobs;
+      for (var i = list.length - 1; i >= 0; i--) {
+        if (mobs !== list) break;                    // respawned / changed rooms — bail
+        var mob = list[i];
+        mob.hit = Math.max(0, mob.hit - dt);
+        mob.phase += dt;
+        if (mob.type === "boss") {
+          if (mob.shieldT > 0) { mob.shieldT -= dt; if (mob.shieldT <= 0 && !mob.shield) { mob.shield = true; big("🛡 THE SHIELD RE-ARMS!", "#ff8a8a"); if (sfx && sfx.buzz) sfx.buzz(); } }
+          // charge-then-pause: wind up toward the player, dash, then rest
+          mob.chargeCd -= dt;
+          if (mob.charge > 0) {
+            mob.charge -= dt;
+            mob.x += mob.cvx * dt; mob.y += mob.cvy * dt;
+          } else if (mob.chargeCd <= 0) {
+            var ddx = player.x - mob.x, ddy = player.y - mob.y, dd = Math.hypot(ddx, ddy) || 1;
+            mob.cvx = ddx / dd * bdef.speed; mob.cvy = ddy / dd * bdef.speed;
+            mob.charge = 0.9; mob.chargeCd = 1.6;
+          }
+          mob.x = Math.max(bdef.r, Math.min(MW - bdef.r, mob.x));
+          mob.y = Math.max(bdef.r, Math.min(MH - bdef.r, mob.y));
+        } else {
+          var d = MOBS[mob.type];
+          if (d.kind === "wander") {
+            if (!mob.wt || mob.wt <= 0) { mob.wa = Math.random() * Math.PI * 2; mob.wt = 0.8 + Math.random(); }
+            mob.wt -= dt;
+            mob.x += Math.cos(mob.wa) * d.speed * dt; mob.y += Math.sin(mob.wa) * d.speed * dt;
+          } else if (d.kind === "swoop") {
+            var bx = player.x - mob.x, by = player.y - mob.y, bl = Math.hypot(bx, by) || 1;
+            var perp = Math.sin(mob.phase * 4) * 40;      // sine-swoop toward the player
+            mob.x += (bx / bl * d.speed + (-by / bl) * perp) * dt;
+            mob.y += (by / bl * d.speed + (bx / bl) * perp) * dt;
+          } else { // chase
+            var cx = player.x - mob.x, cy = player.y - mob.y, cl = Math.hypot(cx, cy) || 1;
+            mob.x += cx / cl * d.speed * dt; mob.y += cy / cl * d.speed * dt;
+          }
+          // keep the little guys on the floor
+          mob.x = Math.max(ER, Math.min(MW - ER, mob.x));
+          mob.y = Math.max(ER, Math.min(MH - ER, mob.y));
+        }
+        // touch damage + knockback + brief invuln
+        var mr = mob.type === "boss" ? bdef.r : MOBS[mob.type].r;
+        var tx = player.x - mob.x, ty = player.y - mob.y, td = Math.hypot(tx, ty);
+        if (td < PR + mr && player.inv <= 0) {
+          hurt(1);
+          var kl = td || 1; kb.x = tx / kl * 260; kb.y = ty / kl * 260;
+        }
+      }
+    }
+
+    // ---------- drawing ----------
+    function rrect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      // dungeon backdrop
+      var g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#241d2e"); g.addColorStop(1, "#15101c");
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      if (!map) return;
+
+      // camera offset during a slide transition (the room glides in)
+      var camx = 0, camy = 0;
+      if (trans) { var e = trans.t * trans.t * (3 - 2 * trans.t); camx = -trans.dc * MW * e; camy = -trans.dr * MH * e; }
+      drawRoom(room.r, room.c, camx, camy, true);
+      if (trans) drawRoom(room.r + trans.dr, room.c + trans.dc, camx + trans.dc * MW, camy + trans.dr * MH, false);
+
+      drawMiniMap();
+      if (juice) { juice.update(0.016); juice.draw(ctx); }
+    }
+
+    function drawRoom(rr, rc, camx, camy, live) {
+      var rm = map[rr] && map[rr][rc]; if (!rm) return;
+      var ox = OX + camx * S, oy = OY + camy * S;
+      function LX(x) { return ox + x * S; }
+      function LY(y) { return oy + y * S; }
+      // floor
+      ctx.fillStyle = rm.t === "boss" ? "#3a2434" : rm.t === "treasure" ? "#3a3320" : "#2c2438";
+      ctx.fillRect(LX(0), LY(0), MW * S, MH * S);
+      // stone tile grid
+      ctx.strokeStyle = "rgba(255,255,255,.045)"; ctx.lineWidth = 1;
+      for (var gx = 1; gx < 8; gx++) { ctx.beginPath(); ctx.moveTo(LX(gx * MW / 8), LY(0)); ctx.lineTo(LX(gx * MW / 8), LY(MH)); ctx.stroke(); }
+      for (var gy = 1; gy < 8; gy++) { ctx.beginPath(); ctx.moveTo(LX(0), LY(gy * MH / 8)); ctx.lineTo(LX(MW), LY(gy * MH / 8)); ctx.stroke(); }
+      // walls with doorway gaps
+      var wall = "#4a3a5c", wt = pz(TILE * 0.5);
+      ctx.fillStyle = wall;
+      ["N", "S", "E", "W"].forEach(function (dir) {
+        var horiz = dir === "N" || dir === "S";
+        var has = doorOf(rm, dir);
+        if (horiz) {
+          var yy = dir === "N" ? LY(0) : LY(MH) - wt;
+          if (has) {
+            var gapc = LX(MW / 2), gw = pz(TILE * 2.2);
+            ctx.fillRect(LX(0), yy, gapc - gw / 2 - LX(0), wt);
+            ctx.fillRect(gapc + gw / 2, yy, LX(MW) - (gapc + gw / 2), wt);
+          } else ctx.fillRect(LX(0), yy, MW * S, wt);
+        } else {
+          var xx = dir === "W" ? LX(0) : LX(MW) - wt;
+          if (has) {
+            var gapcy = LY(MH / 2), gh = pz(TILE * 2.2);
+            ctx.fillRect(xx, LY(0), wt, gapcy - gh / 2 - LY(0));
+            ctx.fillRect(xx, gapcy + gh / 2, wt, LY(MH) - (gapcy + gh / 2));
+          } else ctx.fillRect(xx, LY(0), wt, MH * S);
+        }
+        // door glyph: 📜 rune (word) / 🔒 locked / open arch
+        if (has) {
+          var dc = doorCenter(dir);
+          var locked = (has.word && !doorsUnlocked[roomKey(rr, rc) + ":" + dir]) || (has.lock && !doorsUnlocked[roomKey(rr, rc) + ":" + dir]);
+          if (locked) {
+            ctx.font = Math.round(pz(30)) + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.fillText(has.word ? "📜" : "🔒", LX(dc.x), LY(dc.y));
+          }
+        }
+      });
+      // room contents
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      if (rm.t === "treasure") {
+        var opened = chestOpened[roomKey(rr, rc)];
+        ctx.font = Math.round(pz(46)) + "px serif";
+        ctx.fillText(opened ? "📭" : "💰", LX(MW / 2), LY(MH / 2));
+      } else if (rm.t === "key") {
+        // the 🗝️ hovers as the reward; dims once collected (room cleared)
+        var got = cleared[roomKey(rr, rc)];
+        if (got) ctx.globalAlpha = 0.3;
+        ctx.font = Math.round(pz(28)) + "px serif";
+        ctx.fillText("🗝️", LX(MW / 2), LY(56));
+        if (got) ctx.globalAlpha = 1;
+      }
+      // enemies (only for the live room)
+      if (live) {
+        mobs.forEach(function (mob) {
+          var isBoss = mob.type === "boss";
+          var mr = isBoss ? BOSSES[dungeon].r : MOBS[mob.type].r;
+          var sc = pz(mr * (isBoss ? 2.2 : 1.7));
+          if (mob.hit > 0) { ctx.save(); ctx.globalAlpha = 0.5; }
+          ctx.font = Math.round(sc) + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+          ctx.fillText(isBoss ? BOSSES[dungeon].emoji : MOBS[mob.type].emoji, LX(mob.x), LY(mob.y) + Math.sin(mob.phase * 3) * pz(3));
+          if (mob.hit > 0) ctx.restore();
+          // hp bar
+          if (mob.maxHp > 1 || isBoss) {
+            var f = Math.max(0, mob.hp / mob.maxHp), bw = sc * 0.9;
+            ctx.fillStyle = "rgba(0,0,0,.5)"; ctx.fillRect(LX(mob.x) - bw / 2, LY(mob.y) - sc * 0.62, bw, 5);
+            ctx.fillStyle = "#ff8a8a"; ctx.fillRect(LX(mob.x) - bw / 2, LY(mob.y) - sc * 0.62, bw * f, 5);
+          }
+          // boss word-shield ring + prompt
+          if (isBoss && mob.shield) {
+            ctx.strokeStyle = "rgba(201,182,255," + (0.5 + Math.sin(mob.phase * 6) * 0.25) + ")"; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.arc(LX(mob.x), LY(mob.y), sc * 0.62, 0, Math.PI * 2); ctx.stroke();
+            ctx.fillStyle = "#c9b6ff"; ctx.font = "bold " + Math.round(pz(16)) + "px Trebuchet MS"; ctx.textAlign = "center";
+            ctx.fillText("TAP + WORD!", LX(mob.x), LY(mob.y) - sc * 0.75);
+          }
+        });
+        // sword arc
+        if (swingT > 0) {
+          var ax = { N: 0, S: 0, E: 1, W: -1 }[player.dir], ay = { N: -1, S: 1, E: 0, W: 0 }[player.dir];
+          var base = Math.atan2(ay, ax), sweep = (1 - swingT / 0.3) * 1.4 - 0.7;
+          ctx.strokeStyle = "rgba(230,240,255,.85)"; ctx.lineWidth = pz(6); ctx.lineCap = "round";
+          ctx.beginPath(); ctx.arc(LX(player.x), LY(player.y), pz(PR + 30), base + sweep - 0.5, base + sweep + 0.5); ctx.stroke();
+        }
+        // player avatar (feet-anchored)
+        if (AV && AV.draw) {
+          var pose = swingT > 0 ? "swing" : (Math.hypot(moveVec.x + (keyHeld.A ? -1 : 0) + (keyHeld.D ? 1 : 0), moveVec.y + (keyHeld.W ? -1 : 0) + (keyHeld.S ? 1 : 0)) > 0.1 ? "run" : "idle");
+          var blink = player.inv > 0 && Math.floor(player.inv * 12) % 2 === 0;
+          if (blink) ctx.globalAlpha = 0.4;
+          AV.draw(ctx, { x: LX(player.x), y: LY(player.y) + pz(PR), size: pz(PR * 3), config: cfg, pose: pose, frame: player.phase || (lastT / 1000), flip: player.dir === "W", name: "" });
+          if (blink) ctx.globalAlpha = 1;
+        } else {
+          ctx.fillStyle = "#40c4ff"; ctx.beginPath(); ctx.arc(LX(player.x), LY(player.y), pz(PR), 0, Math.PI * 2); ctx.fill();
+        }
+      }
+    }
+
+    // mini-map: visited rooms + your position. Anchored to the BOTTOM-right of the
+    // screen — free space in both orientations, so it never overlaps the room.
+    function drawMiniMap() {
+      var cell = compact ? 12 : 15, pad = 4, mw = GRID * cell + pad * 2;
+      var mx = W - mw - 8, my = H - (GRID * cell + pad * 2) - 10;
+      ctx.fillStyle = "rgba(0,0,0,.45)"; rrect(mx - pad, my - pad, mw, GRID * cell + pad * 2, 6); ctx.fill();
+      for (var r = 0; r < GRID; r++) for (var c = 0; c < GRID; c++) {
+        var rm = map[r] && map[r][c]; if (!rm) continue;
+        var vx = mx + c * cell, vy = my + r * cell;
+        var vis = visited[roomKey(r, c)];
+        ctx.fillStyle = !vis ? "rgba(255,255,255,.12)" : rm.t === "boss" ? "#c0518a" : rm.t === "treasure" ? "#c6a94e" : rm.t === "key" ? "#5b8ac6" : "#6a5a7c";
+        ctx.fillRect(vx + 1, vy + 1, cell - 2, cell - 2);
+        if (r === room.r && c === room.c) { ctx.fillStyle = "#ffe14d"; ctx.beginPath(); ctx.arc(vx + cell / 2, vy + cell / 2, cell * 0.25, 0, Math.PI * 2); ctx.fill(); }
+      }
+    }
+
+    // ---------- input (phantom-tap safe) ----------
+    // Sword = a SHORT discrete tap (<150ms, <10px). Movement = a longer/moving drag
+    // (virtual stick: move toward the drag direction, relative to the start point).
+    var touchStart = null, touchTime = 0, dragging = false;
+    function screenToLogical(sx, sy) { return { x: (sx - OX) / S, y: (sy - OY) / S }; }
+    function tapAt(sx, sy) {
+      // did we tap the boss (through his shield)? open the duel.
+      var b = boss();
+      if (b) {
+        var lg = screenToLogical(sx, sy);
+        if (Math.hypot(lg.x - b.x, lg.y - b.y) < BOSSES[dungeon].r + 24 && b.shield) { duel(); return; }
+      }
+      swing();
+    }
+    cv.addEventListener("touchstart", function (e) {
+      e.preventDefault();
+      var r = cv.getBoundingClientRect(), tch = e.changedTouches[0];
+      touchStart = { x: tch.clientX - r.left, y: tch.clientY - r.top };
+      touchTime = performance.now(); dragging = false;
+    }, { passive: false });
+    cv.addEventListener("touchmove", function (e) {
+      if (!touchStart) return;
+      e.preventDefault();
+      var r = cv.getBoundingClientRect(), tch = e.changedTouches[0];
+      var cx = tch.clientX - r.left, cy = tch.clientY - r.top;
+      var dx = cx - touchStart.x, dy = cy - touchStart.y;
+      if (Math.hypot(dx, dy) > 10) dragging = true;
+      if (dragging) {
+        var mag = Math.hypot(dx, dy) || 1, cl = Math.min(1, mag / 60);
+        moveVec.x = dx / mag * cl; moveVec.y = dy / mag * cl;
+      }
+    }, { passive: false });
+    function endTouch(e) {
+      if (!touchStart) return;
+      e.preventDefault();
+      var quick = performance.now() - touchTime < 150;
+      if (!dragging && quick) { tapAt(touchStart.x, touchStart.y); }
+      touchStart = null; dragging = false; moveVec.x = 0; moveVec.y = 0;
+    }
+    cv.addEventListener("touchend", endTouch, { passive: false });
+    cv.addEventListener("touchcancel", endTouch, { passive: false });
+    // desktop: click = swing/duel; WASD/arrows = move
+    cv.addEventListener("mousedown", function (e) { var r = cv.getBoundingClientRect(); tapAt(e.clientX - r.left, e.clientY - r.top); });
+    function onKeyDown(e) {
+      var k = e.key;
+      if (k === " " || k === "Spacebar") { e.preventDefault(); swing(); return; }
+      if (k === "e" || k === "E") { duel(); return; }
+      if (k === "w" || k === "W" || k === "ArrowUp") keyHeld.W = keyHeld.ArrowUp = true;
+      else if (k === "s" || k === "S" || k === "ArrowDown") keyHeld.S = keyHeld.ArrowDown = true;
+      else if (k === "a" || k === "A" || k === "ArrowLeft") keyHeld.A = keyHeld.ArrowLeft = true;
+      else if (k === "d" || k === "D" || k === "ArrowRight") keyHeld.D = keyHeld.ArrowRight = true;
+      else return;
+      e.preventDefault();
+    }
+    function onKeyUp(e) {
+      var k = e.key;
+      if (k === "w" || k === "W" || k === "ArrowUp") keyHeld.W = keyHeld.ArrowUp = false;
+      else if (k === "s" || k === "S" || k === "ArrowDown") keyHeld.S = keyHeld.ArrowDown = false;
+      else if (k === "a" || k === "A" || k === "ArrowLeft") keyHeld.A = keyHeld.ArrowLeft = false;
+      else if (k === "d" || k === "D" || k === "ArrowRight") keyHeld.D = keyHeld.ArrowRight = false;
+    }
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("keyup", onKeyUp);
+
+    // ---------- loop ----------
+    function frame(now) {
+      if (!running) return;
+      raf = requestAnimationFrame(frame);
+      var dt = Math.min((now - lastT) / 1000, 0.05); lastT = now;
+      player.phase = (player.phase || 0) + dt;
+      if (!paused && !over && map) step(dt);
+      draw();
+    }
+
+    // ---------- exit / cleanup ----------
+    function onUnload() { bankExit(); }
+    window.addEventListener("beforeunload", onUnload);
+    function exit() {
+      bankExit();
+      running = false;
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", resize);
+      window.removeEventListener("beforeunload", onUnload);
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("keyup", onKeyUp);
+      if (wrap.parentNode) wrap.remove();
+      if (opts.onExit) opts.onExit();
+    }
+    document.getElementById("quit").onclick = exit;
+
+    // ---------- test API ----------
+    cv._dungeon = {
+      state: function () {
+        return {
+          dungeon: dungeon, room: { r: room.r, c: room.c }, hearts: hearts, maxHearts: maxHearts,
+          deaths: deaths, roomsCleared: roomsCleared, coins: coins, over: over, won: won, banked: banked,
+          best: stats.lvl, bossShield: (function () { var b = boss(); return b ? !!b.shield : null; })(),
+          doorsUnlocked: Object.keys(doorsUnlocked).length, paused: paused, keys: keys
+        };
+      },
+      begin: begin,
+      warpRoom: function (r, c) { trans = null; room = { r: r, c: c }; player.x = MW / 2; player.y = MH / 2; enterRoom(false); },
+      enemies: function () { return mobs; },
+      swing: function () { swingCd = 0; swing(); },
+      move: function (dx, dy) { moveVec.x = dx; moveVec.y = dy; },
+      hurt: function (n) { player.inv = 0; hurt(n); },
+      openDoor: function () {
+        // force the nearest authored word-door in the current room
+        var rm = curRoom(); if (!rm) return;
+        var dir = ["N", "S", "E", "W"].filter(function (d) { var o = doorOf(rm, d); return o && o.word && !doorsUnlocked[doorUnlockedKey(d)]; })[0];
+        if (dir) openWordDoor(dir);
+      },
+      duel: duel,
+      boss: boss,
+      player: function () { return { x: player.x, y: player.y, dir: player.dir }; }
+    };
+
+    hud();
+    showSelect();
+    if (global._dungeondemo) setTimeout(function () { // test hook: a lively mid-fight board
+      global._dungeondemo = 0;
+      begin(1);
+      cv._dungeon.warpRoom(4, 1); // a monster room, swords already swinging in demos
+      cv._dungeon.move(0.4, -0.2);
+    }, 700);
+    lastT = performance.now(); raf = requestAnimationFrame(frame);
+  }
+
+  global.VobloxDungeon = { start: start };
+})(typeof window !== "undefined" ? window : globalThis);
