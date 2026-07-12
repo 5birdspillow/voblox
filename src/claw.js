@@ -42,6 +42,9 @@
     stats.grabs = stats.grabs || 0;
     stats.wins = stats.wins || 0;
     stats.itemsWon = stats.itemsWon || 0;
+    // credits PERSIST (additive save field) — the welcome credit is one-time EVER,
+    // so quitting and re-entering never mints a fresh one (Au caught the farm)
+    if (stats.credits == null) stats.credits = 1;
 
     var wrap = document.createElement("div");
     wrap.className = "gamewrap claw";
@@ -83,7 +86,8 @@
 
     // ---------- run state ----------
     var running = true, raf = 0, lastT = performance.now(), t = 0;
-    var credits = 1, sessionGems = 0, grabsWon = 0, itemsWonSession = 0, grabsSinceWin = 0;
+    var credits = stats.credits, sessionGems = 0, grabsWon = 0, itemsWonSession = 0, grabsSinceWin = 0;
+    function syncCredits() { stats.credits = credits; if (store.save) store.save(); }
     var banked = false, paused = false, over = false, lastFmt = null;
     var phase = "idle"; // idle | moving | dropping | carrying | result
     var lifting = false; // internal sub-state of "dropping" (claw rising back to the rail)
@@ -146,7 +150,7 @@
         cb: function (ok, res, fmt) {
           lastFmt = fmt; paused = false;
           if (ok) {
-            credits = Math.min(5, credits + 1);
+            credits = Math.min(5, credits + 1); syncCredits();
             big("🎟 +1 credit! Go grab a prize!", "#69f0ae");
             if (sfx && sfx.coin) sfx.coin();
             if (juice) juice.burst(W * 0.5, H * 0.4, "#ffd23f", 14);
@@ -184,7 +188,7 @@
       o = o || {};
       if (over || phase === "result") return;
       if (credits <= 0) { creditQuiz(); return; }
-      credits -= 1; stats.grabs += 1;             // the credit IS spent — that's claw machines
+      credits -= 1; syncCredits(); stats.grabs += 1; // the credit IS spent — that's claw machines
       var strong = !!o.perfect || ((grabsSinceWin + 1) % 3 === 0); // PITY: every 3rd is sturdy
       var oc = computeOutcome(clawX, !!o.perfect, strong);
       pendingOutcome = oc; slipDone = false;
@@ -466,7 +470,7 @@
         };
       },
       creditQuiz: creditQuiz,
-      give: function (n) { credits += (n === undefined ? 1 : n); hud(); },
+      give: function (n) { credits += (n === undefined ? 1 : n); syncCredits(); hud(); },
       hold: function () { pointerDown(); },
       release: function () { pointerUp(); },
       moveTo: function (x) { clawX = x; },

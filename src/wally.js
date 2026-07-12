@@ -23,6 +23,7 @@
   // Tuned so the jackpot's dead-center (x 948) is hit at power 0.90 — adult-hard.
   var REACH_MIN = 210, REACH_SPAN = 820;
   var METER_PERIOD = 1.2;  // seconds for one full 0→1→0 power sweep
+  var ANGLE_MIN = 0.3, ANGLE_MAX = 1.2, ANGLE_PERIOD = 1.0; // radians; sweep after the power tap
   var FLIGHT_TIME = 1.55;  // seconds from cannon to final flop
   var MAX_CREDITS = 5;
 
@@ -39,8 +40,13 @@
 
   function clamp(n, lo, hi) { return n < lo ? lo : n > hi ? hi : n; }
 
-  // where Wally comes to rest for a given power (the ONLY thing payout depends on)
-  function powerToRestX(power) { return REACH_MIN + clamp(power, 0, 1) * REACH_SPAN; }
+  // where Wally comes to rest for a given power + angle (the ONLY payout inputs).
+  // Real ballistics: range peaks at 45° (sin 2θ = 1) — so the old power-only
+  // mapping is exactly the θ=45° slice, and steep or shallow shots fall short.
+  function powerToRestX(power, ang) {
+    if (ang == null) ang = Math.PI / 4;
+    return REACH_MIN + clamp(power, 0, 1) * Math.max(0.1, Math.sin(2 * ang)) * REACH_SPAN;
+  }
   // the pad Wally STOPS on: jackpot only if he lands inside its narrow slot,
   // otherwise the NEAREST regular pad by center (so a gap always pays — never 0,
   // and the smallest consolation is the 5 pad).
@@ -63,6 +69,9 @@
     stats.bestPad = stats.bestPad || 0;
     stats.jackpots = stats.jackpots || 0;
     stats.totalWon = stats.totalWon || 0;
+    // credits PERSIST (additive save field) — the welcome credit is one-time EVER,
+    // so quitting and re-entering never mints a fresh one
+    if (stats.credits == null) stats.credits = 1;
 
     var wrap = document.createElement("div");
     wrap.className = "gamewrap wally";
@@ -103,16 +112,18 @@
 
     // ---------- run state ----------
     var running = true, raf = 0, lastT = performance.now();
-    var credits = 1;                 // one free launch to start each session
+    var credits = stats.credits;     // persisted satchel (see above)
     var session = 0;                 // REAL Vobux earned this session (banked once)
-    var phase = "idle";              // idle | aiming | flying | landed
+    var phase = "idle";              // idle | aiming | angling | flying | landed
     var meter = 0, meterPhase = 0;   // power sweep 0..1
+    var angle = Math.PI / 4, anglePhase = 0; // angle sweep (locked after the power tap)
     var lastPad = null;              // value of the pad last landed on
     var banked = false, sessionJackpots = 0, sessionWonJackpot = false;
     var paused = false, lastFmt = null;
     // flight
-    var launchPower = 0, restX = REACH_MIN, flightP = 0, lastHop = 0;
+    var launchPower = 0, launchAngle = Math.PI / 4, restX = REACH_MIN, flightP = 0, lastHop = 0;
     var wallyX = CANNON_X, wallyY = GROUND_Y - 40, lit = {};
+    function syncCredits() { stats.credits = credits; if (store.save) store.save(); }
 
     function big(m, col) {
       bigEl.textContent = m; bigEl.style.color = col || "#fff"; bigEl.style.opacity = "1";
@@ -121,6 +132,8 @@
     function hud() {
       document.getElementById("wlcred").textContent = "🎟 " + credits;
       document.getElementById("wlsess").textContent = "💰 session: " + session;
+      // mid-aim the button would sit right on the meters — get it out of the way
+      getBtn.style.display = (phase === "aiming" || phase === "angling" || phase === "flying") ? "none" : "block";
     }
 
     // ---------- the credit loop (vocab) ----------
@@ -134,7 +147,7 @@
           lastFmt = fmt;
           if (ok) {
             if (credits >= MAX_CREDITS) big("🎟 Credits full at 5 — nice word though!", "#69f0ae");
-            else { credits = Math.min(MAX_CREDITS, credits + 1); big("🎟 +1 credit! Tap the cannon to launch!", "#69f0ae"); }
+            else { credits = Math.min(MAX_CREDITS, credits + 1); syncCredits(); big("🎟 +1 credit! Tap the cannon to launch!", "#69f0ae"); }
             if (sfx && sfx.coin) sfx.coin();
             if (juice) juice.burst(W / 2, H * 0.4, "#69f0ae", 16);
           } else {
@@ -151,21 +164,29 @@
       if (phase === "flying") return;
       hideCard();
       if (credits <= 0) { creditQuiz(); return; }
-      credits--;
+      credits--; syncCredits();
       phase = "aiming"; meterPhase = 0; meter = 0;
-      big("🎯 Tap again to LOCK the power!", "#ffe14d");
+      big("🎯 Tap to LOCK the power!", "#ffe14d");
       hud();
     }
-    // fire with an exact power (the tap-lock and the deterministic test entry share this)
-    function fire(power) {
+    // power tapped: lock it, start the ANGLE sweep (the second aiming stage)
+    function lockPower() {
+      launchPower = meter;
+      phase = "angling"; anglePhase = 0; angle = ANGLE_MIN;
+      big("📐 Now tap to LOCK the angle!", "#8be9fd");
+      hud();
+    }
+    // fire with an exact power + angle (tap-lock and the deterministic test entry share this)
+    function fire(power, ang) {
       if (phase === "flying") return;
-      if (phase !== "aiming") { // launched straight from idle/landed — commit a credit now
+      if (phase !== "aiming" && phase !== "angling") { // straight from idle/landed — commit a credit now
         if (credits <= 0) { creditQuiz(); return; }
-        credits--;
+        credits--; syncCredits();
       }
       hideCard();
       launchPower = clamp(power, 0, 1);
-      restX = powerToRestX(launchPower);
+      launchAngle = ang == null ? Math.PI / 4 : clamp(ang, ANGLE_MIN, ANGLE_MAX);
+      restX = powerToRestX(launchPower, launchAngle);
       phase = "flying"; flightP = 0; lastHop = 0; lit = {};
       meter = launchPower;
       wallyX = CANNON_X; wallyY = GROUND_Y - 40;
@@ -175,9 +196,9 @@
       hud();
     }
     // the arc: horizontal is LINEAR (so restX is exact), vertical is 3 humps
-    // (launch + 2 bounces) decaying to the floor at p=1
+    // (launch + 2 bounces) decaying to the floor at p=1. Steeper angle = HIGHER arc.
     function flightYLogical(p) {
-      var amp = 205;
+      var amp = 90 + 190 * (launchAngle / ANGLE_MAX);
       var hop = Math.abs(Math.sin(p * Math.PI * 3));
       return GROUND_Y - 40 - amp * hop * (1 - p * 0.82);
     }
@@ -223,7 +244,8 @@
     // ---------- input (phantom-tap safe) ----------
     function onTap() {
       if (phase === "idle") startLaunch();
-      else if (phase === "aiming") fire(meter);
+      else if (phase === "aiming") lockPower();
+      else if (phase === "angling") fire(launchPower, angle);
       // flying / landed: ignore the canvas — the result card's buttons drive next
     }
     cv.addEventListener("touchstart", function (e) { e.preventDefault(); onTap(); }, { passive: false });
@@ -235,6 +257,10 @@
       if (phase === "aiming") {
         meterPhase += dt;
         meter = 0.5 - 0.5 * Math.cos(2 * Math.PI * meterPhase / METER_PERIOD);
+      } else if (phase === "angling") {
+        anglePhase += dt;
+        var af = 0.5 - 0.5 * Math.cos(2 * Math.PI * anglePhase / ANGLE_PERIOD);
+        angle = ANGLE_MIN + (ANGLE_MAX - ANGLE_MIN) * af;
       } else if (phase === "flying") {
         flightP = Math.min(1, flightP + dt / FLIGHT_TIME);
         wallyX = CANNON_X + (restX - CANNON_X) * flightP;
@@ -290,10 +316,11 @@
         ctx.fillText((pad.jackpot ? "⭐" : "") + pad.value, PX(pad.x), py + ph / 2 + 1);
       }
 
-      // the cannon / ramp on the left
+      // the cannon / ramp on the left (barrel follows the aim)
+      var barrelAng = phase === "flying" ? -launchAngle : phase === "angling" ? -angle : -0.72;
       ctx.save();
       ctx.translate(PX(CANNON_X), PY(GROUND_Y - 6));
-      ctx.rotate(-0.72);
+      ctx.rotate(barrelAng);
       ctx.fillStyle = "#37424f"; rrect(-14 * S, -20 * S, 72 * S, 40 * S, 10 * S); ctx.fill();
       ctx.fillStyle = "#20272e"; rrect(52 * S, -18 * S, 12 * S, 36 * S, 4 * S); ctx.fill();
       ctx.restore();
@@ -317,18 +344,37 @@
       ctx.font = Math.round(40 * S * (2 - sq)) + "px serif";
       ctx.fillText(phase === "landed" ? "💫" : "🤸", PX(wallyX), PY(wallyY));
 
-      // the POWER meter while aiming — with the golden jackpot sweet-spot marked
-      if (phase === "aiming") {
-        var bw = Math.min(360, W * 0.6), bx = (W - bw) / 2, by = H - 96;
+      // the aiming meters — raised well clear of the bottom edge (and the credit
+      // button hides during aiming, so nothing ever blocks them)
+      if (phase === "aiming" || phase === "angling") {
+        var bw = Math.min(360, W * 0.6), bx = (W - bw) / 2, by = H - 150;
         ctx.fillStyle = "rgba(0,0,0,.45)"; rrect(bx - 4, by - 4, bw + 8, 26, 8); ctx.fill();
-        // sweet-spot band (power range that lands inside the jackpot slot)
+        // sweet-spot band (power range that lands in the jackpot slot AT 45°)
         var jp = PADS[PADS.length - 1];
         var lo = (jp.x - jp.w / 2 - REACH_MIN) / REACH_SPAN, hi = (jp.x + jp.w / 2 - REACH_MIN) / REACH_SPAN;
         ctx.fillStyle = "#c99a00"; ctx.fillRect(bx + bw * lo, by, bw * (hi - lo), 18);
-        ctx.fillStyle = "#ffe14d"; ctx.fillRect(bx, by, bw * meter, 18);
+        ctx.fillStyle = phase === "aiming" ? "#ffe14d" : "#b8a14d"; ctx.fillRect(bx, by, bw * meter, 18);
         ctx.fillStyle = "#fff"; ctx.fillRect(bx + bw * meter - 2, by - 3, 4, 24);
         ctx.textAlign = "center"; ctx.fillStyle = "#fff"; ctx.font = "bold " + Math.round(13 * S) + "px Trebuchet MS";
-        ctx.fillText("POWER " + Math.round(meter * 100), W / 2, by - 12);
+        ctx.fillText((phase === "aiming" ? "POWER " : "POWER locked: ") + Math.round(meter * 100), W / 2, by - 12);
+      }
+      // the ANGLE stage: a sweeping aim line from the cannon + a readout
+      if (phase === "angling") {
+        var aLen = 150 * S;
+        ctx.strokeStyle = "rgba(255,255,255,.85)"; ctx.lineWidth = 3 * S; ctx.setLineDash([8 * S, 7 * S]);
+        ctx.beginPath(); ctx.moveTo(PX(CANNON_X), PY(GROUND_Y - 20));
+        ctx.lineTo(PX(CANNON_X) + Math.cos(angle) * aLen, PY(GROUND_Y - 20) - Math.sin(angle) * aLen); ctx.stroke();
+        ctx.setLineDash([]);
+        var abw = Math.min(360, W * 0.6), abx = (W - abw) / 2, aby = H - 108;
+        var af2 = (angle - ANGLE_MIN) / (ANGLE_MAX - ANGLE_MIN);
+        ctx.fillStyle = "rgba(0,0,0,.45)"; rrect(abx - 4, aby - 4, abw + 8, 26, 8); ctx.fill();
+        // best-range marker: 45° flies farthest
+        var mid = (Math.PI / 4 - ANGLE_MIN) / (ANGLE_MAX - ANGLE_MIN);
+        ctx.fillStyle = "#2f9e44"; ctx.fillRect(abx + abw * mid - 3, aby, 6, 18);
+        ctx.fillStyle = "#8be9fd"; ctx.fillRect(abx, aby, abw * af2, 18);
+        ctx.fillStyle = "#fff"; ctx.fillRect(abx + abw * af2 - 2, aby - 3, 4, 24);
+        ctx.textAlign = "center"; ctx.fillStyle = "#fff"; ctx.font = "bold " + Math.round(13 * S) + "px Trebuchet MS";
+        ctx.fillText("ANGLE " + Math.round(angle * 180 / Math.PI) + "°", W / 2, aby - 12);
       }
 
       if (juice) juice.draw(ctx);
@@ -383,11 +429,12 @@
       state: function () {
         return {
           credits: credits, session: session, phase: phase, meter: meter,
-          lastPad: lastPad, banked: banked, jackpots: sessionJackpots
+          angle: angle, lastPad: lastPad, banked: banked, jackpots: sessionJackpots
         };
       },
       creditQuiz: creditQuiz,
-      give: function (n) { credits = Math.min(MAX_CREDITS, credits + (n || 0)); hud(); },
+      give: function (n) { credits = Math.min(MAX_CREDITS, credits + (n || 0)); syncCredits(); hud(); },
+      lockPower: lockPower,
       aim: startLaunch,
       launchAt: fire,
       tick: tick,
@@ -400,7 +447,7 @@
     if (global._wallydemo) { // screenshot seed: Wally mid-flight over a lit board
       global._wallydemo = 0;
       credits = 2; session = 45; lastPad = 25;
-      launchPower = 0.72; restX = powerToRestX(launchPower);
+      launchPower = 0.72; launchAngle = Math.PI / 4; restX = powerToRestX(launchPower, launchAngle);
       phase = "flying"; flightP = 0.55; lastHop = 1;
       wallyX = CANNON_X + (restX - CANNON_X) * flightP; wallyY = flightYLogical(flightP);
       for (var d = 0; d < PADS.length; d++) if (wallyX >= PADS[d].x) lit[d] = 1;
