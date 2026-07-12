@@ -29,6 +29,15 @@
     bat: { emoji: "🦇", hp: 1, speed: 70, r: 16, kind: "swoop", touch: 1 },
     skel: { emoji: "💀", hp: 2, speed: 52, r: 19, kind: "chase", touch: 1 }
   };
+  // ---------- power-up items (found on monsters + in chests; tap to use) ----------
+  var ITEMS = {
+    potion: { emoji: "🧪", name: "Heart Potion", desc: "refill your hearts" },
+    boots: { emoji: "💨", name: "Zoom Boots", desc: "8s super speed" },
+    spin: { emoji: "🌀", name: "Spin Slash", desc: "hit EVERYTHING around you" },
+    bubble: { emoji: "🛡️", name: "Bubble Shield", desc: "8s protection" }
+  };
+  var ITEM_KEYS = ["potion", "boots", "spin", "bubble"];
+
   // bosses: 8-12 hp, a charge-then-pause pattern, and a re-arming WORD SHIELD
   var BOSSES = {
     1: { emoji: "👹", name: "GRUMP", hp: 8, speed: 60, r: 40, touch: 1 },
@@ -135,6 +144,9 @@
     if (!stats.lvl) stats.lvl = 1;         // highest dungeon unlocked (start 1). NOT stats.best.
     stats.clears = stats.clears || 0;
     stats.deaths = stats.deaths || 0;
+    // persistent power-up satchel (additive save field) — found items KEEP across runs
+    stats.items = stats.items || { potion: 0, boots: 0, spin: 0, bubble: 0 };
+    ITEM_KEYS.forEach(function (k) { if (!stats.items[k]) stats.items[k] = 0; });
 
     var cfg = AV && AV.resolve ? AV.resolve(store.state) : { skin: "#ffcc88", shirt: "#2f7be0", pants: "#394063", face: "smile" };
 
@@ -145,6 +157,18 @@
       '<div class="grow"><span id="dghearts">❤️❤️❤️</span><span id="dgkeys">🗝️ 0</span>' +
       '<span id="dgcoins">💰 0</span><button class="bossquit" id="quit">Leave</button></div></div>' +
       '<div class="gmsg" id="dgbig"></div>' +
+      // ⚔ attack cross (bottom-right): four buttons, one per direction
+      '<div id="dgpad" style="position:absolute;right:10px;bottom:calc(env(safe-area-inset-bottom, 0px) + 12px);width:156px;height:156px;z-index:8">' +
+      ['N;top:0;left:52px;▲', 'W;top:52px;left:0;◀', 'E;top:52px;right:0;▶', 'S;bottom:0;left:52px;▼'].map(function (s) {
+        var p = s.split(";");
+        return '<button type="button" class="dgatk" data-atk="' + p[0] + '" style="position:absolute;' + p[1] + ';' + p[2] + ';width:52px;height:52px;' +
+          'background:rgba(20,16,30,.72);border:2px solid rgba(255,225,77,.5);border-radius:14px;color:#ffd23f;' +
+          'font-size:22px;font-weight:900;font-family:inherit;padding:0;line-height:1;cursor:pointer">' + p[3] + '</button>';
+      }).join("") +
+      '<div style="position:absolute;top:52px;left:52px;width:52px;height:52px;display:flex;align-items:center;justify-content:center;font-size:24px;opacity:.8;pointer-events:none">⚔️</div>' +
+      '</div>' +
+      // 🎒 power-up satchel (bottom-left): tap an item to use it
+      '<div id="dginv" style="position:absolute;left:10px;bottom:calc(env(safe-area-inset-bottom, 0px) + 12px);display:flex;gap:6px;z-index:8"></div>' +
       '<div class="gover" id="dgq" style="display:none"></div>' +
       '<div class="gover" id="dgend" style="display:none"></div>';
     document.body.appendChild(wrap);
@@ -182,6 +206,7 @@
     var player = { x: MW / 2, y: MH / 2, dir: "N", inv: 0 };
     var hearts = 3, maxHearts = 3, deaths = 0, keys = 0, coins = 0, roomsCleared = 0;
     var mobs = [], swingT = 0, swingCd = 0, kb = { x: 0, y: 0 };
+    var speedT = 0, shieldT = 0, spinT = 0;   // power-up effect timers
     var moveVec = { x: 0, y: 0 };            // current movement input (-1..1)
     var cleared = {}, doorsUnlocked = {}, visited = {}, chestOpened = {};
     var trans = null;                        // room-slide transition {dr,dc,t}
@@ -213,7 +238,7 @@
         '<div class="wqtitle" style="font-size:20px">Word Dungeon</div>' +
         '<div style="margin:4px 0 10px;color:#5a6b7a;font-weight:bold">Crawl the dungeon. Runed doors 📜 open for a WORD. Beat the boss to unlock the next.</div>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">' + rows + "</div>" +
-        '<div style="font-size:11px;color:#8a98a8;margin-top:8px">Move: drag / WASD · Sword: tap / Space · Doors 📜 & the boss ask a word</div></div>';
+        '<div style="font-size:11px;color:#8a98a8;margin-top:8px">Move: drag / WASD · Sword: tap, Space, or the ⚔ cross · Tap a 🎒 power-up to use it · Doors 📜 & the boss ask a word</div></div>';
       end.style.display = "flex";
       Array.prototype.forEach.call(end.querySelectorAll("[data-dg]"), function (b) {
         b.onclick = function () {
@@ -232,6 +257,7 @@
       cleared = {}; doorsUnlocked = {}; visited = {}; chestOpened = {};
       swingT = 0; swingCd = 0; kb = { x: 0, y: 0 }; moveVec = { x: 0, y: 0 };
       trans = null; player.inv = 0;
+      speedT = 0; shieldT = 0; spinT = 0; invUI();
       // find the start room
       for (var r = 0; r < GRID; r++) for (var c = 0; c < GRID; c++) {
         if (map[r][c] && map[r][c].t === "start") { entrance = { r: r, c: c }; }
@@ -321,17 +347,67 @@
       if (juice) juice.burst(X(mob.x), Y(mob.y), "#9aa86a", 10);
       if (sfx && sfx.pop && Math.random() < 0.6) sfx.pop();
       if (mob.type === "boss") { bossDefeated(); return; }
-      // loot: a heart (25%) or coins
+      // loot: a heart (25%), coins (35%), or a power-up (12%)
       var roll = Math.random();
       if (roll < 0.25 && hearts < maxHearts) { hearts = Math.min(maxHearts, hearts + 1); big("❤️ +1 heart!", "#ff6b6b"); hud(); }
       else if (roll < 0.6) { var c = 3 + Math.floor(Math.random() * 5); coins += c; big("💰 +" + c, "#ffd23f"); hud(); }
+      else if (roll < 0.72) findItem(ITEM_KEYS[Math.floor(Math.random() * ITEM_KEYS.length)]);
       // room cleared?
       if (mobs.length === 0) markCleared();
     }
 
+    // ---------- power-up satchel ----------
+    function findItem(k) {
+      stats.items[k] = (stats.items[k] || 0) + 1; store.save();
+      big(ITEMS[k].emoji + " Found a " + ITEMS[k].name + "! (tap it to use)", "#9be870");
+      if (sfx && sfx.coin) sfx.coin();
+      invUI();
+    }
+    function useItem(k) {
+      if (over || paused || trans || !map) return false;
+      if (!stats.items[k]) return false;
+      if (k === "potion") {
+        if (hearts >= maxHearts) { big("Hearts already full!", "#ffd740"); return false; }
+        hearts = maxHearts; big("🧪 Hearts refilled!", "#ff6b6b");
+      } else if (k === "boots") {
+        speedT = 8; big("💨 ZOOM! Super speed!", "#8ecdf7");
+      } else if (k === "spin") {
+        spinT = 0.35;
+        var hitAny = false;
+        for (var i = mobs.length - 1; i >= 0; i--) {
+          var mob = mobs[i];
+          if (Math.hypot(mob.x - player.x, mob.y - player.y) < 170) { hitMob(mob, 2); hitAny = true; }
+        }
+        big(hitAny ? "🌀 SPIN SLASH!" : "🌀 Whoosh! (nothing close)", "#c9b6ff");
+        if (juice) juice.shake(6);
+      } else if (k === "bubble") {
+        shieldT = 8; big("🛡️ Bubble Shield — 8s safe!", "#69f0ae");
+      }
+      stats.items[k]--; store.save();
+      if (sfx && sfx.chime) sfx.chime();
+      hud(); invUI();
+      return true;
+    }
+    function invUI() {
+      var bar = document.getElementById("dginv"); if (!bar) return;
+      bar.innerHTML = ITEM_KEYS.map(function (k) {
+        var n = stats.items[k] || 0;
+        return '<button type="button" class="dgitem" data-item="' + k + '" title="' + ITEMS[k].name + " — " + ITEMS[k].desc + '" style="position:relative;width:48px;height:48px;' +
+          'background:rgba(20,16,30,.72);border:2px solid ' + (n ? "rgba(155,232,112,.6)" : "rgba(255,255,255,.14)") + ';border-radius:14px;' +
+          'font-size:22px;padding:0;line-height:1;font-family:inherit;cursor:pointer;' + (n ? "" : "opacity:.4;") + '">' + ITEMS[k].emoji +
+          (n ? '<span style="position:absolute;right:-4px;top:-6px;background:#ffd23f;color:#3a2a00;border-radius:9px;font-size:11px;font-weight:900;padding:1px 5px">' + n + "</span>" : "") +
+          "</button>";
+      }).join("");
+      Array.prototype.forEach.call(bar.querySelectorAll("[data-item]"), function (b) {
+        function useIt(e) { e.preventDefault(); useItem(b.dataset.item); }
+        b.addEventListener("touchstart", useIt, { passive: false }); // + mousedown below — preventDefault kills the phantom mouse tap
+        b.addEventListener("mousedown", useIt);
+      });
+    }
+
     // ---------- taking damage / respawn ----------
     function hurt(n) {
-      if (over || player.inv > 0) return;
+      if (over || player.inv > 0 || shieldT > 0) return;
       n = n || 1;
       hearts -= n; player.inv = 1.1;               // invulnerability blink window
       if (juice) juice.shake(6);
@@ -486,6 +562,7 @@
       coins += pay;
       big("💰 Treasure! +" + pay + (rm.heart ? " and a ❤️!" : ""), "#ffd23f");
       if (rm.heart) { maxHearts = Math.min(5, maxHearts + 1); hearts = Math.min(maxHearts, hearts + 1); }
+      findItem(ITEM_KEYS[Math.floor(Math.random() * ITEM_KEYS.length)]); // chests always hold a power-up
       if (juice) juice.burst(X(MW / 2), Y(MH / 2), "#ffd23f", 20);
       if (sfx && sfx.coin) sfx.coin();
       hud();
@@ -496,6 +573,9 @@
       player.inv = Math.max(0, player.inv - dt);
       swingT = Math.max(0, swingT - dt);
       swingCd = Math.max(0, swingCd - dt);
+      speedT = Math.max(0, speedT - dt);
+      shieldT = Math.max(0, shieldT - dt);
+      spinT = Math.max(0, spinT - dt);
 
       // room transition slide: freeze play, glide the camera, then land the player
       if (trans) {
@@ -524,7 +604,7 @@
       if (mag > 1) { mvx /= mag; mvy /= mag; mag = 1; }
       if (mag > 0.05) {
         setDir(mvx, mvy);
-        var SPD = 180;
+        var SPD = speedT > 0 ? 270 : 180;  // 💨 Zoom Boots
         player.x += mvx * SPD * dt;
         player.y += mvy * SPD * dt;
       }
@@ -716,6 +796,18 @@
             ctx.fillText("TAP + WORD!", LX(mob.x), LY(mob.y) - sc * 0.75);
           }
         });
+        // 🌀 spin-slash flash: a full ring around the player
+        if (spinT > 0) {
+          ctx.strokeStyle = "rgba(201,182,255," + (spinT / 0.35) + ")"; ctx.lineWidth = pz(8); ctx.lineCap = "round";
+          ctx.beginPath(); ctx.arc(LX(player.x), LY(player.y), pz(PR + 30 + (0.35 - spinT) * 260), 0, Math.PI * 2); ctx.stroke();
+        }
+        // 🛡️ bubble shield
+        if (shieldT > 0) {
+          ctx.strokeStyle = "rgba(105,240,174," + (0.35 + Math.sin(player.phase * 6) * 0.2) + ")"; ctx.lineWidth = pz(4);
+          ctx.beginPath(); ctx.arc(LX(player.x), LY(player.y), pz(PR + 14), 0, Math.PI * 2); ctx.stroke();
+        }
+        // 💨 zoom trail
+        if (speedT > 0 && juice && Math.random() < 0.4) juice.burst(LX(player.x), LY(player.y) + pz(PR), "#8ecdf7", 2);
         // sword arc
         if (swingT > 0) {
           var ax = { N: 0, S: 0, E: 1, W: -1 }[player.dir], ay = { N: -1, S: 1, E: 0, W: 0 }[player.dir];
@@ -736,11 +828,11 @@
       }
     }
 
-    // mini-map: visited rooms + your position. Anchored to the BOTTOM-right of the
-    // screen — free space in both orientations, so it never overlaps the room.
+    // mini-map: visited rooms + your position. TOP-right just under the HUD —
+    // the bottom-right corner now belongs to the ⚔ attack cross.
     function drawMiniMap() {
       var cell = compact ? 12 : 15, pad = 4, mw = GRID * cell + pad * 2;
-      var mx = W - mw - 8, my = H - (GRID * cell + pad * 2) - 10;
+      var mx = W - mw - 8, my = (compact ? 92 : 122) + pad;
       ctx.fillStyle = "rgba(0,0,0,.45)"; rrect(mx - pad, my - pad, mw, GRID * cell + pad * 2, 6); ctx.fill();
       for (var r = 0; r < GRID; r++) for (var c = 0; c < GRID; c++) {
         var rm = map[r] && map[r][c]; if (!rm) continue;
@@ -795,6 +887,18 @@
     cv.addEventListener("touchcancel", endTouch, { passive: false });
     // desktop: click = swing/duel; WASD/arrows = move
     cv.addEventListener("mousedown", function (e) { var r = cv.getBoundingClientRect(); tapAt(e.clientX - r.left, e.clientY - r.top); });
+    // ⚔ attack cross: tap a button to face that way and swing (discrete taps —
+    // touchstart preventDefault suppresses the iOS phantom mouse tap)
+    function attackDir(dir) {
+      if (over || paused || trans || !map) return;
+      player.dir = dir;
+      swing();
+    }
+    Array.prototype.forEach.call(wrap.querySelectorAll("[data-atk]"), function (b) {
+      function atk(e) { e.preventDefault(); attackDir(b.dataset.atk); }
+      b.addEventListener("touchstart", atk, { passive: false });
+      b.addEventListener("mousedown", atk);
+    });
     function onKeyDown(e) {
       var k = e.key;
       if (k === " " || k === "Spacebar") { e.preventDefault(); swing(); return; }
@@ -866,10 +970,16 @@
       },
       duel: duel,
       boss: boss,
-      player: function () { return { x: player.x, y: player.y, dir: player.dir }; }
+      player: function () { return { x: player.x, y: player.y, dir: player.dir }; },
+      attack: attackDir,
+      items: function () { return stats.items; },
+      giveItem: findItem,
+      useItem: useItem,
+      effects: function () { return { speedT: speedT, shieldT: shieldT, spinT: spinT }; }
     };
 
     hud();
+    invUI();
     showSelect();
     if (global._dungeondemo) setTimeout(function () { // test hook: a lively mid-fight board
       global._dungeondemo = 0;
