@@ -36,5 +36,8 @@
   add("VobloxSlice", { id: "slice", name: "Ninja Slice", emoji: "🥷", color: 0x2c3e50, hub: true });
   add("VobloxBlaster", { id: "blaster", name: "Star Blaster", emoji: "🚀", color: 0x5a3ad0, hub: true });
   add("VobloxBeat", { id: "beat", name: "Beat Bounce", emoji: "🎵", color: 0xd6249b, hub: true });
+  add("VobloxSurvivors", { id: "survivors", name: "Word Survivors", emoji: "🧟", color: 0x6a9c3a, hub: true });
+  add("VobloxDigger", { id: "digger", name: "Gold Digger", emoji: "⛏️", color: 0xc98a2e, hub: true });
+  add("VobloxGobble", { id: "gobble", name: "Gobble Blob", emoji: "🟢", color: 0x3ec66a, hub: true });
   global.VobloxGames = games;
 })(typeof window !== "undefined" ? window : globalThis);

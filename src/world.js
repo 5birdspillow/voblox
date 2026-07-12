@@ -248,7 +248,8 @@
         { gameId: "books", flavor: "awning", wall: 0xf4e8cc, roof: 0x6a8ad0 },
         { gameId: "clash", flavor: "board", wall: 0xf4ccd8, roof: 0xb03a5a },
         { gameId: "towerd", flavor: "tower", wall: 0x9a8ad0, roof: 0x4a3aad },
-        { gameId: "dungeon", flavor: "tower", wall: 0xd8c4e8, roof: 0x5a3a7c }
+        { gameId: "dungeon", flavor: "tower", wall: 0xd8c4e8, roof: 0x5a3a7c },
+        { gameId: "survivors", flavor: "fence", wall: 0xc8d8a8, roof: 0x4a6c2a }
       ] },
       { name: "🏟 Sports Zone", color: "#2f7d4f", defs: [
         { gameId: "soccer", flavor: "goal", wall: 0x7ec86a, roof: 0x2f6b1f },
@@ -267,11 +268,13 @@
       ] },
       { name: "🌿 Critter Cove", color: "#3a9c50", defs: [
         { gameId: "pets", flavor: "fence", wall: 0xf0b8d8, roof: 0xb06a9a },
-        { gameId: "fishing", flavor: "dock", wall: 0x7ab8d8, roof: 0x2a6a8a }
+        { gameId: "fishing", flavor: "dock", wall: 0x7ab8d8, roof: 0x2a6a8a },
+        { gameId: "gobble", flavor: null, wall: 0xb8ecc8, roof: 0x2a9c50 }
       ] },
       { name: "🎢 Tycoon Town", color: "#6b5ac0", defs: [
         { gameId: "park", flavor: "arch", wall: 0xd0f4c8, roof: 0x3a9c50 },
-        { gameId: "chef", flavor: "awning", wall: 0xf2dcb8, roof: 0xb3392f }
+        { gameId: "chef", flavor: "awning", wall: 0xf2dcb8, roof: 0xb3392f },
+        { gameId: "digger", flavor: "tower", wall: 0xd8b88a, roof: 0x8a5a2a }
       ] },
       { name: "🏪 Town Square", color: "#5aa6f0", defs: [
         { tab: "shop", name: "Item Shop", emoji: "🛍️", color: 0xf0a92e, flavor: "awning", wall: 0xffe2a8, roof: 0xf0a92e },
@@ -850,7 +853,7 @@
     var bkgm = (window.VobloxGames || []).filter(function (x) { return x.id === "books"; })[0];
     if (bkgm) launchGame(bkgm);
   }
-  else if (/^#(merge|dash|dungeon|clash|park|slice|blaster|beat)demo$/.test(location.hash)) { // test hooks: seeded new-game boards
+  else if (/^#(merge|dash|dungeon|clash|park|slice|blaster|beat|survivors|digger|gobble)demo$/.test(location.hash)) { // test hooks: seeded new-game boards
     var ngid = location.hash.slice(1).replace("demo", "");
     window["_" + ngid + "demo"] = 1;
     var ngm = (window.VobloxGames || []).filter(function (x) { return x.id === ngid; })[0];
