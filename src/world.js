@@ -37,12 +37,12 @@
 
   var scene = new THREE.Scene();
   scene.background = new THREE.Color(0x9fd6ff);
-  scene.fog = new THREE.Fog(0x9fd6ff, 44, 120);
+  scene.fog = new THREE.Fog(0x9fd6ff, 54, 150);
   var camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
   scene.add(new THREE.HemisphereLight(0xffffff, 0x6f9e57, 1.0));
   var sun = new THREE.DirectionalLight(0xfff3d0, 0.85);
   sun.position.set(30, 48, 22); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
-  var scam = sun.shadow.camera; scam.left = -36; scam.right = 36; scam.top = 36; scam.bottom = -36; scam.near = 1; scam.far = 130;
+  var scam = sun.shadow.camera; scam.left = -46; scam.right = 46; scam.top = 46; scam.bottom = -46; scam.near = 1; scam.far = 150;
   scene.add(sun);
 
   // ---------- helpers ----------
@@ -74,7 +74,7 @@
   function box(w, h, d, color) { var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ color: color })); m.castShadow = true; return m; }
 
   // ---------- ground ----------
-  var HALF = 22; // island grew to fit the game districts around the outer ring
+  var HALF = 32; // island sized for the six themed game districts (two rows each)
   (function buildGround() {
     var n = (HALF * 2 + 1) * (HALF * 2 + 1);
     var mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshLambertMaterial({ color: 0xffffff }), n);
@@ -89,9 +89,9 @@
     }
     mesh.instanceMatrix.needsUpdate = true; if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     scene.add(mesh);
-    // the pond anchors the fishing district in the south-west corner
+    // the pond anchors the fishing dock in Critter Cove (south-west corner)
     var water = new THREE.Mesh(new THREE.BoxGeometry(8, 0.5, 8), new THREE.MeshLambertMaterial({ color: 0x3aa0e6, transparent: true, opacity: 0.85 }));
-    water.position.set(-16.5, -0.15, -16.5); water.receiveShadow = true; scene.add(water);
+    water.position.set(-24, -0.15, -24); water.receiveShadow = true; scene.add(water);
     var wallMat = new THREE.MeshLambertMaterial({ color: 0x9aa0aa });
     [[0, HALF + 0.5], [0, -(HALF + 0.5)]].forEach(function (p) { var w = new THREE.Mesh(new THREE.BoxGeometry(HALF * 2 + 1, 1.2, 1), wallMat); w.position.set(p[0], 0.6, p[1]); w.receiveShadow = true; scene.add(w); });
     [[HALF + 0.5, 0], [-(HALF + 0.5), 0]].forEach(function (p) { var w = new THREE.Mesh(new THREE.BoxGeometry(1, 1.2, HALF * 2 + 1), wallMat); w.position.set(p[0], 0.6, p[1]); w.receiveShadow = true; scene.add(w); });
@@ -108,7 +108,9 @@
   [[3.8, 2.6], [-3.8, 3.4], [3.0, -3.9], [-3.2, -2.6], [-6.6, 6.6],
    [10.5, 2.5], [-10.5, 3.5], [2.5, 10.5], [-3, -10.5], [11, -10], [-11.5, 9.5],
    [14, 4], [-14, -3], [5.5, 14], [-5.5, -14], [9, 9], [-9, -9],
-   [20, 8], [-20, 6], [8, -20], [-6, 20], [16, 16], [16, -16], [-19, 14], [20, -6]].forEach(function (p) { makeTree(p[0], p[1]); });
+   [20, 8], [-20, 6], [8, -20], [-6, 20], [16, 16], [16, -16], [-19, 14], [20, -6],
+   // outer trees mark the district boundaries on the bigger island
+   [31, 0], [15.5, 26.8], [-15.5, 26.8], [-31, 0], [-15.5, -26.8], [15.5, -26.8]].forEach(function (p) { makeTree(p[0], p[1]); });
 
   // ---------- boss totem (center) ----------
   var totem = (function () {
@@ -227,41 +229,77 @@
     buildings.push(b);
     return b;
   }
+  function makeSignpost(name, color, x, z) {
+    var g = new THREE.Group();
+    var post = box(0.18, 2.6, 0.18, 0x8a5a3b); post.position.y = 1.3; g.add(post);
+    var top = box(0.5, 0.18, 0.5, 0x6a4a2e); top.position.y = 2.65; g.add(top);
+    var spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex(name, color), depthWrite: false }));
+    spr.scale.set(3.6, 0.95, 1); spr.position.y = 3.2; g.add(spr);
+    g.position.set(x, 0, z); scene.add(g);
+    buildingObstacles.push({ x: x, z: z, r: 0.4 });
+  }
   function buildBuildings() {
-    var DEFS = [
-      { gameId: "pickle", flavor: null, wall: 0x63c78a, roof: 0x2f7d4f },
-      { gameId: "soccer", flavor: "goal", wall: 0x7ec86a, roof: 0x2f6b1f },
-      { gameId: "karts", flavor: "arch", wall: 0xd97b4a, roof: 0x8a3a1a },
-      { gameId: "chef", flavor: "awning", wall: 0xf2dcb8, roof: 0xb3392f },
-      { gameId: "chess", flavor: "board", wall: 0xcaa876, roof: 0x5a3a22 },
-      { gameId: "bjj", flavor: null, wall: 0xe8e2d6, roof: 0xb3392f },
-      { gameId: "pets", flavor: "fence", wall: 0xf0b8d8, roof: 0xb06a9a },
-      { gameId: "fishing", flavor: "dock", wall: 0x7ab8d8, roof: 0x2a6a8a },
-      { gameId: "towerd", flavor: "tower", wall: 0x9a8ad0, roof: 0x4a3aad },
-      { gameId: "obby", flavor: "cloud", wall: 0xbfe3ff, roof: 0x5aa6f0 },
-      { tab: "shop", name: "Item Shop", emoji: "🛍️", color: 0xf0a92e, flavor: "awning", wall: 0xffe2a8, roof: 0xf0a92e },
-      { tab: "locker", name: "Wardrobe", emoji: "🧢", color: 0x5aa6f0, flavor: null, wall: 0xcfe0f4, roof: 0x3a6ab0 },
-      { href: "craft.html", name: "Vocraft Mine", emoji: "⛏️", color: 0x6fae3e, flavor: "tower", wall: 0x8a5a3b, roof: 0x57c04a },
-      { gameId: "empire", flavor: "tower", wall: 0xd8ccf4, roof: 0x6b5ac0 },
-      { gameId: "books", flavor: "awning", wall: 0xf4e8cc, roof: 0x6a8ad0 },
-      { gameId: "merge", flavor: "tower", wall: 0xf4d8a8, roof: 0xffb300 },
-      { gameId: "dash", flavor: "arch", wall: 0xc8f4ee, roof: 0x30c0b0 },
-      { gameId: "dungeon", flavor: "tower", wall: 0xd8c4e8, roof: 0x5a3a7c },
-      { gameId: "clash", flavor: "board", wall: 0xf4ccd8, roof: 0xb03a5a },
-      { gameId: "park", flavor: "arch", wall: 0xd0f4c8, roof: 0x3a9c50 }
+    // Six themed districts, one wedge each. Buildings sit in two staggered rows
+    // ~8 units apart so no doorway is ever crowded; each district gets a signpost.
+    // New hub games join the district that fits their genre (7-8 fit per wedge).
+    var DISTRICTS = [
+      { name: "⚔ Battle Row", color: "#b3123c", defs: [
+        { gameId: "empire", flavor: "tower", wall: 0xd8ccf4, roof: 0x6b5ac0 },
+        { gameId: "books", flavor: "awning", wall: 0xf4e8cc, roof: 0x6a8ad0 },
+        { gameId: "clash", flavor: "board", wall: 0xf4ccd8, roof: 0xb03a5a },
+        { gameId: "towerd", flavor: "tower", wall: 0x9a8ad0, roof: 0x4a3aad },
+        { gameId: "dungeon", flavor: "tower", wall: 0xd8c4e8, roof: 0x5a3a7c }
+      ] },
+      { name: "🏟 Sports Zone", color: "#2f7d4f", defs: [
+        { gameId: "soccer", flavor: "goal", wall: 0x7ec86a, roof: 0x2f6b1f },
+        { gameId: "pickle", flavor: null, wall: 0x63c78a, roof: 0x2f7d4f },
+        { gameId: "bjj", flavor: null, wall: 0xe8e2d6, roof: 0xb3392f },
+        { gameId: "karts", flavor: "arch", wall: 0xd97b4a, roof: 0x8a3a1a }
+      ] },
+      { name: "🎠 Arcade Ave", color: "#f0a92e", defs: [
+        { gameId: "dash", flavor: "arch", wall: 0xc8f4ee, roof: 0x30c0b0 },
+        { gameId: "obby", flavor: "cloud", wall: 0xbfe3ff, roof: 0x5aa6f0 },
+        { gameId: "merge", flavor: "tower", wall: 0xf4d8a8, roof: 0xffb300 },
+        { gameId: "chess", flavor: "board", wall: 0xcaa876, roof: 0x5a3a22 }
+      ] },
+      { name: "🌿 Critter Cove", color: "#3a9c50", defs: [
+        { gameId: "pets", flavor: "fence", wall: 0xf0b8d8, roof: 0xb06a9a },
+        { gameId: "fishing", flavor: "dock", wall: 0x7ab8d8, roof: 0x2a6a8a }
+      ] },
+      { name: "🎢 Tycoon Town", color: "#6b5ac0", defs: [
+        { gameId: "park", flavor: "arch", wall: 0xd0f4c8, roof: 0x3a9c50 },
+        { gameId: "chef", flavor: "awning", wall: 0xf2dcb8, roof: 0xb3392f }
+      ] },
+      { name: "🏪 Town Square", color: "#5aa6f0", defs: [
+        { tab: "shop", name: "Item Shop", emoji: "🛍️", color: 0xf0a92e, flavor: "awning", wall: 0xffe2a8, roof: 0xf0a92e },
+        { tab: "locker", name: "Wardrobe", emoji: "🧢", color: 0x5aa6f0, flavor: null, wall: 0xcfe0f4, roof: 0x3a6ab0 },
+        { href: "craft.html", name: "Vocraft Mine", emoji: "⛏️", color: 0x6fae3e, flavor: "tower", wall: 0x8a5a3b, roof: 0x57c04a }
+      ] }
     ];
-    var R = 18.5;
-    DEFS.forEach(function (d, i) {
-      if (d.gameId) {
+    var FRONT_R = 23, BACK_R = 28.5, SPACING = 8.2; // arc distance between building centers
+    DISTRICTS.forEach(function (D, di) {
+      var theta = (di / DISTRICTS.length) * Math.PI * 2 + Math.PI / DISTRICTS.length;
+      makeSignpost(D.name, D.color, Math.cos(theta) * 17, Math.sin(theta) * 17);
+      var defs = D.defs.filter(function (d) {
+        if (!d.gameId) return true;
         var gm = (window.VobloxGames || []).filter(function (x) { return x.id === d.gameId; })[0];
-        if (!gm) return;
-        d.name = gm.name; d.emoji = gm.emoji; d.color = gm.color;
-        d.game = gm;
-      }
-      var a = (i / DEFS.length) * Math.PI * 2 + Math.PI / DEFS.length;
-      var x = Math.cos(a) * R, z = Math.sin(a) * R;
-      if (d.gameId === "fishing") { x = -13.4; z = -13.4; } // the dock sits by the pond
-      makeBuilding(d, x, z);
+        if (!gm) return false;
+        d.name = gm.name; d.emoji = gm.emoji; d.color = gm.color; d.game = gm;
+        return true;
+      });
+      var frontN = defs.length > 6 ? 4 : Math.min(3, defs.length);
+      var rows = [{ list: defs.slice(0, frontN), radius: FRONT_R, stagger: 0 },
+                  { list: defs.slice(frontN), radius: BACK_R, stagger: 0.5 }];
+      rows.forEach(function (row) {
+        var n = row.list.length; if (!n) return;
+        var dA = SPACING / row.radius;
+        row.list.forEach(function (d, i) {
+          var a = theta + (i - (n - 1) / 2 + row.stagger) * dA;
+          var x = Math.cos(a) * row.radius, z = Math.sin(a) * row.radius;
+          if (d.gameId === "fishing") { x = -20; z = -20; } // the dock sits by the pond
+          makeBuilding(d, x, z);
+        });
+      });
     });
   }
 
@@ -286,7 +324,7 @@
     var bub = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex("hi!", "#ffffff"), depthWrite: false, transparent: true }));
     bub.scale.set(2.0, 0.55, 1); bub.position.y = 3.7 * s; bub.visible = false; g.add(bub);
     g.add(ll, rl, torso, la, ra, head);
-    var a0 = Math.random() * Math.PI * 2, r0 = 6 + Math.random() * 10;
+    var a0 = Math.random() * Math.PI * 2, r0 = 6 + Math.random() * 18;
     g.position.set(Math.cos(a0) * r0, 0, Math.sin(a0) * r0);
     scene.add(g);
     return { group: g, bot: bot, ll: ll, rl: rl, la: la, ra: ra, bub: bub, tx: g.position.x, tz: g.position.z, wait: Math.random() * 3, phase: Math.random() * 6, bubT: 0, greeted: 0 };
@@ -303,7 +341,7 @@
         w.wait -= dt;
         w.ll.rotation.x *= 0.8; w.rl.rotation.x *= 0.8; w.la.rotation.x *= 0.8; w.ra.rotation.x *= 0.8;
         if (w.wait <= 0) {
-          var a = Math.random() * Math.PI * 2, r = 5 + Math.random() * 13;
+          var a = Math.random() * Math.PI * 2, r = 5 + Math.random() * 20;
           w.tx = Math.cos(a) * r; w.tz = Math.sin(a) * r; w.wait = 1.5 + Math.random() * 4;
         }
       } else {
@@ -457,7 +495,7 @@
     ix += joy.x; iz += joy.y;
     var mag = Math.hypot(ix, iz); if (mag > 1) { ix /= mag; iz /= mag; mag = 1; }
     if (mag > 0.05) {
-      var s = Math.sin(camYaw), c = Math.cos(camYaw), wx = -s * iz + c * ix, wz = -c * iz - s * ix, spd = 4.2 * dt;
+      var s = Math.sin(camYaw), c = Math.cos(camYaw), wx = -s * iz + c * ix, wz = -c * iz - s * ix, spd = 4.8 * dt; // a touch quicker for the bigger island
       pos.x += wx * spd; pos.z += wz * spd;
       for (var o = 0; o < obstacles.length; o++) { var ob = obstacles[o], dx = pos.x - ob.x, dz = pos.z - ob.z, dd = Math.hypot(dx, dz), mn = ob.r + 0.45; if (dd < mn && dd > 0.0001) { pos.x = ob.x + (dx / dd) * mn; pos.z = ob.z + (dz / dd) * mn; } }
       pos.x = Math.max(-HALF + 0.6, Math.min(HALF - 0.6, pos.x)); pos.z = Math.max(-HALF + 0.6, Math.min(HALF - 0.6, pos.z));
@@ -796,6 +834,7 @@
     store.state.profile.avatar.hair = hs2; store.state.profile.avatar.hairColor = "#e884c8"; store.save();
     if (window.VobloxAvatar) avatar.applyConfig(window.VobloxAvatar.resolve(store.state));
   }
+  else if (location.hash === "#overview") { camPitch = 1.2; camDist = 34; } // test hook: bird's-eye of the island
   else if (location.hash === "#players") openPlayers(); // test hook: the players overlay
   else if (location.hash === "#locker") openBackpack("locker"); // test hook: the locker
   else if (location.hash === "#shop") openBackpack("shop"); // test hook: the shop (daily + whole-store browse)
