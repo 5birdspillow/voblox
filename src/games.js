@@ -45,5 +45,12 @@
   add("VobloxFactory", { id: "factory", name: "Word Factory", emoji: "🏭", color: 0x5a6478, hub: true });
   add("VobloxWally", { id: "wally", name: "Wally Crash", emoji: "💥", color: 0xe0522e, hub: true });
   add("VobloxClaw", { id: "claw", name: "Claw Champ", emoji: "🕹️", color: 0xc03a9c, hub: true });
+  add("VobloxFishing2", { id: "fishing2", name: "Fishing Frenzy 2", emoji: "🌊", color: 0x1a5a9c, hub: true });
+  add("VobloxPiano", { id: "piano", name: "Piano Panic", emoji: "🎹", color: 0x2a2a3a, hub: true });
+  add("VobloxStack", { id: "stack", name: "Sky Stacker", emoji: "🏗️", color: 0xe0a02e, hub: true });
+  add("VobloxJetHop", { id: "jethop", name: "Jet Hop", emoji: "🐤", color: 0xffc93f, hub: true });
+  add("VobloxBrick", { id: "brick", name: "Brick Blitz", emoji: "🧱", color: 0xc0522e, hub: true });
+  add("VobloxHopper", { id: "hopper", name: "Road Hopper", emoji: "🚸", color: 0x4aa03a, hub: true });
+  add("VobloxGolf", { id: "golf", name: "Word Golf", emoji: "⛳", color: 0x2e8a4a, hub: true });
   global.VobloxGames = games;
 })(typeof window !== "undefined" ? window : globalThis);

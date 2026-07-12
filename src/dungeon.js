@@ -1,6 +1,8 @@
 /*
  * Voblox arcade game — 🗡️ Word Dungeon (a top-down Zelda-lite crawler).
- * THREE dungeons of escalating menace, each a 5×5 grid of hand-authored rooms.
+ * SIX dungeons of escalating menace, each a 5×5 grid of hand-authored rooms.
+ * Later floors add 🧩 Zelda-style PUZZLE ROOMS (push-block, torch-order, plate
+ * sequence) and tougher bosses with telegraphed, dodgeable new attacks.
  * One room fills the screen at a time; walk through a doorway and it slides to
  * the neighbor. Monsters, keys, treasure, and a boss in the far corner.
  * VOCAB IS THE KEY — literally:
@@ -27,7 +29,11 @@
   var MOBS = {
     slime: { emoji: "🟢", hp: 1, speed: 42, r: 18, kind: "wander", touch: 1 },
     bat: { emoji: "🦇", hp: 1, speed: 70, r: 16, kind: "swoop", touch: 1 },
-    skel: { emoji: "💀", hp: 2, speed: 52, r: 19, kind: "chase", touch: 1 }
+    skel: { emoji: "💀", hp: 2, speed: 52, r: 19, kind: "chase", touch: 1 },
+    // deeper-floor mobs (dungeons 4-6)
+    spiderling: { emoji: "🕷", hp: 1, speed: 96, r: 15, kind: "chase", touch: 1 }, // fast, 1 hp
+    magmablob: { emoji: "🔥", hp: 3, speed: 30, r: 20, kind: "wander", touch: 1 }, // slow, 3 hp, leaves hot floor on death
+    shade: { emoji: "👑", hp: 1, speed: 46, r: 40, kind: "wander", touch: 0 }      // KING's harmless decoy (fake:true), shatters in 1 hit
   };
   // ---------- power-up items (found on monsters + in chests; tap to use) ----------
   var ITEMS = {
@@ -42,19 +48,30 @@
   var BOSSES = {
     1: { emoji: "👹", name: "GRUMP", hp: 8, speed: 60, r: 40, touch: 1 },
     2: { emoji: "🐍", name: "FANG", hp: 10, speed: 78, r: 42, touch: 1 },
-    3: { emoji: "🐲", name: "VOWELZILLA", hp: 12, speed: 92, r: 46, touch: 1 }
+    3: { emoji: "🐲", name: "VOWELZILLA", hp: 12, speed: 92, r: 46, touch: 1 },
+    // deeper bosses: extra telegraphed attacks layered on the charge/word-shield duel
+    4: { emoji: "🕷", name: "WEBSPINNER", hp: 14, speed: 66, r: 44, touch: 1 },        // web slow-zones + baby spiders
+    5: { emoji: "🌋", name: "CINDERJAW", hp: 16, speed: 96, r: 46, touch: 1 },         // charge + telegraphed fire pools
+    6: { emoji: "👑", name: "THE WORDLESS KING", hp: 20, speed: 84, r: 46, touch: 1 }  // teleport + shadow-bolt cross + splits
   };
+
+  // dungeon display names, indexed 1..6 (index 0 unused)
+  var DG_NAMES = ["", "The Slime Cellar", "The Fang Warren", "VOWELZILLA'S Lair", "The Web Depths", "The Magma Halls", "The Shadow Keep"];
 
   // ---------- hand-authored dungeon layouts (deterministic → tests are stable) ----------
   // Each dungeon is a 5×5 map. Rooms addressed [r][c], r=row (0 top), c=col.
   // Room fields:
-  //   t: "start" | "normal" | "key" | "treasure" | "boss"
+  //   t: "start" | "normal" | "key" | "treasure" | "boss" | "puzzle"
+  //   puzzle: {kind:"block"|"torch"|"plates", ...} — a Zelda-style room (no mobs).
+  //     A door flagged {plate:true} stays sealed until THIS room's puzzle is solved.
   //   mobs: [{type,x,y}] spawn offsets in logical room space (defaults center-ish)
   //   doors: which neighbors connect: any of "N","S","E","W". A door object may
   //          carry {word:true} (📜 rune-locked) or {lock:true} (needs the 🗝️ key).
   //   Doors are authored on BOTH sides for the pair (mirror) so travel is symmetric.
   // Design rule the prompt demands: there is ALWAYS a non-word path to the key
   // and to the boss. Word-doors are shortcuts + treasure gates, never a wall.
+  // Puzzles may gate a path ONLY when always solvable (no word, no dead-end) —
+  // here they gate treasure/side rewards, keeping the main crawl word-free.
   var OPP = { N: "S", S: "N", E: "W", W: "E" };
   var STEP = { N: { dr: -1, dc: 0 }, S: { dr: 1, dc: 0 }, E: { dr: 0, dc: 1 }, W: { dr: 0, dc: -1 } };
   function layout(n) {
@@ -115,7 +132,7 @@
       link(2, 2, "W", { lock: true });                                     // 🗝️ locked heart-treasure door
       link(1, 2, "E"); link(1, 3, "E"); link(1, 4, "N");                   // across the top to the boss
       link(2, 2, "N", { word: true });                                     // 📜 shortcut up from the treasure
-    } else {
+    } else if (n === 3) {
       // Dungeon 3 — the gauntlet: more mobs, a heart treasure, two 📜 word-doors.
       G[4][0] = room("start");
       G[4][1] = room("normal", [m("skel", 220, 240), m("skel", 320, 220), m("bat", 260, 300)]);
@@ -134,6 +151,95 @@
       link(2, 1, "E"); link(2, 2, "N"); link(1, 2, "E"); link(1, 3, "E"); link(1, 4, "N"); // across to the boss
       link(4, 2, "N"); link(3, 2, "N", { word: true });                    // 📜 shortcut #1 (key col → middle)
       link(2, 2, "W", { word: true });                                     // 📜 shortcut #2 into the treasure
+    } else if (n === 4) {
+      // Dungeon 4 "The Web Depths" — 🕷 WEBSPINNER. Denser mobs + all 3 puzzle rooms.
+      // puzzle configs: block/torch gate a {plate:true} treasure door; plates pays out.
+      G[4][0] = room("start");
+      G[4][1] = room("normal", [m("skel", 200, 240), m("spiderling", 300, 210), m("bat", 260, 320)]);
+      G[4][2] = room("key", [m("spiderling", 220, 240), m("slime", 320, 250)]);            // 🗝️
+      G[4][3] = room("puzzle", [], { puzzle: { kind: "torch", door: "N",
+        torches: [{ x: 140, y: 250, rune: 2 }, { x: 240, y: 250, rune: 1 }, { x: 340, y: 250, rune: 3 }] } });
+      G[3][0] = room("puzzle", [], { puzzle: { kind: "block", door: "N",
+        start: { x: 240, y: 360 }, plate: { x: 240, y: 120 }, lever: { x: 70, y: 410 } } });
+      G[3][2] = room("normal", [m("spiderling", 220, 230), m("spiderling", 320, 250), m("skel", 250, 330)]);
+      G[3][3] = room("treasure", [], { heart: true });                                     // behind the 🕯 torch door
+      G[2][0] = room("treasure", []);                                                       // behind the 🟫 block door
+      G[2][2] = room("normal", [m("skel", 200, 220), m("spiderling", 320, 220), m("bat", 260, 320), m("slime", 200, 330)]);
+      G[2][3] = room("normal", [m("spiderling", 220, 240), m("spiderling", 320, 240), m("skel", 260, 330)]);
+      G[2][4] = room("puzzle", [], { puzzle: { kind: "plates", seq: [0, 2, 3, 1],
+        plates: [{ x: 150, y: 160 }, { x: 330, y: 160 }, { x: 150, y: 340 }, { x: 330, y: 340 }] } });
+      G[1][3] = room("normal", [m("skel", 220, 240), m("skel", 320, 240), m("spiderling", 260, 330)]);
+      G[1][4] = room("normal", [m("spiderling", 240, 240), m("bat", 300, 250)]);
+      G[0][4] = room("boss");
+      // main non-word, non-puzzle path: start → key → boss
+      link(4, 0, "E"); link(4, 1, "E");
+      link(4, 2, "N"); link(3, 2, "N"); link(2, 2, "E");
+      link(2, 3, "N"); link(1, 3, "E"); link(1, 4, "N");
+      // 🟫 block puzzle branch → treasure
+      link(4, 0, "N"); link(3, 0, "N", { plate: true });
+      // 🕯 torch puzzle branch → treasure
+      link(4, 2, "E"); link(4, 3, "N", { plate: true });
+      // plates puzzle side room + a 📜 runed shortcut up to the boss row
+      link(2, 3, "E"); link(2, 4, "N", { word: true });
+    } else if (n === 5) {
+      // Dungeon 5 "The Magma Halls" — 🌋 CINDERJAW. Magma-heavy, torch + block puzzles.
+      G[4][0] = room("start");
+      G[4][1] = room("normal", [m("magmablob", 200, 240), m("skel", 320, 220), m("spiderling", 260, 320)]);
+      G[4][2] = room("key", [m("magmablob", 230, 240), m("spiderling", 320, 250)]);         // 🗝️
+      G[3][0] = room("puzzle", [], { puzzle: { kind: "torch", door: "N",
+        torches: [{ x: 140, y: 250, rune: 3 }, { x: 240, y: 250, rune: 1 }, { x: 340, y: 250, rune: 2 }] } });
+      G[3][2] = room("normal", [m("magmablob", 200, 220), m("magmablob", 320, 250), m("skel", 260, 330)]);
+      G[3][3] = room("puzzle", [], { puzzle: { kind: "block", door: "N",
+        start: { x: 240, y: 360 }, plate: { x: 240, y: 120 }, lever: { x: 70, y: 410 } } });
+      G[2][0] = room("treasure", [], { heart: true });                                      // behind the 🕯 torch door
+      G[2][2] = room("normal", [m("skel", 200, 220), m("spiderling", 320, 220), m("magmablob", 250, 330), m("bat", 310, 320)]);
+      G[2][3] = room("treasure", []);                                                        // behind the 🟫 block door / 📜 shortcut
+      G[1][2] = room("normal", [m("magmablob", 210, 240), m("skel", 320, 230), m("spiderling", 260, 330)]);
+      G[1][3] = room("normal", [m("skel", 220, 240), m("spiderling", 320, 240), m("bat", 260, 330)]);
+      G[1][4] = room("normal", [m("magmablob", 240, 240), m("spiderling", 300, 250)]);
+      G[0][4] = room("boss");
+      // main non-word path
+      link(4, 0, "E"); link(4, 1, "E");
+      link(4, 2, "N"); link(3, 2, "N"); link(2, 2, "N");
+      link(1, 2, "E"); link(1, 3, "E"); link(1, 4, "N");
+      // 🕯 torch branch → heart treasure
+      link(4, 0, "N"); link(3, 0, "N", { plate: true });
+      // 🟫 block branch → treasure, plus a 📜 runed shortcut into it
+      link(3, 2, "E"); link(3, 3, "N", { plate: true });
+      link(2, 2, "E", { word: true });
+    } else {
+      // Dungeon 6 "The Shadow Keep" — 👑 THE WORDLESS KING, the finale. Every mob type,
+      // all three puzzle kinds, two heart treasures, a 📜 runed treasure shortcut.
+      G[4][0] = room("start");
+      G[4][1] = room("normal", [m("skel", 190, 230), m("spiderling", 300, 210), m("magmablob", 250, 330), m("bat", 330, 320)]);
+      G[4][2] = room("key", [m("skel", 210, 240), m("spiderling", 320, 240), m("magmablob", 260, 330)]); // 🗝️
+      G[3][0] = room("puzzle", [], { puzzle: { kind: "plates", seq: [2, 0, 3, 1],
+        plates: [{ x: 150, y: 160 }, { x: 330, y: 160 }, { x: 150, y: 340 }, { x: 330, y: 340 }] } });
+      G[3][2] = room("normal", [m("magmablob", 200, 220), m("magmablob", 320, 240), m("skel", 240, 320), m("spiderling", 320, 320)]);
+      G[3][3] = room("puzzle", [], { puzzle: { kind: "block", door: "E",
+        start: { x: 120, y: 240 }, plate: { x: 360, y: 240 }, lever: { x: 70, y: 410 } } });
+      G[3][4] = room("treasure", [], { heart: true });                                       // behind the 🟫 block door
+      G[2][2] = room("normal", [m("skel", 200, 220), m("skel", 320, 230), m("magmablob", 250, 330), m("spiderling", 320, 330)]);
+      G[2][3] = room("normal", [m("spiderling", 210, 240), m("skel", 320, 240), m("magmablob", 260, 330)]);
+      G[1][2] = room("puzzle", [], { puzzle: { kind: "torch", door: "N",
+        torches: [{ x: 130, y: 250, rune: 2 }, { x: 230, y: 250, rune: 3 }, { x: 330, y: 250, rune: 1 }] } });
+      G[1][3] = room("normal", [m("magmablob", 210, 230), m("skel", 320, 230), m("spiderling", 250, 330), m("bat", 320, 320)]);
+      G[1][4] = room("normal", [m("skel", 230, 240), m("spiderling", 310, 250)]);
+      G[0][2] = room("treasure", [], { heart: true });                                       // behind the 🕯 torch door
+      G[0][3] = room("treasure", []);                                                         // behind a 📜 runed door
+      G[0][4] = room("boss");
+      // main non-word, non-puzzle path: start → key → boss
+      link(4, 0, "E"); link(4, 1, "E");
+      link(4, 2, "N"); link(3, 2, "N"); link(2, 2, "E");
+      link(2, 3, "N"); link(1, 3, "E"); link(1, 4, "N");
+      // 🎛 plates puzzle side room
+      link(4, 0, "N");
+      // 🟫 block puzzle → heart treasure
+      link(3, 2, "E"); link(3, 3, "E", { plate: true });
+      // 🕯 torch puzzle → heart treasure
+      link(1, 3, "W"); link(1, 2, "N", { plate: true });
+      // 📜 runed treasure shortcut off the top row
+      link(1, 3, "N", { word: true });
     }
     return G;
   }
@@ -209,6 +315,8 @@
     var speedT = 0, shieldT = 0, spinT = 0;   // power-up effect timers
     var moveVec = { x: 0, y: 0 };            // current movement input (-1..1)
     var cleared = {}, doorsUnlocked = {}, visited = {}, chestOpened = {};
+    var puzzles = {};                        // per-room 🧩 puzzle state (keyed like cleared)
+    var zones = [];                          // active hazard zones (web slow / fire pool / shadow bolts)
     var trans = null;                        // room-slide transition {dr,dc,t}
     var lastFmt = null;
     var keyHeld = {};                        // WASD/arrow state
@@ -226,10 +334,10 @@
     function showSelect() {
       dungeon = 0; map = null; paused = true; over = false; won = false;
       var end = document.getElementById("dgend");
-      var rows = [1, 2, 3].map(function (n) {
+      var rows = [1, 2, 3, 4, 5, 6].map(function (n) {
         var open = n <= stats.lvl;
-        var name = ["The Slime Cellar", "The Fang Warren", "VOWELZILLA'S Lair"][n - 1];
-        var boss = ["👹 GRUMP", "🐍 FANG", "🐲 VOWELZILLA"][n - 1];
+        var name = DG_NAMES[n];
+        var boss = ["👹 GRUMP", "🐍 FANG", "🐲 VOWELZILLA", "🕷 WEBSPINNER", "🌋 CINDERJAW", "👑 THE WORDLESS KING"][n - 1];
         return '<button class="embtn" style="min-width:140px' + (open ? "" : ";opacity:.45") + '" data-dg="' + n + '">' +
           '<span class="ebl">' + (open ? "🗡️ " : "🔒 ") + "Dungeon " + n + '</span>' +
           '<span class="ebs">' + name + " · " + boss + "</span></button>";
@@ -251,10 +359,15 @@
 
     // ---------- start a dungeon ----------
     function begin(n) {
+      // progression gate (same lock message path as the select buttons)
+      if (n > stats.lvl) { big("🔒 Beat Dungeon " + (n - 1) + " first!", "#ffd740"); return; }
       dungeon = n; map = layout(n);
       over = false; won = false; banked = false; paused = false;
-      hearts = 3; maxHearts = 3; deaths = 0; keys = 0; coins = 0; roomsCleared = 0;
+      // dungeon 4+ grants a courtesy heart for the harder rooms
+      maxHearts = n >= 4 ? 4 : 3; hearts = maxHearts;
+      deaths = 0; keys = 0; coins = 0; roomsCleared = 0;
       cleared = {}; doorsUnlocked = {}; visited = {}; chestOpened = {};
+      puzzles = {}; zones = [];
       swingT = 0; swingCd = 0; kb = { x: 0, y: 0 }; moveVec = { x: 0, y: 0 };
       trans = null; player.inv = 0;
       speedT = 0; shieldT = 0; spinT = 0; invUI();
@@ -266,7 +379,7 @@
       player.x = MW / 2; player.y = MH - TILE * 1.6; player.dir = "N";
       document.getElementById("dgend").style.display = "none";
       enterRoom(true);
-      big("🗡️ " + ["", "The Slime Cellar", "The Fang Warren", "VOWELZILLA'S Lair"][n], "#ffe14d");
+      big("🗡️ " + DG_NAMES[n], "#ffe14d");
       document.getElementById("dgmsg").innerHTML = "🗡️ <b>Dungeon " + n + "</b> — find the 🗝️, open the 📜, beat the boss!";
       hud();
     }
@@ -276,6 +389,14 @@
       var rm = curRoom(); if (!rm) return;
       visited[roomKey(room.r, room.c)] = true;
       mobs = [];
+      zones = [];                                  // hazard zones never carry between rooms
+      if (rm.t === "puzzle") {
+        // 🧩 thinking room: no mobs. Spin up (or restore) its puzzle state.
+        var pk = roomKey(room.r, room.c);
+        if (!puzzles[pk]) puzzles[pk] = initPuzzle(rm.puzzle);
+        hud();
+        return;
+      }
       if (rm.t === "boss") {
         // face the boss from a safe distance (the arena is tall enough to breathe)
         player.x = MW / 2; player.y = MH - TILE * 2; player.dir = "N";
@@ -294,7 +415,9 @@
     function spawnBoss() {
       var b = BOSSES[dungeon];
       mobs = [{ type: "boss", x: MW / 2, y: MH / 2 - 30, hp: b.hp, maxHp: b.hp, phase: 0, hit: 0,
-        shield: true, shieldT: 0, charge: 0, chargeCd: 1.5, cvx: 0, cvy: 0 }];
+        shield: true, shieldT: 0, charge: 0, chargeCd: 1.5, cvx: 0, cvy: 0,
+        // deeper-boss attack timers (unused by bosses 1-3)
+        webCd: 0.6, fireCd: 2.4, tpCd: 2.6, boltCd: 1.8, split: false }];
       big("⚔️ " + b.emoji + " " + b.name + " — tap him & answer a word to drop his shield!", "#c9b6ff");
       if (sfx && sfx.buzz) sfx.buzz();
     }
@@ -334,6 +457,13 @@
       if (juice) juice.burst(X(player.x + ax * 30), Y(player.y + ay * 30), "#e8f0ff", 6);
     }
     function hitMob(mob, dmg) {
+      if (mob.fake) {                              // a decoy shade — one tap and it's gone; real king unharmed
+        var fi = mobs.indexOf(mob); if (fi >= 0) mobs.splice(fi, 1);
+        big("✨ the shade shatters!", "#c9b6ff");
+        if (juice) juice.burst(X(mob.x), Y(mob.y), "#c9b6ff", 12);
+        if (sfx && sfx.pop) sfx.pop();
+        return;
+      }
       if (mob.type === "boss" && mob.shield) {     // WORD SHIELD blocks everything
         if (juice && Math.random() < 0.5) juice.text(X(mob.x), Y(mob.y - 50), "🛡 WORD-LOCKED", "#c9b6ff");
         return;
@@ -346,6 +476,8 @@
       var i = mobs.indexOf(mob); if (i >= 0) mobs.splice(i, 1);
       if (juice) juice.burst(X(mob.x), Y(mob.y), "#9aa86a", 10);
       if (sfx && sfx.pop && Math.random() < 0.6) sfx.pop();
+      // 🔥 a slain magmablob leaves a brief patch of hot floor
+      if (mob.type === "magmablob") zones.push({ kind: "fire", x: mob.x, y: mob.y, r: 42, life: 2.2, warn: 0 });
       if (mob.type === "boss") { bossDefeated(); return; }
       // loot: a heart (25%), coins (35%), or a power-up (12%)
       var roll = Math.random();
@@ -449,6 +581,7 @@
       var rm = curRoom(), d = doorOf(rm, dir); if (!d || !d.open) return false;
       if (mobs.length > 0 && !cleared[roomKey(room.r, room.c)]) { pushOff(dir); big("Clear the room first!", "#ffd740"); return false; }
       var uk = doorUnlockedKey(dir);
+      if (d.plate && !doorsUnlocked[uk]) { pushOff(dir); big("🔷 Solve the room's puzzle to open this door!", "#ffd740"); return false; }
       if (d.word && !doorsUnlocked[uk]) { pushOff(dir); openWordDoor(dir); return false; }
       if (d.lock && !doorsUnlocked[uk]) {
         pushOff(dir);
@@ -499,6 +632,8 @@
             big("💥 SHIELD DOWN — 10 seconds, GO!", "#69f0ae");
             if (juice) { juice.shake(8); juice.burst(X(b.x), Y(b.y), "#c9b6ff", 24); }
             if (sfx && sfx.fanfare) sfx.fanfare();
+            // 🕷 WEBSPINNER calls two baby spiders the moment his shield drops
+            if (dungeon === 4) summonSpiders(2, b);
           } else big("The boss laughs at your spelling…", "#ff8a8a");
         }
       });
@@ -507,8 +642,9 @@
     function bossDefeated() {
       cleared[roomKey(room.r, room.c)] = true;
       won = true;
-      if (dungeon >= stats.lvl && dungeon < 3) { stats.lvl = dungeon + 1; store.save(); }
-      if (dungeon === 3) { stats.beatAll = true; store.save(); }
+      if (dungeon >= stats.lvl && dungeon < 6) { stats.lvl = dungeon + 1; store.save(); }
+      if (dungeon === 3) { stats.beatAll = true; store.save(); }   // backward-compat flag (D3 cleared)
+      if (dungeon === 6) { stats.beatAll6 = true; store.save(); }  // the whole keep conquered
       stats.clears = (stats.clears || 0) + 1; store.save();
       endRun(true);
     }
@@ -538,17 +674,17 @@
       var bank = bankRun(w) || { rw: runRewards(w), res: null };
       var rw = bank.rw, res = bank.res;
       var end = document.getElementById("dgend");
-      var title = w ? (dungeon === 3 ? "🐲 VOWELZILLA IS SLAIN! You cleared every dungeon!" : "🏆 " + BOSSES[dungeon].emoji + " " + BOSSES[dungeon].name + " is defeated!") : "💀 The dungeon was too much…";
+      var title = w ? (dungeon === 6 ? "👑 THE WORDLESS KING FALLS! You conquered the whole keep!" : dungeon === 3 ? "🐲 VOWELZILLA IS SLAIN! Three dungeons down!" : "🏆 " + BOSSES[dungeon].emoji + " " + BOSSES[dungeon].name + " is defeated!") : "💀 The dungeon was too much…";
       var payRow = '<div style="margin:6px 0;font-weight:900;color:#2f9e44;font-size:17px">+' + rw.gems + ' <img class="vbx" src="icons/vobux.png" alt="Vobux"> · +' + rw.xp + " XP</div>";
       end.innerHTML = '<div class="wqcard" style="text-align:center"><div style="font-size:44px">' + (w ? "🏆" : "💀") + '</div>' +
         '<div class="wqtitle" style="font-size:20px">' + title + "</div>" + payRow +
         '<div style="margin:2px 0">🚪 ' + roomsCleared + " rooms cleared · 💀 " + deaths + " faints · 📜 " + Object.keys(doorsUnlocked).length + " doors opened" + (res && res.rankedUp ? "<br>🎖 RANK UP!" : "") + "</div>" +
-        '<button class="submit big-next" id="dgnext">' + (w && dungeon < 3 ? "Next dungeon ➜" : "Dungeon select") + "</button></div>";
+        '<button class="submit big-next" id="dgnext">' + (w && dungeon < 6 ? "Next dungeon ➜" : "Dungeon select") + "</button></div>";
       end.style.display = "flex";
       if (w && sfx && sfx.fanfare) sfx.fanfare();
       if (w && juice) { juice.shake(6); for (var i = 0; i < 5; i++) juice.burst(W * (0.2 + i * 0.15), H * 0.35, ["#ffd23f", "#69f0ae", "#40c4ff", "#ff6b6b", "#e040fb"][i], 16); }
       document.getElementById("dgnext").onclick = function () {
-        if (w && dungeon < 3) begin(dungeon + 1); else showSelect();
+        if (w && dungeon < 6) begin(dungeon + 1); else showSelect();
       };
     }
 
@@ -566,6 +702,215 @@
       if (juice) juice.burst(X(MW / 2), Y(MH / 2), "#ffd23f", 20);
       if (sfx && sfx.coin) sfx.coin();
       hud();
+    }
+
+    // ---------- 🧩 Zelda-style puzzle rooms (block / torch / plates) ----------
+    var BLOCKSTEP = 80, BLOCKMIN = 120, BLOCKMAX = 360;
+    function curPuzzle() { var rm = curRoom(); if (!rm || rm.t !== "puzzle") return null; return puzzles[roomKey(room.r, room.c)] || null; }
+    // build fresh runtime state from a room's puzzle config
+    function initPuzzle(cfg) {
+      if (!cfg) return null;
+      if (cfg.kind === "block") {
+        return { kind: "block", solved: false, bx: cfg.start.x, by: cfg.start.y,
+          plate: cfg.plate, door: cfg.door, lever: cfg.lever, pushCd: 0 };
+      }
+      if (cfg.kind === "torch") {
+        // ascending-rune solution order (indices sorted by rune)
+        var order = cfg.torches.map(function (tt, i) { return i; }).sort(function (a, b) { return cfg.torches[a].rune - cfg.torches[b].rune; });
+        return { kind: "torch", solved: false, torches: cfg.torches, order: order, lit: [], door: cfg.door, flick: 0 };
+      }
+      // plates: flash a sequence, then step them in order (wrong just replays)
+      return { kind: "plates", solved: false, seq: cfg.seq.slice(), plates: cfg.plates, step: 0, onPlate: -1,
+        showT: 0.6 * cfg.seq.length + 0.8, flashIdx: -1 };
+    }
+    // seal/open the {plate:true} doors of a room (both sides) once its puzzle is solved
+    function unlockPlateDoors(r, c) {
+      var rm = map[r] && map[r][c]; if (!rm) return;
+      ["N", "S", "E", "W"].forEach(function (dir) {
+        var d = rm.doors[dir]; if (!d || !d.plate) return;
+        doorsUnlocked[roomKey(r, c) + ":" + dir] = true;
+        var st = STEP[dir], nr = r + st.dr, nc = c + st.dc;
+        if (map[nr] && map[nr][nc]) doorsUnlocked[roomKey(nr, nc) + ":" + OPP[dir]] = true;
+      });
+    }
+    function solvePuzzle(ps) {
+      if (!ps || ps.solved) return;
+      ps.solved = true;
+      unlockPlateDoors(room.r, room.c);
+      var pay = 5 + dungeon * 2; coins += pay;
+      big("✨ Puzzle solved! +💰" + pay, "#9be870");
+      if (juice) juice.burst(X(MW / 2), Y(MH / 2), "#9be870", 22);
+      if (sfx && sfx.fanfare) sfx.fanfare();
+      // the plate-sequence room hands out a bonus power-up
+      if (ps.kind === "plates") findItem(ITEM_KEYS[Math.floor(Math.random() * ITEM_KEYS.length)]);
+      hud();
+    }
+    // 🟫 shove the push-block one grid step; snaps to grid, stops at walls, solves on the plate
+    function pushBlock(dir) {
+      var ps = curPuzzle(); if (!ps || ps.kind !== "block" || ps.solved) return;
+      var st = STEP[dir]; var nx = ps.bx + st.dc * BLOCKSTEP, ny = ps.by + st.dr * BLOCKSTEP;
+      if (nx < BLOCKMIN || nx > BLOCKMAX || ny < BLOCKMIN || ny > BLOCKMAX) return; // wall — cornered? use the 🔄 lever
+      ps.bx = nx; ps.by = ny;
+      if (sfx && sfx.thud) sfx.thud(); else if (sfx && sfx.pop) sfx.pop();
+      if (Math.abs(ps.bx - ps.plate.x) < 12 && Math.abs(ps.by - ps.plate.y) < 12) solvePuzzle(ps);
+    }
+    function resetBlock() {
+      var ps = curPuzzle(); if (!ps || ps.kind !== "block" || ps.solved) return;
+      var cfg = curRoom().puzzle; ps.bx = cfg.start.x; ps.by = cfg.start.y;
+      big("🔄 The block resets.", "#8ecdf7"); if (sfx && sfx.buzz) sfx.buzz();
+    }
+    // 🕯 light torches in ascending-rune order; a wrong tap flickers them all out
+    function tapTorch(i) {
+      var ps = curPuzzle(); if (!ps || ps.kind !== "torch" || ps.solved) return;
+      if (ps.lit.indexOf(i) >= 0) return;
+      var expect = ps.order[ps.lit.length];
+      if (i === expect) {
+        ps.lit.push(i);
+        if (sfx && sfx.chime) sfx.chime();
+        if (juice) juice.burst(X(ps.torches[i].x), Y(ps.torches[i].y - 20), "#ffb347", 8);
+        if (ps.lit.length >= ps.order.length) solvePuzzle(ps);
+      } else {
+        ps.lit = []; ps.flick = 0.5;
+        big("🕯 A gust! The torches flicker out — try ascending order.", "#ffd740");
+        if (sfx && sfx.buzz) sfx.buzz();
+      }
+    }
+    // 🎛 step the memory plates in the flashed order; a wrong step just replays (never hurts)
+    function stepPlate(i) {
+      var ps = curPuzzle(); if (!ps || ps.kind !== "plates" || ps.solved) return;
+      if (ps.showT > 0) return;                    // still demonstrating the sequence
+      if (i === ps.seq[ps.step]) {
+        ps.step++;
+        if (juice) juice.burst(X(ps.plates[i].x), Y(ps.plates[i].y), "#69f0ae", 8);
+        if (sfx && sfx.chime) sfx.chime();
+        if (ps.step >= ps.seq.length) solvePuzzle(ps);
+      } else {
+        ps.step = 0; ps.showT = 0.6 * ps.seq.length + 0.8;   // replay the sequence, kindly
+        big("🎛 Not quite — watch the lights again!", "#ffd740");
+        if (sfx && sfx.buzz) sfx.buzz();
+      }
+    }
+    // update per-frame puzzle timers + in-room interactions (block shove, plate stepping)
+    function stepPuzzle(dt, rm) {
+      var ps = puzzles[roomKey(room.r, room.c)]; if (!ps) return;
+      if (ps.kind === "block" && !ps.solved) {
+        ps.pushCd = Math.max(0, ps.pushCd - dt);
+        // solid block: resolve overlap + shove it when the player walks into it
+        var half = 30, dx = player.x - ps.bx, dy = player.y - ps.by;
+        if (Math.abs(dx) < half + PR && Math.abs(dy) < half + PR) {
+          var pushDir = null;
+          if (Math.abs(moveVec.x) > Math.abs(moveVec.y)) { if (Math.abs(moveVec.x) > 0.1) pushDir = moveVec.x > 0 ? "E" : "W"; }
+          else if (Math.abs(moveVec.y) > 0.1) pushDir = moveVec.y > 0 ? "S" : "N";
+          if (pushDir && ps.pushCd <= 0) { pushBlock(pushDir); ps.pushCd = 0.28; }
+          // keep the player from sliding through the block (push out on the lesser-penetration axis)
+          var ox = (half + PR) - Math.abs(dx), oy = (half + PR) - Math.abs(dy);
+          if (ox < oy) player.x = ps.bx + (dx < 0 ? -1 : 1) * (half + PR);
+          else player.y = ps.by + (dy < 0 ? -1 : 1) * (half + PR);
+        }
+      } else if (ps.kind === "plates" && !ps.solved) {
+        if (ps.showT > 0) {
+          ps.showT -= dt;
+          var t = ps.showT; var idx = Math.floor((0.6 * ps.seq.length + 0.8 - t) / 0.6);
+          ps.flashIdx = (idx >= 0 && idx < ps.seq.length && ((0.6 * ps.seq.length + 0.8 - t) % 0.6) < 0.4) ? ps.seq[idx] : -1;
+        } else {
+          ps.flashIdx = -1;
+          // stand on a plate to register a step (must leave before it counts again)
+          var on = -1;
+          for (var pi = 0; pi < ps.plates.length; pi++) {
+            if (Math.hypot(player.x - ps.plates[pi].x, player.y - ps.plates[pi].y) < 34) { on = pi; break; }
+          }
+          if (on >= 0 && on !== ps.onPlate) stepPlate(on);
+          ps.onPlate = on;
+        }
+      } else if (ps.kind === "torch" && !ps.solved) {
+        ps.flick = Math.max(0, ps.flick - dt);
+      }
+    }
+
+    // ---------- hazard zones (web slow-fields, fire pools, shadow bolts) ----------
+    function stepZones(dt) {
+      for (var zi = zones.length - 1; zi >= 0; zi--) {
+        var z = zones[zi];
+        if (z.warn > 0) { z.warn -= dt; continue; }   // telegraph wind-up: no damage yet
+        if (z.vx || z.vy) { z.x += z.vx * dt; z.y += z.vy * dt; }
+        z.life -= dt;
+        if (z.life <= 0 || z.x < -20 || z.x > MW + 20 || z.y < -20 || z.y > MH + 20) { zones.splice(zi, 1); continue; }
+        if ((z.kind === "fire" || z.kind === "bolt") && player.inv <= 0 && shieldT <= 0) {
+          if (Math.hypot(player.x - z.x, player.y - z.y) < z.r + PR - 6) hurt(1);
+        }
+      }
+    }
+    // is the player standing in an active 🕸 web slow-field?
+    function inWeb() {
+      for (var i = 0; i < zones.length; i++) {
+        var z = zones[i];
+        if (z.kind === "web" && z.warn <= 0 && Math.hypot(player.x - z.x, player.y - z.y) < z.r + PR - 4) return true;
+      }
+      return false;
+    }
+
+    // ---------- deeper-boss attacks (all telegraphed + dodgeable; clean up on room exit) ----------
+    function summonSpiders(n, b) {
+      for (var i = 0; i < n; i++) {
+        var a = Math.PI * (0.5 + i * 0.6);
+        mobs.push({ type: "spiderling", x: Math.max(ER, Math.min(MW - ER, b.x + Math.cos(a) * 60)),
+          y: Math.max(ER, Math.min(MH - ER, b.y + Math.sin(a) * 60)), hp: 1, maxHp: 1, phase: Math.random() * 6, hit: 0 });
+      }
+      big("🕷 WEBSPINNER calls baby spiders!", "#c9b6ff");
+    }
+    // 🕷 WEBSPINNER: sticky web blobs that slow the floor
+    function webspinner(mob, dt) {
+      mob.webCd -= dt;
+      if (mob.webCd <= 0) {
+        mob.webCd = 1.5;
+        // a blob lands where the player is standing (dodge by keeping moving)
+        zones.push({ kind: "web", x: player.x, y: player.y, r: 62, life: 6, warn: 0 });
+        if (sfx && sfx.whoosh) sfx.whoosh();
+      }
+    }
+    // 🌋 CINDERJAW: telegraphed fire pools (target circle, then a burning zone)
+    function cinderjaw(mob, dt) {
+      mob.fireCd -= dt;
+      if (mob.fireCd <= 0) {
+        mob.fireCd = 2.6;
+        zones.push({ kind: "fire", x: player.x, y: player.y, r: 52, life: 4, warn: 1 }); // 1s warn, then 4s burn
+        big("🌋 Fire pool incoming — step off the circle!", "#ff8a5c");
+        if (sfx && sfx.buzz) sfx.buzz();
+      }
+    }
+    // 👑 THE WORDLESS KING: teleport, a 4-way shadow-bolt cross, and a half-hp split
+    function wordlessKing(mob, dt) {
+      // teleport: vanish → reappear near the player
+      mob.tpCd -= dt;
+      if (mob.tpCd <= 0) {
+        mob.tpCd = 2.8;
+        var a = Math.random() * Math.PI * 2, dist = 120;
+        mob.x = Math.max(BOSSES[6].r, Math.min(MW - BOSSES[6].r, player.x + Math.cos(a) * dist));
+        mob.y = Math.max(BOSSES[6].r, Math.min(MH - BOSSES[6].r, player.y + Math.sin(a) * dist));
+        mob.charge = 0; mob.chargeCd = 1.4;
+        if (juice) { juice.burst(X(mob.x), Y(mob.y), "#b39ddb", 16); juice.shake(4); }
+      }
+      // shadow bolts in a telegraphed 4-way cross
+      mob.boltCd -= dt;
+      if (mob.boltCd <= 0) {
+        mob.boltCd = 2.2;
+        var sp = 150;
+        [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }].forEach(function (d) {
+          zones.push({ kind: "bolt", x: mob.x, y: mob.y, r: 15, life: 3, warn: 0.5, vx: d.x * sp, vy: d.y * sp });
+        });
+        big("👑 Shadow cross — mind the bolts!", "#c9b6ff");
+      }
+      // at half hp: split into decoy shades (only the real king takes damage)
+      if (!mob.split && mob.hp <= mob.maxHp / 2) {
+        mob.split = true;
+        for (var i = 0; i < 2; i++) {
+          var a2 = Math.PI * (0.4 + i * 0.9);
+          mobs.push({ type: "shade", fake: true, x: Math.max(40, Math.min(MW - 40, mob.x + Math.cos(a2) * 110)),
+            y: Math.max(40, Math.min(MH - 40, mob.y + Math.sin(a2) * 110)), hp: 1, maxHp: 1, phase: Math.random() * 6, hit: 0 });
+        }
+        big("👑 The king splits into shades — find the real one!", "#c9b6ff");
+        if (juice) juice.shake(6);
+      }
     }
 
     // ---------- simulation ----------
@@ -594,6 +939,9 @@
         return;
       }
 
+      // hazard zones (web/fire/bolts) tick every live frame, dt-driven
+      stepZones(dt);
+
       // ---------- movement (keyboard OR drag stick, unified into moveVec) ----------
       var mvx = moveVec.x, mvy = moveVec.y;
       if (keyHeld.W || keyHeld.ArrowUp) mvy -= 1;
@@ -605,6 +953,7 @@
       if (mag > 0.05) {
         setDir(mvx, mvy);
         var SPD = speedT > 0 ? 270 : 180;  // 💨 Zoom Boots
+        if (inWeb()) SPD *= 0.5;            // 🕸 web slow-field halves your speed
         player.x += mvx * SPD * dt;
         player.y += mvy * SPD * dt;
       }
@@ -643,6 +992,8 @@
       if (rm && rm.t === "treasure" && !chestOpened[roomKey(room.r, room.c)]) {
         if (Math.hypot(player.x - MW / 2, player.y - MH / 2) < 50) openChest();
       }
+      // 🧩 puzzle rooms: block shove / plate stepping / timers
+      if (rm && rm.t === "puzzle") stepPuzzle(dt, rm);
 
       // ---------- enemies ----------
       // snapshot the list: a touch can trigger respawn(), which swaps in a whole
@@ -655,16 +1006,23 @@
         mob.phase += dt;
         if (mob.type === "boss") {
           if (mob.shieldT > 0) { mob.shieldT -= dt; if (mob.shieldT <= 0 && !mob.shield) { mob.shield = true; big("🛡 THE SHIELD RE-ARMS!", "#ff8a8a"); if (sfx && sfx.buzz) sfx.buzz(); } }
-          // charge-then-pause: wind up toward the player, dash, then rest
-          mob.chargeCd -= dt;
-          if (mob.charge > 0) {
-            mob.charge -= dt;
-            mob.x += mob.cvx * dt; mob.y += mob.cvy * dt;
-          } else if (mob.chargeCd <= 0) {
-            var ddx = player.x - mob.x, ddy = player.y - mob.y, dd = Math.hypot(ddx, ddy) || 1;
-            mob.cvx = ddx / dd * bdef.speed; mob.cvy = ddy / dd * bdef.speed;
-            mob.charge = 0.9; mob.chargeCd = 1.6;
+          // charge-then-pause: wind up toward the player, dash, then rest.
+          // (The WORDLESS KING moves by teleport instead — bosses 1-5 keep the charge.)
+          if (dungeon !== 6) {
+            mob.chargeCd -= dt;
+            if (mob.charge > 0) {
+              mob.charge -= dt;
+              mob.x += mob.cvx * dt; mob.y += mob.cvy * dt;
+            } else if (mob.chargeCd <= 0) {
+              var ddx = player.x - mob.x, ddy = player.y - mob.y, dd = Math.hypot(ddx, ddy) || 1;
+              mob.cvx = ddx / dd * bdef.speed; mob.cvy = ddy / dd * bdef.speed;
+              mob.charge = 0.9; mob.chargeCd = 1.6;
+            }
           }
+          // deeper bosses layer on their signature telegraphed attacks
+          if (dungeon === 4) webspinner(mob, dt);
+          else if (dungeon === 5) cinderjaw(mob, dt);
+          else if (dungeon === 6) wordlessKing(mob, dt);
           mob.x = Math.max(bdef.r, Math.min(MW - bdef.r, mob.x));
           mob.y = Math.max(bdef.r, Math.min(MH - bdef.r, mob.y));
         } else {
@@ -689,7 +1047,7 @@
         // touch damage + knockback + brief invuln
         var mr = mob.type === "boss" ? bdef.r : MOBS[mob.type].r;
         var tx = player.x - mob.x, ty = player.y - mob.y, td = Math.hypot(tx, ty);
-        if (td < PR + mr && player.inv <= 0) {
+        if (td < PR + mr && player.inv <= 0 && !mob.fake) {   // decoy shades never hurt you
           hurt(1);
           var kl = td || 1; kb.x = tx / kl * 260; kb.y = ty / kl * 260;
         }
@@ -721,7 +1079,7 @@
       function LX(x) { return ox + x * S; }
       function LY(y) { return oy + y * S; }
       // floor
-      ctx.fillStyle = rm.t === "boss" ? "#3a2434" : rm.t === "treasure" ? "#3a3320" : "#2c2438";
+      ctx.fillStyle = rm.t === "boss" ? "#3a2434" : rm.t === "treasure" ? "#3a3320" : rm.t === "puzzle" ? "#1f3038" : "#2c2438";
       ctx.fillRect(LX(0), LY(0), MW * S, MH * S);
       // stone tile grid
       ctx.strokeStyle = "rgba(255,255,255,.045)"; ctx.lineWidth = 1;
@@ -751,10 +1109,11 @@
         // door glyph: 📜 rune (word) / 🔒 locked / open arch
         if (has) {
           var dc = doorCenter(dir);
-          var locked = (has.word && !doorsUnlocked[roomKey(rr, rc) + ":" + dir]) || (has.lock && !doorsUnlocked[roomKey(rr, rc) + ":" + dir]);
+          var ulk = doorsUnlocked[roomKey(rr, rc) + ":" + dir];
+          var locked = (has.word && !ulk) || (has.lock && !ulk) || (has.plate && !ulk);
           if (locked) {
             ctx.font = Math.round(pz(30)) + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-            ctx.fillText(has.word ? "📜" : "🔒", LX(dc.x), LY(dc.y));
+            ctx.fillText(has.word ? "📜" : has.plate ? "🔷" : "🔒", LX(dc.x), LY(dc.y));
           }
         }
       });
@@ -771,7 +1130,11 @@
         ctx.font = Math.round(pz(28)) + "px serif";
         ctx.fillText("🗝️", LX(MW / 2), LY(56));
         if (got) ctx.globalAlpha = 1;
+      } else if (rm.t === "puzzle") {
+        drawPuzzle(rr, rc, LX, LY);
       }
+      // hazard zones (web/fire/bolts) — only in the live room
+      if (live) drawZones(LX, LY);
       // enemies (only for the live room)
       if (live) {
         mobs.forEach(function (mob) {
@@ -828,6 +1191,63 @@
       }
     }
 
+    // 🧩 draw a puzzle room's contents (block+plate+lever / torches / plates)
+    function drawPuzzle(rr, rc, LX, LY) {
+      var ps = puzzles[roomKey(rr, rc)]; if (!ps) return;
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      if (ps.kind === "block") {
+        // glowing pressure plate
+        var pulse = 0.4 + Math.sin((lastT / 200)) * 0.2;
+        ctx.strokeStyle = ps.solved ? "rgba(105,240,174,.9)" : "rgba(255,225,77," + pulse + ")"; ctx.lineWidth = pz(4);
+        ctx.beginPath(); ctx.arc(LX(ps.plate.x), LY(ps.plate.y), pz(26), 0, Math.PI * 2); ctx.stroke();
+        // the push-block
+        ctx.font = Math.round(pz(52)) + "px serif"; ctx.fillText("🟫", LX(ps.bx), LY(ps.by));
+        // reset lever
+        if (!ps.solved && ps.lever) { ctx.font = Math.round(pz(26)) + "px serif"; ctx.fillText("🔄", LX(ps.lever.x), LY(ps.lever.y)); }
+      } else if (ps.kind === "torch") {
+        for (var i = 0; i < ps.torches.length; i++) {
+          var tt = ps.torches[i], lit = ps.solved || ps.lit.indexOf(i) >= 0;
+          if (ps.flick > 0 && !ps.solved) { ctx.save(); ctx.globalAlpha = 0.5; }
+          ctx.font = Math.round(pz(34)) + "px serif"; ctx.fillText(lit ? "🔥" : "🕯", LX(tt.x), LY(tt.y));
+          if (ps.flick > 0 && !ps.solved) ctx.restore();
+          ctx.fillStyle = "#ffe14d"; ctx.font = "bold " + Math.round(pz(18)) + "px Trebuchet MS";
+          ctx.fillText(String(tt.rune), LX(tt.x), LY(tt.y) - pz(34));
+        }
+      } else if (ps.kind === "plates") {
+        for (var j = 0; j < ps.plates.length; j++) {
+          var pl = ps.plates[j], flash = ps.flashIdx === j, done = j < ps.step;
+          ctx.fillStyle = flash ? "rgba(105,240,174,.9)" : done ? "rgba(105,240,174,.4)" : "rgba(255,255,255,.16)";
+          ctx.beginPath(); ctx.arc(LX(pl.x), LY(pl.y), pz(24), 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = "rgba(255,255,255,.4)"; ctx.lineWidth = pz(3);
+          ctx.beginPath(); ctx.arc(LX(pl.x), LY(pl.y), pz(24), 0, Math.PI * 2); ctx.stroke();
+        }
+        if (ps.solved) { ctx.font = Math.round(pz(30)) + "px serif"; ctx.fillText("✨", LX(MW / 2), LY(MH / 2)); }
+      }
+    }
+
+    // draw active hazard zones (🕸 web slow-field, 🔥 fire pool, shadow bolts)
+    function drawZones(LX, LY) {
+      for (var i = 0; i < zones.length; i++) {
+        var z = zones[i];
+        if (z.kind === "web") {
+          ctx.fillStyle = "rgba(210,225,255,.18)"; ctx.beginPath(); ctx.arc(LX(z.x), LY(z.y), pz(z.r), 0, Math.PI * 2); ctx.fill();
+          ctx.font = Math.round(pz(30)) + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+          ctx.globalAlpha = 0.7; ctx.fillText("🕸", LX(z.x), LY(z.y)); ctx.globalAlpha = 1;
+        } else if (z.kind === "fire") {
+          if (z.warn > 0) {   // telegraph: a target circle you can still step off
+            ctx.strokeStyle = "rgba(255,120,80," + (0.4 + Math.sin(lastT / 90) * 0.3) + ")"; ctx.lineWidth = pz(4);
+            ctx.beginPath(); ctx.arc(LX(z.x), LY(z.y), pz(z.r), 0, Math.PI * 2); ctx.stroke();
+          } else {
+            ctx.fillStyle = "rgba(255,110,50,.28)"; ctx.beginPath(); ctx.arc(LX(z.x), LY(z.y), pz(z.r), 0, Math.PI * 2); ctx.fill();
+            ctx.font = Math.round(pz(28)) + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("🔥", LX(z.x), LY(z.y));
+          }
+        } else if (z.kind === "bolt") {
+          ctx.fillStyle = z.warn > 0 ? "rgba(179,157,219,.5)" : "rgba(120,90,180,.9)";
+          ctx.beginPath(); ctx.arc(LX(z.x), LY(z.y), pz(z.r), 0, Math.PI * 2); ctx.fill();
+        }
+      }
+    }
+
     // mini-map: visited rooms + your position. TOP-right just under the HUD —
     // the bottom-right corner now belongs to the ⚔ attack cross.
     function drawMiniMap() {
@@ -838,7 +1258,7 @@
         var rm = map[r] && map[r][c]; if (!rm) continue;
         var vx = mx + c * cell, vy = my + r * cell;
         var vis = visited[roomKey(r, c)];
-        ctx.fillStyle = !vis ? "rgba(255,255,255,.12)" : rm.t === "boss" ? "#c0518a" : rm.t === "treasure" ? "#c6a94e" : rm.t === "key" ? "#5b8ac6" : "#6a5a7c";
+        ctx.fillStyle = !vis ? "rgba(255,255,255,.12)" : rm.t === "boss" ? "#c0518a" : rm.t === "treasure" ? "#c6a94e" : rm.t === "key" ? "#5b8ac6" : rm.t === "puzzle" ? "#3fb6a8" : "#6a5a7c";
         ctx.fillRect(vx + 1, vy + 1, cell - 2, cell - 2);
         if (r === room.r && c === room.c) { ctx.fillStyle = "#ffe14d"; ctx.beginPath(); ctx.arc(vx + cell / 2, vy + cell / 2, cell * 0.25, 0, Math.PI * 2); ctx.fill(); }
       }
@@ -855,6 +1275,18 @@
       if (b) {
         var lg = screenToLogical(sx, sy);
         if (Math.hypot(lg.x - b.x, lg.y - b.y) < BOSSES[dungeon].r + 24 && b.shield) { duel(); return; }
+      }
+      // 🧩 puzzle taps: light a torch / flip the reset lever
+      var ps = curPuzzle();
+      if (ps && !paused && !trans) {
+        var lg2 = screenToLogical(sx, sy);
+        if (ps.kind === "torch") {
+          for (var i = 0; i < ps.torches.length; i++) {
+            if (Math.hypot(lg2.x - ps.torches[i].x, lg2.y - ps.torches[i].y) < 40) { tapTorch(i); return; }
+          }
+        } else if (ps.kind === "block" && ps.lever && !ps.solved) {
+          if (Math.hypot(lg2.x - ps.lever.x, lg2.y - ps.lever.y) < 36) { resetBlock(); return; }
+        }
       }
       swing();
     }
@@ -975,7 +1407,14 @@
       items: function () { return stats.items; },
       giveItem: findItem,
       useItem: useItem,
-      effects: function () { return { speedT: speedT, shieldT: shieldT, spinT: spinT }; }
+      effects: function () { return { speedT: speedT, shieldT: shieldT, spinT: spinT }; },
+      // 🧩 puzzle + hazard test hooks (dungeons 4-6)
+      puzzle: curPuzzle,
+      pushBlock: pushBlock,
+      tapTorch: tapTorch,
+      stepPlate: stepPlate,
+      zones: function () { return zones; },
+      setLvl: function (n) { stats.lvl = n; }
     };
 
     hud();

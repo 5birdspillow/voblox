@@ -258,7 +258,10 @@
         { gameId: "pickle", flavor: null, wall: 0x63c78a, roof: 0x2f7d4f },
         { gameId: "bjj", flavor: null, wall: 0xe8e2d6, roof: 0xb3392f },
         { gameId: "karts", flavor: "arch", wall: 0xd97b4a, roof: 0x8a3a1a },
-        { gameId: "slice", flavor: null, wall: 0x3a4a5c, roof: 0x22303c }
+        { gameId: "slice", flavor: null, wall: 0x3a4a5c, roof: 0x22303c },
+        { gameId: "jethop", flavor: "cloud", wall: 0xfae8b0, roof: 0xe0a92e },
+        { gameId: "golf", flavor: "goal", wall: 0xc8ecc0, roof: 0x2e8a4a },
+        { gameId: "hopper", flavor: "fence", wall: 0xd8e8c0, roof: 0x4aa03a }
       ] },
       { name: "🎠 Arcade Ave", color: "#f0a92e", defs: [
         { gameId: "dash", flavor: "arch", wall: 0xc8f4ee, roof: 0x30c0b0 },
@@ -267,25 +270,29 @@
         { gameId: "chess", flavor: "board", wall: 0xcaa876, roof: 0x5a3a22 },
         { gameId: "blaster", flavor: "tower", wall: 0xc4baf0, roof: 0x3a2b7a },
         { gameId: "beat", flavor: "awning", wall: 0xf4c4e4, roof: 0xa8186e },
-        { gameId: "micro", flavor: "awning", wall: 0xfae0b8, roof: 0xe07a2e }
+        { gameId: "micro", flavor: "awning", wall: 0xfae0b8, roof: 0xe07a2e },
+        { gameId: "piano", flavor: "board", wall: 0xe8e8f0, roof: 0x22222e }
       ] },
       { name: "🌿 Critter Cove", color: "#3a9c50", defs: [
         { gameId: "pets", flavor: "fence", wall: 0xf0b8d8, roof: 0xb06a9a },
         { gameId: "fishing", flavor: "dock", wall: 0x7ab8d8, roof: 0x2a6a8a },
-        { gameId: "gobble", flavor: null, wall: 0xb8ecc8, roof: 0x2a9c50 }
+        { gameId: "gobble", flavor: null, wall: 0xb8ecc8, roof: 0x2a9c50 },
+        { gameId: "fishing2", flavor: "dock", wall: 0x4a88c0, roof: 0x143a6a }
       ] },
       { name: "🎢 Tycoon Town", color: "#6b5ac0", defs: [
         { gameId: "park", flavor: "arch", wall: 0xd0f4c8, roof: 0x3a9c50 },
         { gameId: "chef", flavor: "awning", wall: 0xf2dcb8, roof: 0xb3392f },
         { gameId: "digger", flavor: "tower", wall: 0xd8b88a, roof: 0x8a5a2a },
-        { gameId: "factory", flavor: "tower", wall: 0xc8ccd8, roof: 0x4a5468 }
+        { gameId: "factory", flavor: "tower", wall: 0xc8ccd8, roof: 0x4a5468 },
+        { gameId: "stack", flavor: "tower", wall: 0xf0d8a8, roof: 0xe0a02e }
       ] },
       { name: "🏪 Town Square", color: "#5aa6f0", defs: [
         { tab: "shop", name: "Item Shop", emoji: "🛍️", color: 0xf0a92e, flavor: "awning", wall: 0xffe2a8, roof: 0xf0a92e },
         { tab: "locker", name: "Wardrobe", emoji: "🧢", color: 0x5aa6f0, flavor: null, wall: 0xcfe0f4, roof: 0x3a6ab0 },
         { href: "craft.html", name: "Vocraft Mine", emoji: "⛏️", color: 0x6fae3e, flavor: "tower", wall: 0x8a5a3b, roof: 0x57c04a },
         { gameId: "wally", flavor: "arch", wall: 0xf4c8b0, roof: 0xc03a1a },
-        { gameId: "claw", flavor: "awning", wall: 0xecc0e8, roof: 0x8a2a7c }
+        { gameId: "claw", flavor: "awning", wall: 0xecc0e8, roof: 0x8a2a7c },
+        { gameId: "brick", flavor: null, wall: 0xe0b8a0, roof: 0xa04a2e }
       ] }
     ];
     var FRONT_R = 23, BACK_R = 28.5, SPACING = 8.2; // arc distance between building centers
@@ -866,7 +873,7 @@
     var bkgm = (window.VobloxGames || []).filter(function (x) { return x.id === "books"; })[0];
     if (bkgm) launchGame(bkgm);
   }
-  else if (/^#(merge|dash|dungeon|clash|park|slice|blaster|beat|survivors|digger|gobble|royale|bossrush|micro|factory|wally|claw)demo$/.test(location.hash)) { // test hooks: seeded new-game boards
+  else if (/^#(merge|dash|dungeon|clash|park|slice|blaster|beat|survivors|digger|gobble|royale|bossrush|micro|factory|wally|claw|fishing2|piano|stack|jethop|brick|hopper|golf)demo$/.test(location.hash)) { // test hooks: seeded new-game boards
     var ngid = location.hash.slice(1).replace("demo", "");
     window["_" + ngid + "demo"] = 1;
     var ngm = (window.VobloxGames || []).filter(function (x) { return x.id === ngid; })[0];
