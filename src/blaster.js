@@ -548,8 +548,8 @@
     if (global._blasterdemo) setTimeout(function () { // screenshot scene: a busy mid-boss fight
       global._blasterdemo = 0;
       sector = 3; wave = 3; won = false;
-      cv._blaster.spawnBoss();
       cv._blaster.spawnWave(8);
+      startBoss(); // after the wave — spawnWave/spawnBoss each clear the other
       charge = 0.7;
       for (var d = 0; d < 5; d++) ebullets.push({ x: 200 + d * 140, y: 200 + d * 30, vy: 200, vx: 0 });
       powerups.push({ x: 500, y: 300, kind: "spread", vy: 120 });

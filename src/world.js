@@ -254,13 +254,16 @@
         { gameId: "soccer", flavor: "goal", wall: 0x7ec86a, roof: 0x2f6b1f },
         { gameId: "pickle", flavor: null, wall: 0x63c78a, roof: 0x2f7d4f },
         { gameId: "bjj", flavor: null, wall: 0xe8e2d6, roof: 0xb3392f },
-        { gameId: "karts", flavor: "arch", wall: 0xd97b4a, roof: 0x8a3a1a }
+        { gameId: "karts", flavor: "arch", wall: 0xd97b4a, roof: 0x8a3a1a },
+        { gameId: "slice", flavor: null, wall: 0x3a4a5c, roof: 0x22303c }
       ] },
       { name: "🎠 Arcade Ave", color: "#f0a92e", defs: [
         { gameId: "dash", flavor: "arch", wall: 0xc8f4ee, roof: 0x30c0b0 },
         { gameId: "obby", flavor: "cloud", wall: 0xbfe3ff, roof: 0x5aa6f0 },
         { gameId: "merge", flavor: "tower", wall: 0xf4d8a8, roof: 0xffb300 },
-        { gameId: "chess", flavor: "board", wall: 0xcaa876, roof: 0x5a3a22 }
+        { gameId: "chess", flavor: "board", wall: 0xcaa876, roof: 0x5a3a22 },
+        { gameId: "blaster", flavor: "tower", wall: 0xc4baf0, roof: 0x3a2b7a },
+        { gameId: "beat", flavor: "awning", wall: 0xf4c4e4, roof: 0xa8186e }
       ] },
       { name: "🌿 Critter Cove", color: "#3a9c50", defs: [
         { gameId: "pets", flavor: "fence", wall: 0xf0b8d8, roof: 0xb06a9a },
@@ -847,7 +850,7 @@
     var bkgm = (window.VobloxGames || []).filter(function (x) { return x.id === "books"; })[0];
     if (bkgm) launchGame(bkgm);
   }
-  else if (/^#(merge|dash|dungeon|clash|park)demo$/.test(location.hash)) { // test hooks: seeded new-game boards
+  else if (/^#(merge|dash|dungeon|clash|park|slice|blaster|beat)demo$/.test(location.hash)) { // test hooks: seeded new-game boards
     var ngid = location.hash.slice(1).replace("demo", "");
     window["_" + ngid + "demo"] = 1;
     var ngm = (window.VobloxGames || []).filter(function (x) { return x.id === ngid; })[0];
