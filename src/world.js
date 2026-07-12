@@ -249,7 +249,9 @@
         { gameId: "clash", flavor: "board", wall: 0xf4ccd8, roof: 0xb03a5a },
         { gameId: "towerd", flavor: "tower", wall: 0x9a8ad0, roof: 0x4a3aad },
         { gameId: "dungeon", flavor: "tower", wall: 0xd8c4e8, roof: 0x5a3a7c },
-        { gameId: "survivors", flavor: "fence", wall: 0xc8d8a8, roof: 0x4a6c2a }
+        { gameId: "survivors", flavor: "fence", wall: 0xc8d8a8, roof: 0x4a6c2a },
+        { gameId: "royale", flavor: "goal", wall: 0xbcd8f0, roof: 0x3a5a9c },
+        { gameId: "bossrush", flavor: "tower", wall: 0xe0c4c4, roof: 0x8a2a3a }
       ] },
       { name: "🏟 Sports Zone", color: "#2f7d4f", defs: [
         { gameId: "soccer", flavor: "goal", wall: 0x7ec86a, roof: 0x2f6b1f },
@@ -264,7 +266,8 @@
         { gameId: "merge", flavor: "tower", wall: 0xf4d8a8, roof: 0xffb300 },
         { gameId: "chess", flavor: "board", wall: 0xcaa876, roof: 0x5a3a22 },
         { gameId: "blaster", flavor: "tower", wall: 0xc4baf0, roof: 0x3a2b7a },
-        { gameId: "beat", flavor: "awning", wall: 0xf4c4e4, roof: 0xa8186e }
+        { gameId: "beat", flavor: "awning", wall: 0xf4c4e4, roof: 0xa8186e },
+        { gameId: "micro", flavor: "awning", wall: 0xfae0b8, roof: 0xe07a2e }
       ] },
       { name: "🌿 Critter Cove", color: "#3a9c50", defs: [
         { gameId: "pets", flavor: "fence", wall: 0xf0b8d8, roof: 0xb06a9a },
@@ -274,7 +277,8 @@
       { name: "🎢 Tycoon Town", color: "#6b5ac0", defs: [
         { gameId: "park", flavor: "arch", wall: 0xd0f4c8, roof: 0x3a9c50 },
         { gameId: "chef", flavor: "awning", wall: 0xf2dcb8, roof: 0xb3392f },
-        { gameId: "digger", flavor: "tower", wall: 0xd8b88a, roof: 0x8a5a2a }
+        { gameId: "digger", flavor: "tower", wall: 0xd8b88a, roof: 0x8a5a2a },
+        { gameId: "factory", flavor: "tower", wall: 0xc8ccd8, roof: 0x4a5468 }
       ] },
       { name: "🏪 Town Square", color: "#5aa6f0", defs: [
         { tab: "shop", name: "Item Shop", emoji: "🛍️", color: 0xf0a92e, flavor: "awning", wall: 0xffe2a8, roof: 0xf0a92e },
@@ -299,6 +303,10 @@
       rows.forEach(function (row) {
         var n = row.list.length; if (!n) return;
         var dA = SPACING / row.radius;
+        // a wide row must still FIT its wedge — tighten spacing rather than
+        // poke into the neighbor district (4-wide fronts got walls-touching close)
+        var usable = (Math.PI * 2 / DISTRICTS.length) * 0.87;
+        if (n > 1 && dA * (n - 1) > usable) dA = usable / (n - 1);
         row.list.forEach(function (d, i) {
           var a = theta + (i - (n - 1) / 2 + row.stagger) * dA;
           var x = Math.cos(a) * row.radius, z = Math.sin(a) * row.radius;
@@ -818,7 +826,10 @@
   // ---------- loop ----------
   window.addEventListener("resize", function () { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
   var clock = new THREE.Clock(), tAcc = 0;
-  function animate() { requestAnimationFrame(animate); var dt = Math.min(clock.getDelta(), 0.05); tAcc += dt; if (!overlayOpen) updatePlayer(dt); animateChests(dt, tAcc); updateWalkers(dt, tAcc); updateCamera(); renderer.render(scene, camera); }
+  // While a game or overlay is up the world FREEZES (last frame stays on the
+  // canvas): saves battery on iPad and stops the WebGL layer bleeding through
+  // fullscreen game canvases in some compositors.
+  function animate() { requestAnimationFrame(animate); var dt = Math.min(clock.getDelta(), 0.05); tAcc += dt; if (overlayOpen) return; updatePlayer(dt); animateChests(dt, tAcc); updateWalkers(dt, tAcc); updateCamera(); renderer.render(scene, camera); }
 
   // ---------- boot ----------
   buildBuildings();
@@ -853,7 +864,7 @@
     var bkgm = (window.VobloxGames || []).filter(function (x) { return x.id === "books"; })[0];
     if (bkgm) launchGame(bkgm);
   }
-  else if (/^#(merge|dash|dungeon|clash|park|slice|blaster|beat|survivors|digger|gobble)demo$/.test(location.hash)) { // test hooks: seeded new-game boards
+  else if (/^#(merge|dash|dungeon|clash|park|slice|blaster|beat|survivors|digger|gobble|royale|bossrush|micro|factory)demo$/.test(location.hash)) { // test hooks: seeded new-game boards
     var ngid = location.hash.slice(1).replace("demo", "");
     window["_" + ngid + "demo"] = 1;
     var ngm = (window.VobloxGames || []).filter(function (x) { return x.id === ngid; })[0];

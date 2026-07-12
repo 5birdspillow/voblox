@@ -39,5 +39,9 @@
   add("VobloxSurvivors", { id: "survivors", name: "Word Survivors", emoji: "🧟", color: 0x6a9c3a, hub: true });
   add("VobloxDigger", { id: "digger", name: "Gold Digger", emoji: "⛏️", color: 0xc98a2e, hub: true });
   add("VobloxGobble", { id: "gobble", name: "Gobble Blob", emoji: "🟢", color: 0x3ec66a, hub: true });
+  add("VobloxRoyale", { id: "royale", name: "Word Royale", emoji: "🌀", color: 0x3a6ac0, hub: true });
+  add("VobloxBossRush", { id: "bossrush", name: "Boss Rush", emoji: "🏰", color: 0xb03a4a, hub: true });
+  add("VobloxMicro", { id: "micro", name: "Micro Mania", emoji: "🎪", color: 0xe0842e, hub: true });
+  add("VobloxFactory", { id: "factory", name: "Word Factory", emoji: "🏭", color: 0x5a6478, hub: true });
   global.VobloxGames = games;
 })(typeof window !== "undefined" ? window : globalThis);
