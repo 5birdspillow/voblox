@@ -328,7 +328,7 @@
       var board = resume ? deser(resume.board) : initial();
       var hist = [], sel = null, targets = [], thinking = false, over = false, hintSq = null;
       var myMoves = 0, awaitingWord = false, lastQ = null; // vocab is REQUIRED: a word gates play every few of your moves
-      var QUESTION_EVERY = 3;
+      var QUESTION_EVERY = 6; // Leo found every-3 too naggy — a word every 6th of his moves
 
       function save() { stats.resume = { oppId: club.id, board: ser(board) }; store.save(); }
       function clearSave() { stats.resume = null; store.save(); }

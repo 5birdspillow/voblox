@@ -43,6 +43,7 @@
     var stats = store.game("pets");
     var state = store.state;
     state.pets = state.pets || [];
+    stats.team = stats.team || []; // chosen battle team (pet indexes, max 3); additive save field
     // migrate any old-shape pets defensively
     state.pets.forEach(function (p) { if (!p.emoji) { var sp = findSpec(p.species || p.id); p.emoji = sp.emoji; p.type = sp.type; } });
 
@@ -57,7 +58,7 @@
       '<div class="gmsg" id="ptbig"></div>' +
       '<div class="gover" id="ptq" style="display:none"></div>' +
       '<div class="gover" id="ptcard" style="display:none"></div>' +
-      '<div class="runhint">Tap a pet to train, rename, or bring along!</div>';
+      '<div class="runhint">Tap a pet to train, pick your ⚔️ battle team, or bring one along!</div>';
     document.body.appendChild(wrap);
     var cv = wrap.querySelector("#ptcv"), ctx = cv.getContext("2d");
     var W, H;
@@ -123,10 +124,19 @@
       if (juice) juice.burst(W / 2, H / 2, shiny ? "#ffe14d" : "#9be870", 20);
     }
 
-    // ---------- pet panel (train / buddy / rename) ----------
+    // ---------- battle team (Leo's fix: YOU pick who fights, not auto-top-3) ----------
+    function toggleTeam(idx) {
+      var ti = stats.team.indexOf(idx);
+      if (ti >= 0) { stats.team.splice(ti, 1); store.save(); return "off"; }
+      if (stats.team.length >= 3) return "full";
+      stats.team.push(idx); store.save(); return "on";
+    }
+
+    // ---------- pet panel (train / buddy / team / rename) ----------
     function petPanel(idx) {
       var p = state.pets[idx];
       var isBuddy = state.equipped.pet === "hatch:" + idx;
+      var onTeam = stats.team.indexOf(idx) >= 0;
       var stage = evoStage(p);
       card().innerHTML = '<div class="wqcard" style="text-align:center">' +
         '<div style="font-size:' + (44 + stage * 12) + 'px">' + (p.shiny ? "✨" : "") + p.emoji + (stage >= 2 ? "👑" : stage >= 1 ? "⭐" : "") + '</div>' +
@@ -134,10 +144,18 @@
         '<div class="muted2">' + TYPE[p.type].emoji + " " + p.type + " · Level " + p.level + " · power " + Math.round(power(p)) + "</div>" +
         '<div class="xpbar" style="max-width:220px;margin:6px auto"><div class="xpfill" style="width:' + Math.round(100 * p.xp / xpNeed(p.level)) + '%"></div><span>' + p.xp + "/" + xpNeed(p.level) + " XP</span></div>" +
         '<button class="ibtn" id="pttrain" style="font-size:14px;padding:8px 14px">📚 Study together (word!)</button> ' +
-        '<button class="ibtn' + (isBuddy ? " on" : "") + '" id="ptbuddy" style="font-size:14px;padding:8px 14px">' + (isBuddy ? "✓ Your buddy" : "🎒 Bring along") + "</button>" +
+        '<button class="ibtn' + (isBuddy ? " on" : "") + '" id="ptbuddy" style="font-size:14px;padding:8px 14px">' + (isBuddy ? "✓ Your buddy" : "🎒 Bring along") + "</button> " +
+        '<button class="ibtn' + (onTeam ? " on" : "") + '" id="ptteam" style="font-size:14px;padding:8px 14px">' + (onTeam ? "✓ On battle team" : "⚔️ Join battle team") + "</button>" +
         '<button class="wqskip" id="ptx">close</button></div>';
       card().style.display = "flex";
       document.getElementById("ptx").onclick = closeCard;
+      document.getElementById("ptteam").onclick = function () {
+        var r = toggleTeam(idx);
+        if (r === "full") { big("Team is full (3)! Tap a teammate to remove them first.", "#ffd740"); return; }
+        if (sfx) sfx.pop(); closeCard();
+        big(r === "on" ? "⚔️ " + p.name + " joins your battle team! (" + stats.team.length + "/3)"
+                       : p.name + " leaves the battle team. (" + stats.team.length + "/3)", "#9fd6ff");
+      };
       document.getElementById("ptbuddy").onclick = function () {
         if (isBuddy) delete state.equipped.pet; else state.equipped.pet = "hatch:" + idx;
         store.save(); if (sfx) sfx.pop(); closeCard();
@@ -169,7 +187,10 @@
     var battle = null;
     document.getElementById("ptbattle").onclick = function () {
       if (state.pets.length < 1) { big("Hatch a pet first! 🥚", "#ffd740"); return; }
-      var team = state.pets.slice().sort(function (a, b) { return power(b) - power(a); }).slice(0, 3);
+      // YOUR chosen team fights (⚔️ toggle on each pet); auto-pick top-3 only if none chosen
+      var picked = stats.team.map(function (i) { return state.pets[i]; }).filter(Boolean);
+      var team = picked.length ? picked.slice(0, 3)
+        : state.pets.slice().sort(function (a, b) { return power(b) - power(a); }).slice(0, 3);
       var trainer = Bots.pickOpponents(1, P.botSkillFor(stats.rankPts))[0];
       var avgLvl = Math.max(1, Math.round(team.reduce(function (a, p) { return a + p.level; }, 0) / team.length));
       var pool = EGGS[0].pets.concat(EGGS[1].pets);
@@ -179,7 +200,7 @@
       });
       battle = { team: team.map(function (p) { return { p: p, hp: 30 + p.level * 6, max: 30 + p.level * 6 }; }),
                  foes: foes.map(function (p) { return { p: p, hp: 30 + p.level * 6, max: 30 + p.level * 6 }; }),
-                 trainer: trainer, mi: 0, fi: 0, turn: "me", meterT: 0, waiting: false };
+                 trainer: trainer, mi: 0, fi: 0, turn: "me", meterT: 0, waiting: false, choosing: false };
       renderBattle("⚔️ " + trainer.name + " challenges you! Tap a move — hit SPACE/tap when the bar is green for a CRIT!");
     };
     function alive(list) { return list.filter(function (u) { return u.hp > 0; }); }
@@ -199,20 +220,41 @@
         '<div style="display:flex;justify-content:space-between"><div>' + b.team.map(function (u, i) { return i === b.mi ? "<b>" + row(u) + "</b>" : row(u); }).join("") + "</div>" +
         "<div>" + b.foes.map(function (u, i) { return i === b.fi ? "<b>" + row(u, true) + "</b>" : row(u, true); }).join("") + "</div></div>" +
         '<div class="cc-pmsg" style="color:#20303a;font-weight:bold">' + msg + "</div>" +
-        (b.turn === "me" && !b.waiting ?
+        (b.turn === "me" && !b.waiting && b.choosing ?
+          '<div class="bjrow">' + b.team.map(function (u, i) {
+            if (i === b.mi || u.hp <= 0) return "";
+            return '<button class="bjcard" data-sw="' + i + '"><span class="bjemoji">' + u.p.emoji + '</span><span class="bjname">' + VQ.esc(u.p.name) + '</span><span class="bjodds">' + Math.max(0, u.hp) + "/" + u.max + ' hp</span></button>';
+          }).join("") +
+          '<button class="bjcard" data-sw="-1"><span class="bjemoji">↩️</span><span class="bjname">Never mind</span><span class="bjodds">back</span></button></div>' :
+        b.turn === "me" && !b.waiting ?
           '<div class="bjrow"><button class="bjcard" data-mv="0"><span class="bjemoji">💥</span><span class="bjname">Big Attack</span><span class="bjodds">timing!</span></button>' +
           '<button class="bjcard" data-mv="1"><span class="bjemoji">🎯</span><span class="bjname">Quick Hit</span><span class="bjodds">safe</span></button>' +
-          '<button class="bjcard" data-mv="2"><span class="bjemoji">💚</span><span class="bjname">Rest</span><span class="bjodds">+heal</span></button></div>' : "") +
+          '<button class="bjcard" data-mv="2"><span class="bjemoji">💚</span><span class="bjname">Rest</span><span class="bjodds">+heal</span></button>' +
+          (alive(b.team).length > 1 ? '<button class="bjcard" data-mv="3"><span class="bjemoji">🔄</span><span class="bjname">Swap</span><span class="bjodds">switch pet</span></button>' : "") +
+          "</div>" : "") +
         '<button class="wqskip" id="ptrun">🏃 Run away</button></div>';
       card().style.display = "flex";
       document.getElementById("ptrun").onclick = function () { if (battle && battle.endTiming) battle.endTiming(); battle = null; closeCard(); };
       Array.prototype.forEach.call(card().querySelectorAll("[data-mv]"), function (btn) {
         btn.onclick = function () { myMove(parseInt(btn.dataset.mv, 10)); };
       });
+      Array.prototype.forEach.call(card().querySelectorAll("[data-sw]"), function (btn) {
+        btn.onclick = function () {
+          var i = parseInt(btn.dataset.sw, 10);
+          if (!battle) return;
+          b.choosing = false;
+          if (i < 0) { renderBattle("Your move!"); return; }
+          if (!b.team[i] || b.team[i].hp <= 0) { renderBattle("Your move!"); return; }
+          b.mi = i;
+          if (sfx) sfx.pop();
+          endMyTurn("🔄 Go, " + b.team[i].p.name + "!"); // swapping uses your turn
+        };
+      });
     }
     function myMove(mv) {
       var b = battle; if (!b || b.turn !== "me") return;
       var mine = b.team[b.mi], foe = b.foes[b.fi];
+      if (mv === 3) { b.choosing = true; renderBattle("🔄 Who jumps in?"); return; }
       if (mv === 2) {
         mine.hp = Math.min(mine.max, mine.hp + 12);
         endMyTurn("💚 " + mine.p.name + " rests (+12)!");
@@ -359,9 +401,10 @@
         ctx.fillText(p.emoji, w2.x, w2.y + bob);
         if (stage >= 1) ctx.fillText(stage >= 2 ? "👑" : "⭐", w2.x + sz * 0.6, w2.y - sz * 0.6 + bob);
         ctx.font = "bold 12px Trebuchet MS, sans-serif";
-        ctx.fillStyle = "#00000066"; ctx.fillText(p.name + " L" + p.level, w2.x + 1, w2.y + sz * 0.62 + 1);
+        var tag = (stats.team.indexOf(i) >= 0 ? "⚔️ " : "") + p.name + " L" + p.level;
+        ctx.fillStyle = "#00000066"; ctx.fillText(tag, w2.x + 1, w2.y + sz * 0.62 + 1);
         ctx.fillStyle = state.equipped.pet === "hatch:" + i ? "#ffe14d" : "#fff";
-        ctx.fillText(p.name + " L" + p.level, w2.x, w2.y + sz * 0.62);
+        ctx.fillText(tag, w2.x, w2.y + sz * 0.62);
       });
       if (juice) juice.draw(ctx);
       ctx.restore();
@@ -380,7 +423,10 @@
       battle: function () { return battle; },
       fight: function () { document.getElementById("ptbattle").onclick(); return battle; },
       move: function (mv) { myMove(mv); },
-      commitTiming: function () { document.dispatchEvent(new KeyboardEvent("keydown", { key: " " })); }
+      commitTiming: function () { document.dispatchEvent(new KeyboardEvent("keydown", { key: " " })); },
+      team: function () { return stats.team; },
+      toggleTeam: toggleTeam,
+      panel: petPanel
     };
 
     msgEl.innerHTML = "🐾 <b>Pet Paradise</b> — " + (state.pets.length ? state.pets.length + " pets live here!" : "hatch your first egg!");
