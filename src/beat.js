@@ -20,12 +20,13 @@
   var LANE_COLS = ["#ff5d6c", "#3ec6ff", "#ffd23f"];
 
   // rising BPM + density; songs 2-5 unlock by finishing the previous with a C+ grade
+  // base = the song's key (lane pitches are a triad on it, so the chart IS the tune)
   var SONGS = [
-    { name: "Sunny Steps",   emoji: "☀️", bpm: 92,  dens: 0.52, seed: 101, bars: 22 },
-    { name: "Robot Groove",  emoji: "🤖", bpm: 108, dens: 0.62, seed: 211, bars: 24 },
-    { name: "Dragon Drums",  emoji: "🐲", bpm: 124, dens: 0.72, seed: 331, bars: 26 },
-    { name: "Comet Rush",    emoji: "☄️", bpm: 140, dens: 0.82, seed: 457, bars: 28 },
-    { name: "Galaxy Finale", emoji: "🌌", bpm: 156, dens: 0.92, seed: 613, bars: 30 }
+    { name: "Sunny Steps",   emoji: "☀️", bpm: 92,  dens: 0.52, seed: 101, bars: 22, base: 392 },
+    { name: "Robot Groove",  emoji: "🤖", bpm: 108, dens: 0.62, seed: 211, bars: 24, base: 440 },
+    { name: "Dragon Drums",  emoji: "🐲", bpm: 124, dens: 0.72, seed: 331, bars: 26, base: 349 },
+    { name: "Comet Rush",    emoji: "☄️", bpm: 140, dens: 0.82, seed: 457, bars: 28, base: 466 },
+    { name: "Galaxy Finale", emoji: "🌌", bpm: 156, dens: 0.92, seed: 613, bars: 30, base: 523 }
   ];
   var ENDLESS = SONGS.length; // songIdx sentinel for ⭐ Endless Jam
 
@@ -166,7 +167,8 @@
       selecting = false; songIdx = i;
       var map = i >= SONGS.length ? buildEndless() : buildMap(SONGS[i]);
       notes = map.notes; duration = map.duration;
-      song = i >= SONGS.length ? { name: "Endless Jam", emoji: "⭐", endless: true } : SONGS[i];
+      song = i >= SONGS.length ? { name: "Endless Jam", emoji: "⭐", endless: true, bpm: 120, base: 440 } : SONGS[i];
+      musBeat = -1;
       songT = 0; score = 0; combo = 0; bestComboRun = 0; health = MAXHP;
       encore = false; starsOpened = 0; lastMilestone = 0; gradeStr = "";
       perfectCount = 0; goodCount = 0; missCount = 0;
@@ -327,9 +329,36 @@
       var bl = document.getElementById("bt_leave"); if (bl) bl.onclick = exit;
     }
 
+    // ---------- music: the beatmap IS the tune ----------
+    // A bass+kick pulse marks every beat (the cue you play to), and each gem
+    // SINGS its lane's pitch as it crosses the hit line — all through the shared
+    // VobloxSfx kit, all derived from songT, so sound and chart can never drift.
+    var musBeat = -1;
+    function music() {
+      if (!sfx || !sfx.tone || !song) return;
+      var beat = 60 / (song.bpm || 120);
+      var mb = Math.floor(songT / beat);
+      if (mb !== musBeat) {
+        musBeat = mb;
+        sfx.tone(mb % 8 < 4 ? 98 : 110, 0.22, "triangle", 0.05);   // walking bass
+        if (mb % 4 === 0) sfx.tone(60, 0.1, "sine", 0.09);          // kick
+        else if (mb % 2 === 0) sfx.tone(2400, 0.03, "square", 0.018); // hi-hat tick
+      }
+      var base = song.base || 440;
+      for (var i = 0; i < notes.length; i++) {
+        var n = notes[i];
+        if (!n.sounded && songT >= n.t - 0.02) {
+          n.sounded = true;
+          sfx.tone(base * (n.lane === 0 ? 1 : n.lane === 1 ? 1.25 : 1.5), 0.16, "square", 0.045);
+          if (n.star) { sfx.tone(base * 2, 0.1, "triangle", 0.05, 0.06); sfx.tone(base * 2.5, 0.14, "triangle", 0.05, 0.14); }
+        }
+      }
+    }
+
     // ---------- simulation ----------
     function step(dt) {
       songT += dt; // ← song position advances ONLY by accumulated rAF dt
+      music();
       for (var i = 0; i < notes.length; i++) {
         var n = notes[i];
         if (!n.judged && songT > n.t + MISS_LATE) { registerMiss(MISS_HP, n); if (over) return; }
@@ -440,8 +469,12 @@
       tap: function (lane) { judgeTap(lane); },
       nextNote: function () { var n = firstUnjudged(); return n ? { lane: n.lane, t: n.t } : null; },
       seek: function (v) {
-        songT = v;
-        for (var i = 0; i < notes.length; i++) { var n = notes[i]; if (!n.judged && n.t <= songT - MISS_LATE) n.judged = true; }
+        songT = v; musBeat = Math.floor(songT / (60 / (song && song.bpm || 120)));
+        for (var i = 0; i < notes.length; i++) {
+          var n = notes[i];
+          if (!n.judged && n.t <= songT - MISS_LATE) n.judged = true;
+          if (n.t <= songT) n.sounded = true; // don't blast every skipped note as one chord
+        }
       },
       star: function () { var n = firstUnjudged(); if (n) { n.star = true; n.forced = true; } return n ? { lane: n.lane, t: n.t } : null; },
       drain: function () { health = 5; }

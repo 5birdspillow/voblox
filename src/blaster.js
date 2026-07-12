@@ -32,6 +32,8 @@
       '<canvas id="bscv"></canvas>' +
       '<div class="ghud"><div class="clue" id="bsmsg">🚀 Star Blaster</div>' +
       '<div class="grow"><span id="bsstat"></span>' +
+      '<button class="bossquit" id="bwarp" title="Time Warp: slow the invaders">🕒</button>' +
+      '<button class="bossquit" id="bbarr" title="Star Barrage: homing strikes">☄️</button>' +
       '<button class="bossquit" id="bmega" style="display:none">💥 MEGA</button>' +
       '<button class="bossquit" id="quit">Leave</button></div></div>' +
       '<div class="gmsg" id="bsbig"></div>' +
@@ -63,6 +65,7 @@
     var fireT = 0, fireBase = 0.34, fireMul = 1;
     var spreadT = 0, rapidT = 0;
     var formT = 0, formDir = 1, awaiting = false, waveTimer = 0, diveT = 2.2;
+    var warpT = 0, warpCd = 0, barrCd = 0;  // special abilities: 🕒 time warp + ☄️ barrage
     var lastFmt = null;
 
     for (var si = 0; si < 60; si++) stars.push({ x: Math.random() * VW, y: Math.random() * VH, z: 0.3 + Math.random() * 1.2 });
@@ -70,10 +73,43 @@
     var msgEl = wrap.querySelector("#bsmsg"), bigEl = wrap.querySelector("#bsbig");
     var statEl = wrap.querySelector("#bsstat"), megaBtn = wrap.querySelector("#bmega");
     function big(m, col) { bigEl.textContent = m; bigEl.style.color = col || "#fff"; bigEl.style.opacity = "1"; setTimeout(function () { bigEl.style.opacity = "0"; }, 1200); }
+    var warpBtn = wrap.querySelector("#bwarp"), barrBtn = wrap.querySelector("#bbarr");
     function hud() {
       statEl.textContent = "💙" + Math.max(0, shields) + "  ·  🚀 S" + sector + (boss ? " BOSS" : "-" + wave) +
         "  ·  ⭐" + score + "  ·  ⚡" + Math.round(charge * 100) + "%";
       megaBtn.style.display = (charge >= 1 && !over && !paused) ? "" : "none";
+      warpBtn.textContent = warpCd > 0 ? "🕒 " + Math.ceil(warpCd) : "🕒";
+      warpBtn.style.opacity = warpCd > 0 ? ".45" : "1";
+      barrBtn.textContent = barrCd > 0 ? "☄️ " + Math.ceil(barrCd) : "☄️";
+      barrBtn.style.opacity = barrCd > 0 ? ".45" : "1";
+    }
+    // ---------- special abilities ----------
+    function timeWarp() {
+      if (warpCd > 0 || over || paused) return;
+      warpT = 5; warpCd = 25;
+      big("🕒 TIME WARP — the invaders crawl!", "#8be9fd");
+      if (sfx && sfx.chime) sfx.chime();
+      if (juice) juice.shake(4);
+      hud();
+    }
+    function barrage() {
+      if (barrCd > 0 || over || paused) return;
+      barrCd = 20;
+      var hits = 0;
+      for (var i = aliens.length - 1; i >= 0 && hits < 6; i--) {
+        var a = aliens[i];
+        a.hp -= 2; hits++;
+        if (juice) { juice.burst(a.x * SX, a.y * SY, "#ffd23f", 10); juice.text(a.x * SX, a.y * SY - 14, "☄️", "#ffd23f"); }
+        if (a.hp <= 0) killAlienAt(i);
+      }
+      if (boss) {
+        boss.hp -= 8; hits++;
+        if (juice) juice.burst(boss.x * SX, boss.y * SY, "#ffd23f", 16);
+        if (boss.hp <= 0) { score += 120 + sector * 10; if (sfx && sfx.fanfare) sfx.fanfare(); sectorClear(); }
+      }
+      big(hits ? "☄️ STAR BARRAGE!" : "☄️ …nothing up there!", "#ffd23f");
+      if (sfx && sfx.pop) sfx.pop();
+      hud();
     }
 
     // ---------- flow ----------
@@ -262,6 +298,10 @@
       if (invuln > 0) invuln = Math.max(0, invuln - dt);
       if (spreadT > 0) spreadT = Math.max(0, spreadT - dt);
       if (rapidT > 0) rapidT = Math.max(0, rapidT - dt);
+      if (warpT > 0) { warpT = Math.max(0, warpT - dt); if (warpT === 0) big("Time snaps back!", "#8be9fd"); }
+      if (warpCd > 0) { warpCd = Math.max(0, warpCd - dt); if (warpCd === 0) hud(); }
+      if (barrCd > 0) { barrCd = Math.max(0, barrCd - dt); if (barrCd === 0) hud(); }
+      var edt = warpT > 0 ? dt * 0.4 : dt; // 🕒 enemies experience slowed time
 
       // arrow-key drift
       if (keys.left) ship.x -= 520 * dt;
@@ -297,22 +337,24 @@
       // alien formation + dives
       formDir += 0; // (formation sway uses formT)
       var sway = Math.sin(formT * 0.8) * 70;
-      var descend = boss ? 0 : 4 * dt * (1 + sector * 0.15); // creep toward the player
+      var descend = boss ? 0 : 4 * edt * (1 + sector * 0.15); // creep toward the player
       for (var fi = aliens.length - 1; fi >= 0; fi--) {
         var a2 = aliens[fi];
         if (a2.state === "enter") {
-          a2.y += 260 * dt;
+          a2.y += 260 * edt;
           if (a2.y >= a2.homeY) { a2.y = a2.homeY; a2.state = "form"; }
           a2.x = a2.homeX + sway;
         } else if (a2.state === "form") {
           a2.homeY += descend;
           a2.x = a2.homeX + sway + Math.sin(formT * 3 + a2.wig) * 6;
           a2.y = a2.homeY;
-          if (a2.y > VH - 90) { aliens.splice(fi, 1); loseShield(); continue; }
+          // old-school Galaga: an alien that slips past just LOOPS back to the top
+          // — escapes never cost a shield, only touches and shots do
+          if (a2.y > VH - 90) { a2.homeY = 96 + Math.random() * 70; a2.y = -30; a2.state = "enter"; continue; }
         } else if (a2.state === "dive") {
-          a2.y += 280 * dt;
-          a2.x += a2.vx * dt;
-          if (a2.y > VH + 20) { aliens.splice(fi, 1); loseShield(); continue; }
+          a2.y += 280 * edt;
+          a2.x += a2.vx * edt;
+          if (a2.y > VH + 20) { a2.homeY = 96 + Math.random() * 70; a2.y = -40; a2.state = "enter"; continue; }
           if (invuln <= 0 && Math.abs(a2.x - ship.x) < ship.w + 20 && Math.abs(a2.y - ship.y) < 34) {
             aliens.splice(fi, 1); loseShield(); continue;
           }
@@ -320,7 +362,7 @@
       }
       // pick a diver now and then
       if (!boss) {
-        diveT -= dt;
+        diveT -= edt;
         if (diveT <= 0) {
           diveT = Math.max(0.7, 2.4 - sector * 0.2);
           var formers = [];
@@ -334,10 +376,10 @@
 
       // boss motion + shots
       if (boss) {
-        boss.x += boss.dir * (90 + sector * 10) * dt;
+        boss.x += boss.dir * (90 + sector * 10) * edt;
         if (boss.x < boss.w + 20) { boss.x = boss.w + 20; boss.dir = 1; }
         if (boss.x > VW - boss.w - 20) { boss.x = VW - boss.w - 20; boss.dir = -1; }
-        boss.shootT -= dt;
+        boss.shootT -= edt;
         if (boss.shootT <= 0) {
           boss.shootT = Math.max(0.5, 1.4 - sector * 0.08);
           ebullets.push({ x: boss.x, y: boss.y + 30, vy: 240 + sector * 12, vx: (ship.x - boss.x) * 0.35 });
@@ -346,7 +388,7 @@
 
       // enemy bullets
       for (var ei = ebullets.length - 1; ei >= 0; ei--) {
-        var eb = ebullets[ei]; eb.y += eb.vy * dt; eb.x += (eb.vx || 0) * dt;
+        var eb = ebullets[ei]; eb.y += eb.vy * edt; eb.x += (eb.vx || 0) * edt;
         if (eb.y > VH + 20 || eb.x < -20 || eb.x > VW + 20) { ebullets.splice(ei, 1); continue; }
         if (invuln <= 0 && Math.abs(eb.x - ship.x) < ship.w + 8 && Math.abs(eb.y - ship.y) < 26) {
           ebullets.splice(ei, 1); loseShield(); if (over) return;
@@ -391,13 +433,18 @@
         ctx.font = Math.round(38 * Math.min(SX, SY)) + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
         ctx.fillText(ALIEN_EMOJI[a.kind], a.x * SX, a.y * SY);
       }
-      // boss
+      // boss (chunky health bar BELOW the HUD — the old one hid under it)
       if (boss) {
         ctx.font = Math.round(96 * Math.min(SX, SY)) + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
         ctx.fillText("🛸", boss.x * SX, boss.y * SY);
-        ctx.fillStyle = "rgba(0,0,0,.55)"; ctx.fillRect(W * 0.14, 6, W * 0.72, 14);
-        ctx.fillStyle = "#ff6b6b"; ctx.fillRect(W * 0.14 + 2, 8, (W * 0.72 - 4) * Math.max(0, boss.hp / boss.maxHp), 10);
+        var by = 96;
+        ctx.fillStyle = "rgba(0,0,0,.6)"; ctx.fillRect(W * 0.12, by, W * 0.76, 22);
+        ctx.fillStyle = "#ff6b6b"; ctx.fillRect(W * 0.12 + 3, by + 3, (W * 0.76 - 6) * Math.max(0, boss.hp / boss.maxHp), 16);
+        ctx.fillStyle = "#fff"; ctx.font = "bold 12px Trebuchet MS, sans-serif"; ctx.textAlign = "center";
+        ctx.fillText("🛸 BOSS SAUCER  " + Math.max(0, Math.ceil(boss.hp)) + " / " + boss.maxHp, W / 2, by + 11);
       }
+      // 🕒 warp tint while time is slowed
+      if (warpT > 0) { ctx.fillStyle = "rgba(80,180,255,.08)"; ctx.fillRect(0, 0, W, H); }
       // player bullets
       ctx.fillStyle = "#ffe14d";
       for (var b = 0; b < bullets.length; b++) ctx.fillRect(bullets[b].x * SX - 2, bullets[b].y * SY - 8, 4, 12);
@@ -441,6 +488,8 @@
     document.addEventListener("keydown", onKeyDown);
     document.addEventListener("keyup", onKeyUp);
     megaBtn.onclick = openMega;
+    warpBtn.onclick = timeWarp;
+    barrBtn.onclick = barrage;
 
     // ---------- loop ----------
     function frame(now) {
@@ -529,9 +578,14 @@
         return {
           score: score, shields: shields, sector: sector, wave: wave,
           best: stats.bestScore || 0, charge: charge, banked: banked, over: over,
-          aliens: aliens.length, boss: boss ? { hp: boss.hp } : null, upgrades: upgrades.slice()
+          aliens: aliens.length, boss: boss ? { hp: boss.hp } : null, upgrades: upgrades.slice(),
+          warpT: warpT, warpCd: warpCd, barrCd: barrCd
         };
       },
+      warp: timeWarp,
+      barrage: barrage,
+      alienList: function () { return aliens; },
+      cool: function () { warpCd = 0; barrCd = 0; warpT = 0; hud(); },
       begin: begin,
       moveTo: function (x) { ship.x = Math.max(ship.w, Math.min(VW - ship.w, x)); },
       spawnWave: function (n) { aliens = []; boss = null; awaiting = false; spawnFormation(n || 4); hud(); },
