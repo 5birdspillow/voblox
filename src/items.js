@@ -169,7 +169,126 @@
     I("emote.heart", "Blow a Kiss", "💖", "emote", "rare", 700),
     I("emote.dance", "Dance", "🕺", "emote", "rare", 750),
     I("emote.fire", "On Fire", "🔥", "emote", "epic", 2700),
-    I("emote.crown", "Crowned", "👑", "emote", "mythic", 26000)
+    I("emote.crown", "Crowned", "👑", "emote", "mythic", 26000),
+
+    // ==== VAULT EXPANSION: 100 high-end grind goals (the long-haul chase) ====
+    // ---- hats (14) ----
+    I("hat.captain", "Captain's Tricorn", "🎩", "hat", "rare", 950),
+    I("hat.voidhood", "Void Ninja Hood", "🥷", "hat", "epic", 2600),
+    I("hat.magmahelm", "Magma War Helm", "🌋", "hat", "epic", 3100),
+    I("hat.paladin", "Paladin Great Helm", "🛡️", "hat", "epic", 2800),
+    I("hat.archmage", "Grand Archmage Hat", "🧙", "hat", "epic", 3400),
+    I("hat.emperorcrown", "Emperor's Crown", "🥇", "hat", "epic", 2500),
+    I("hat.stormcrown", "Storm Caller Crown", "⚡", "hat", "epic", 4000),
+    I("hat.dragonhelm", "Obsidian Dragon Helm", "🐉", "hat", "legendary", 12000),
+    I("hat.frostcrown", "Frost King Crown", "❄️", "hat", "legendary", 9000),
+    I("hat.shadowcrown", "Shadow Lord Crown", "🌑", "hat", "legendary", 11000),
+    I("hat.starforge", "Starforged Crown", "🌟", "hat", "legendary", 14000),
+    I("hat.dominus", "Dominus Astra", "👑", "hat", "legendary", 0, { unlock: { level: 20 } }),
+    I("hat.diamondcrown", "Diamond Crown of Kings", "💎", "hat", "mythic", 38000),
+    I("hat.celestialcrown", "Celestial God Crown", "✨", "hat", "mythic", 45000),
+
+    // ---- faces (12) ----
+    I("face.blazeeyes", "Blazing Eyes", "🔥", "face", "rare", 950),
+    I("face.frosteyes", "Frost Eyes", "🥶", "face", "epic", 2700),
+    I("face.voidmask", "Void Mask", "🥷", "face", "epic", 2900),
+    I("face.galaxyeyes", "Galaxy Eyes", "🌌", "face", "epic", 2500),
+    I("face.laser", "Laser Eyes", "💥", "face", "epic", 3600),
+    I("face.cyborg", "Cyborg Visor", "🕶️", "face", "epic", 0, { unlock: { level: 15 } }),
+    I("face.dragonrage", "Dragon Rage", "🐲", "face", "legendary", 10000),
+    I("face.shadoweyes", "Shadow Eyes", "🌑", "face", "legendary", 9500),
+    I("face.goldmask", "Golden Oni Mask", "👺", "face", "legendary", 13000),
+    I("face.phantom", "Phantom Visage", "👻", "face", "legendary", 8000),
+    I("face.dragongod", "Dragon God Eyes", "🐉", "face", "mythic", 40000),
+    I("face.cosmic", "Cosmic Overlord Eyes", "🌟", "face", "mythic", 35000),
+
+    // ---- shirts (10; color drives the torso) ----
+    I("shirt.dragonscale", "Dragonscale Jersey", "👕", "shirt", "rare", 1000, { color: "#b22222" }),
+    I("shirt.voidninja", "Void Ninja Gi Top", "👕", "shirt", "epic", 2600, { color: "#1a1030" }),
+    I("shirt.obsidian", "Obsidian Battle Vest", "👕", "shirt", "epic", 2900, { color: "#14161c" }),
+    I("shirt.emberdragon", "Ember Dragon Robe", "👕", "shirt", "epic", 3200, { color: "#ff5a1f" }),
+    I("shirt.frostguard", "Frostguard Jersey", "👕", "shirt", "epic", 2500, { color: "#4fc3ff" }),
+    I("shirt.goldenknight", "Golden Knight Tunic", "👕", "shirt", "legendary", 9000, { color: "#ffc04d" }),
+    I("shirt.shadowlord", "Shadow Lord Cloak", "👕", "shirt", "legendary", 11000, { color: "#2a2140" }),
+    I("shirt.oceanic", "Leviathan Ocean Robe", "👕", "shirt", "legendary", 8500, { color: "#0e7fa8" }),
+    I("shirt.candyking", "Candy King Hoodie", "👕", "shirt", "legendary", 13000, { color: "#ff5fa2" }),
+    I("shirt.diamond", "Diamond Aegis Chestplate", "👕", "shirt", "mythic", 30000, { color: "#7fe3ff" }),
+
+    // ---- pants (8) ----
+    I("pants.voidninja", "Void Ninja Leggings", "👖", "pants", "epic", 2500, { color: "#1a1030" }),
+    I("pants.obsidian", "Obsidian Greaves", "👖", "pants", "epic", 2800, { color: "#14161c" }),
+    I("pants.emberdragon", "Ember Dragon Pants", "👖", "pants", "epic", 3100, { color: "#ff5a1f" }),
+    I("pants.frostguard", "Frostguard Trousers", "👖", "pants", "epic", 2600, { color: "#4fc3ff" }),
+    I("pants.goldenknight", "Golden Knight Legplates", "👖", "pants", "legendary", 8500, { color: "#ffc04d" }),
+    I("pants.shadowlord", "Shadow Lord Leggings", "👖", "pants", "legendary", 10000, { color: "#2a2140" }),
+    I("pants.oceanic", "Leviathan Ocean Pants", "👖", "pants", "legendary", 9500, { color: "#0e7fa8" }),
+    I("pants.diamond", "Diamond Greaves", "👖", "pants", "mythic", 28000, { color: "#7fe3ff" }),
+
+    // ---- trails (12; color drives the emitted particles) ----
+    I("trail.embers", "Ember Storm Trail", "🔥", "trail", "rare", 1100, { color: "#ff6a2a" }),
+    I("trail.frostwake", "Frost Wake Trail", "❄️", "trail", "epic", 2700, { color: "#6cc9ff" }),
+    I("trail.voidwisp", "Void Wisp Trail", "🌑", "trail", "epic", 3000, { color: "#6a3fb0" }),
+    I("trail.thunder", "Thunderstorm Trail", "⚡", "trail", "epic", 3300, { color: "#ffe14d" }),
+    I("trail.dragonfire", "Dragonfire Trail", "🐉", "trail", "epic", 2500, { color: "#ff3b1f" }),
+    I("trail.ocean", "Tidal Wave Trail", "🌊", "trail", "epic", 2900, { color: "#1aa3d8" }),
+    I("trail.starfall", "Starfall Trail", "🌟", "trail", "legendary", 9000, { color: "#ffd54d" }),
+    I("trail.shadow", "Shadowflame Trail", "💫", "trail", "legendary", 12000, { color: "#7a3fd6" }),
+    I("trail.comet", "Comet Tail", "☄️", "trail", "legendary", 10000, { color: "#ff9d4d" }),
+    I("trail.phoenix", "Phoenix Flame Trail", "🔥", "trail", "legendary", 0, { unlock: { game: "karts", rankPts: 200 }, color: "#ff7a1f" }),
+    I("trail.galaxystorm", "Galaxy Storm Trail", "🌠", "trail", "mythic", 32000, { color: "#a06bff" }),
+    I("trail.cosmicdragon", "Cosmic Dragon Trail", "🐲", "trail", "mythic", 36000, { color: "#b06dff" }),
+
+    // ---- pet buddies (14) ----
+    I("pet.dragonbaby", "Baby Frost Dragon", "🐲", "pet", "epic", 2800),
+    I("pet.shark", "Megalodon", "🦈", "pet", "epic", 2500),
+    I("pet.octopus", "Kraken Jr.", "🐙", "pet", "epic", 3200),
+    I("pet.bat", "Shadow Bat", "🦇", "pet", "epic", 2600),
+    I("pet.tiger", "Blaze Tiger", "🐯", "pet", "epic", 3400),
+    I("pet.dolphin", "Tidal Dolphin", "🐬", "pet", "epic", 3000),
+    I("pet.frostdragon", "Frost Dragon", "🐉", "pet", "legendary", 12000),
+    I("pet.wyvern", "Storm Wyvern", "🦅", "pet", "legendary", 9000),
+    I("pet.raptor", "Obsidian Raptor", "🦕", "pet", "legendary", 10500),
+    I("pet.gorilla", "Titan Gorilla", "🦍", "pet", "legendary", 8500),
+    I("pet.leviathan", "Leviathan", "🐳", "pet", "legendary", 14000),
+    I("pet.dragonlord", "Ancient Dragon Lord", "🐲", "pet", "mythic", 42000),
+    I("pet.kraken", "Elder Kraken", "🦑", "pet", "mythic", 33000),
+    I("pet.rainbowdragon", "Rainbow Dragon", "🐉", "pet", "mythic", 0, { unlock: { game: "chess", rankPts: 250 } }),
+
+    // ---- auras (10; a colored glow ring around your avatar) ----
+    I("aura.dragonfire", "Dragonfire Aura", "🔥", "aura", "epic", 2700, { color: "#ff5a2a" }),
+    I("aura.frost", "Glacier Aura", "❄️", "aura", "epic", 2500, { color: "#6cc9ff" }),
+    I("aura.void", "Void Aura", "🌌", "aura", "epic", 3000, { color: "#6a3fb0" }),
+    I("aura.thunder", "Thunder Aura", "⚡", "aura", "epic", 3300, { color: "#ffe14d" }),
+    I("aura.celestial", "Celestial Aura", "🌟", "aura", "legendary", 9000, { color: "#ffd54d" }),
+    I("aura.ocean", "Abyssal Aura", "🌊", "aura", "legendary", 8500, { color: "#1aa3d8" }),
+    I("aura.phoenix", "Phoenix Aura", "🔥", "aura", "legendary", 0, { unlock: { game: "bjj", rankPts: 200 }, color: "#ff7a1f" }),
+    I("aura.galaxy", "Galaxy God Aura", "🌠", "aura", "mythic", 30000, { color: "#a06bff" }),
+    I("aura.diamond", "Diamond Aura", "💎", "aura", "mythic", 35000, { color: "#7fe3ff" }),
+    I("aura.cosmic", "Cosmic Overlord Aura", "✨", "aura", "mythic", 40000, { color: "#ff4db8" }),
+
+    // ---- emotes (10; a celebration you play when you win) ----
+    I("emote.bow", "Royal Bow", "🙇", "emote", "rare", 900),
+    I("emote.ninja", "Ninja Vanish", "🥷", "emote", "epic", 2700),
+    I("emote.floss", "Floss Dance", "💃", "emote", "epic", 2500),
+    I("emote.dab", "Mega Dab", "🙌", "emote", "epic", 3000),
+    I("emote.breakdance", "Breakdance Spin", "🌀", "emote", "legendary", 8500),
+    I("emote.dragonroar", "Dragon Roar", "🐲", "emote", "legendary", 10000),
+    I("emote.backflip", "Ninja Backflip", "🤸", "emote", "legendary", 9000),
+    I("emote.teleport", "Shadow Teleport", "💨", "emote", "legendary", 0, { unlock: { level: 18 } }),
+    I("emote.godmode", "God Mode", "🌟", "emote", "mythic", 28000),
+    I("emote.rainbowdance", "Rainbow Rave", "🌈", "emote", "mythic", 32000),
+
+    // ---- per-game gear (10; over pickle/fishing/soccer/karts/chess/bjj/chef/towerd/obby) ----
+    I("gear.pickle.dragon", "Dragonfire Paddle", "🐉", "gear.pickle", "epic", 2800),
+    I("gear.fishing.legend", "Leviathan Rod", "🎣", "gear.fishing", "legendary", 9000),
+    I("gear.soccer.dragon", "Dragon Strike Ball", "⚽", "gear.soccer", "epic", 3000),
+    I("gear.karts.dragon", "Obsidian Dragon Kart", "🏎️", "gear.karts", "legendary", 11000),
+    I("gear.chess.dragon", "Dragonbone Chess Set", "♟️", "gear.chess", "mythic", 30000),
+    I("gear.chess.void", "Void Master Set", "♛", "gear.chess", "mythic", 40000),
+    I("gear.bjj.dragon", "Black Dragon Gi", "🥋", "gear.bjj", "legendary", 10000),
+    I("gear.chef.dragon", "Inferno Chef Blade", "🔪", "gear.chef", "epic", 2600),
+    I("gear.towerd.dragon", "Dragon Tower", "🐲", "gear.towerd", "mythic", 35000),
+    I("gear.obby.dragon", "Dragon Wings", "🐉", "gear.obby", "mythic", 0, { unlock: { game: "obby", rankPts: 250 } }),
   ];
 
   var byId = {}; ALL.forEach(function (it) { byId[it.id] = it; });
@@ -246,7 +365,11 @@
     { id: "knight", name: "Knight Set", emoji: "🛡️", items: ["hat.knight", "face.cool", "gear.bjj.blue"], bonus: "pet.wolf" },
     { id: "space", name: "Space Set", emoji: "🚀", items: ["face.alien", "trail.rainbow", "pet.trex"], bonus: "hat.galaxy" },
     { id: "royal", name: "Royal Set", emoji: "👑", items: ["hat.crown", "shirt.gold", "pants.gold"], bonus: "pet.whale" },
-    { id: "rainbow", name: "Rainbow Set", emoji: "🌈", items: ["shirt.rainbow", "pants.rainbow", "aura.rainbow"], bonus: "trail.galaxy" }
+    { id: "rainbow", name: "Rainbow Set", emoji: "🌈", items: ["shirt.rainbow", "pants.rainbow", "aura.rainbow"], bonus: "trail.galaxy" },
+    { id: "dragon", name: "Dragon Lord Set", emoji: "🐉", items: ["hat.dragonhelm", "shirt.dragonscale", "trail.dragonfire"], bonus: "pet.dragonlord" },
+    { id: "void", name: "Void Ninja Set", emoji: "🥷", items: ["hat.voidhood", "face.voidmask", "shirt.voidninja"], bonus: "aura.galaxy" },
+    { id: "ocean", name: "Ocean Legend Set", emoji: "🌊", items: ["shirt.oceanic", "trail.ocean", "aura.ocean"], bonus: "pet.kraken" },
+    { id: "frost", name: "Frost King Set", emoji: "❄️", items: ["hat.frostcrown", "shirt.frostguard", "trail.frostwake"], bonus: "aura.diamond" }
   ];
   function setProgress(state, setId) {
     var set = SETS.filter(function (s) { return s.id === setId; })[0];
