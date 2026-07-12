@@ -143,7 +143,9 @@
   }
 
   var RAR_EMOJI = { mythic: "🌈", legendary: "🟡", epic: "🟣", rare: "🔵", common: "⚪" };
-  // The chest hub: four tiers, odds shown openly, buy + open.
+  // 🪵 wooden chests are the CREDIT: trade a pile of them straight up for a rarer tier
+  var CHEST_TRADE = { silver: 3, gold: 8, diamond: 18 };
+  // The chest hub: four tiers, odds shown openly, buy + open + trade-up.
   function chestHubHTML() {
     var st = state();
     var cards = IT().CHEST_ORDER.map(function (id) {
@@ -155,19 +157,32 @@
         : '<span class="ilock">none yet</span>';
       var buyBtn = c.price
         ? '<button class="ibtn buy' + ((st.gems || 0) >= c.price ? "" : " no") + '" data-cbuy="' + id + '">Buy ' + c.price + ' <img class="vbx" src="icons/vobux.png" alt="V"></button>'
-        : '<span class="ilock">free from play</span>';
+        : '<span class="ilock">free from play & level-ups</span>';
+      var tradeBtn = CHEST_TRADE[id]
+        ? '<button class="ibtn' + ((st.chests || 0) >= CHEST_TRADE[id] ? "" : " no") + '" data-ctrade="' + id + '">Trade ' + CHEST_TRADE[id] + " 🪵</button>"
+        : "";
       return '<div class="chestcard" style="border-color:' + IT().RARITY[c.odds[0][0]].color + '">' +
         '<div class="cheshead">' + c.emoji + " <b>" + c.name + "</b>" + (have > 0 ? ' <span class="chesown">×' + have + "</span>" : "") + "</div>" +
         '<div class="chesblurb">' + c.blurb + "</div>" +
         '<div class="chesodds">' + odds + "</div>" +
-        '<div class="chesactions">' + openBtn + buyBtn + "</div></div>";
+        '<div class="chesactions">' + openBtn + buyBtn + tradeBtn + "</div></div>";
     }).join("");
-    return '<div class="asec">🎁 Chests <span class="muted2">(odds shown openly — no surprises!)</span></div>' +
+    return '<div class="asec">🎁 Chests <span class="muted2">(odds shown openly — 🪵 chests trade UP: 3→⚙️ · 8→🥇 · 18→💎)</span></div>' +
       '<div class="chestgrid">' + cards + "</div>";
   }
   function wireChestHub(el) {
     Array.prototype.forEach.call(el.querySelectorAll("[data-cbuy]"), function (b) { b.onclick = function () { buyChest(b.dataset.cbuy); }; });
     Array.prototype.forEach.call(el.querySelectorAll("[data-copen]"), function (b) { b.onclick = function () { openTier(b.dataset.copen); }; });
+    Array.prototype.forEach.call(el.querySelectorAll("[data-ctrade]"), function (b) { b.onclick = function () { tradeChest(b.dataset.ctrade); }; });
+  }
+  function tradeChest(tierId) {
+    var st = state(), cost = CHEST_TRADE[tierId], c = IT().CHESTS[tierId];
+    if (!cost || !c) return;
+    if ((st.chests || 0) < cost) { SFX().toast("Need " + cost + " 🪵 wooden chests — level up and finish quests!"); return; }
+    st.chests -= cost;
+    P().grantChest(st, tierId, 1);
+    save(); SFX().coin(); SFX().toast("🎁 Traded " + cost + " 🪵 for a " + c.name + " — open it!");
+    render();
   }
   function buyChest(tierId) {
     var st = state(), c = IT().CHESTS[tierId];
@@ -426,9 +441,9 @@
         '<div class="iname">' + esc(it.name) + '</div><div class="crrar" style="color:' + rc.color + ';font-size:11px">' + rc.label + "</div>" + action + "</div>";
     }).join("");
     el.innerHTML = headerHTML() +
+      chestHubHTML() + // chests FIRST — the thing Leo opens the shop for
       '<div class="asec">🛍️ Today\'s Shop <span class="muted2">(pay with <img class="vbx" src="icons/vobux.png" alt=""> Vobux — new deals every day!)</span></div>' +
       '<div class="igrid shopgrid">' + cards + "</div>" +
-      chestHubHTML() +
       '<div class="asec">🗂️ The Whole Store <span class="muted2">(' + allBuy.length + " items — buy anything you can afford!)</span></div>" +
       '<div class="igrid storegrid">' + browse + "</div>";
     wireHeader();

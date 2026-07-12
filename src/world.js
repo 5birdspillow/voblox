@@ -635,6 +635,13 @@
     document.getElementById("rankchip").textContent = r.icon + " " + r.name;
     var lc = document.getElementById("lvlchip"); if (lc) lc.textContent = "⭐ Lv " + (store.state.level || 1);
     document.getElementById("gemchip").innerHTML = '<img class="vbx" src="icons/vobux.png" alt="V"> ' + store.state.gems;
+    // 🎁 unopened chests get a tappable chip — one tap straight to the chest hub
+    var ch = document.getElementById("chestchip");
+    if (ch && window.VobloxProfile && window.VobloxProfile.chestCount) {
+      var nCh = window.VobloxProfile.chestCount(store.state);
+      ch.style.display = nCh > 0 ? "inline-block" : "none";
+      ch.textContent = "🎁 " + nCh;
+    }
     var cc = document.getElementById("combochip");
     if (store.state.combo > 1) { cc.style.display = "inline-block"; cc.textContent = "🔥 x" + store.state.combo; } else cc.style.display = "none";
     document.getElementById("meterfill").style.width = p + "%";
@@ -643,12 +650,16 @@
 
   // ---------- menu ----------
   document.getElementById("menubtn").addEventListener("click", openMenu);
+  var chestChipEl = document.getElementById("chestchip");
+  if (chestChipEl) chestChipEl.addEventListener("click", function () { openBackpack("shop"); });
   function openMenu() {
     var unlocked = store.state.chessUnlocked || store.predicted(WORDS) >= 90;
     openOverlay('<div class="card menucard"><h2>☰ Menu — ' + esc(lesson.title) + '</h2>' +
       '<button class="menubtn" id="m_resume">▶ Back to the world</button>' +
       '<button class="menubtn" id="m_arcade" style="background:linear-gradient(#ffd76a,#f0a92e);border-color:#a06a12;color:#3a2a00">🎒 Backpack (quests · locker · shop · saves)</button>' +
       '<a class="menubtn" href="craft.html" style="background:linear-gradient(#9ad06a,#6fae3e);border-color:#4f7e2a">⛏️ Vocraft (build · mine · treasure!)</a>' +
+      '<button class="menubtn" id="m_games">🎮 All Games (' + (window.VobloxGames || []).length + ')</button>' +
+      '<button class="menubtn" id="m_chests">🎁 Chests' + (window.VobloxProfile && window.VobloxProfile.chestCount ? " (" + window.VobloxProfile.chestCount(store.state) + " to open!)" : "") + '</button>' +
       '<button class="menubtn" id="m_boss">⚔️ Boss Battle (beat the lesson!)</button>' +
       '<button class="menubtn" id="m_review">🔁 Daily Review (mix of words)</button>' +
       '<button class="menubtn" id="m_lessons">🗺️ Choose Lesson</button>' +
@@ -662,6 +673,8 @@
       function (e) { if (e.key === "Escape") closeOverlay(); });
     document.getElementById("m_resume").onclick = closeOverlay;
     document.getElementById("m_arcade").onclick = function () { openBackpack("quests"); };
+    document.getElementById("m_games").onclick = openGamesList;
+    document.getElementById("m_chests").onclick = function () { openBackpack("shop"); };
     document.getElementById("m_boss").onclick = function () { startBoss(WORDS, "boss", "Boss: " + lesson.title); };
     document.getElementById("m_review").onclick = startReview;
     document.getElementById("m_lessons").onclick = openLessons;
@@ -724,6 +737,25 @@
       flash("You are now " + name + "!");
       openPlayers();
     };
+  }
+
+  // 🎮 every game on the island, A-Z — tap to jump straight in
+  function openGamesList() {
+    var games = (window.VobloxGames || []).slice().sort(function (a, b) { return a.name < b.name ? -1 : a.name > b.name ? 1 : 0; });
+    var rows = games.map(function (g) {
+      return '<button class="menubtn" data-g="' + g.id + '" style="text-align:left;padding:9px 10px">' + g.emoji + " " + esc(g.name) + "</button>";
+    }).join("");
+    openOverlay('<div class="card menucard"><h2>🎮 All ' + games.length + ' Games <span class="x" id="gx" style="float:right">✕</span></h2>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">' + rows + "</div>" +
+      '<div class="help">Tap a game to jump straight in — or walk to its building on the island!</div></div>',
+      function (e) { if (e.key === "Escape") openMenu(); });
+    document.getElementById("gx").onclick = openMenu;
+    Array.prototype.forEach.call(obox.querySelectorAll("[data-g]"), function (b) {
+      b.onclick = function () {
+        var gm = games.filter(function (g) { return g.id === b.dataset.g; })[0];
+        if (gm) launchGame(gm);
+      };
+    });
   }
 
   function openLessons() {
@@ -861,6 +893,7 @@
     if (window.VobloxAvatar) avatar.applyConfig(window.VobloxAvatar.resolve(store.state));
   }
   else if (location.hash === "#overview") { camPitch = 1.2; camDist = 34; } // test hook: bird's-eye of the island
+  else if (location.hash === "#games") openGamesList(); // test hook: the all-games list
   else if (location.hash === "#players") openPlayers(); // test hook: the players overlay
   else if (location.hash === "#locker") openBackpack("locker"); // test hook: the locker
   else if (location.hash === "#shop") openBackpack("shop"); // test hook: the shop (daily + whole-store browse)
