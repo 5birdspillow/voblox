@@ -283,7 +283,9 @@
       { name: "🏪 Town Square", color: "#5aa6f0", defs: [
         { tab: "shop", name: "Item Shop", emoji: "🛍️", color: 0xf0a92e, flavor: "awning", wall: 0xffe2a8, roof: 0xf0a92e },
         { tab: "locker", name: "Wardrobe", emoji: "🧢", color: 0x5aa6f0, flavor: null, wall: 0xcfe0f4, roof: 0x3a6ab0 },
-        { href: "craft.html", name: "Vocraft Mine", emoji: "⛏️", color: 0x6fae3e, flavor: "tower", wall: 0x8a5a3b, roof: 0x57c04a }
+        { href: "craft.html", name: "Vocraft Mine", emoji: "⛏️", color: 0x6fae3e, flavor: "tower", wall: 0x8a5a3b, roof: 0x57c04a },
+        { gameId: "wally", flavor: "arch", wall: 0xf4c8b0, roof: 0xc03a1a },
+        { gameId: "claw", flavor: "awning", wall: 0xecc0e8, roof: 0x8a2a7c }
       ] }
     ];
     var FRONT_R = 23, BACK_R = 28.5, SPACING = 8.2; // arc distance between building centers
@@ -864,7 +866,7 @@
     var bkgm = (window.VobloxGames || []).filter(function (x) { return x.id === "books"; })[0];
     if (bkgm) launchGame(bkgm);
   }
-  else if (/^#(merge|dash|dungeon|clash|park|slice|blaster|beat|survivors|digger|gobble|royale|bossrush|micro|factory)demo$/.test(location.hash)) { // test hooks: seeded new-game boards
+  else if (/^#(merge|dash|dungeon|clash|park|slice|blaster|beat|survivors|digger|gobble|royale|bossrush|micro|factory|wally|claw)demo$/.test(location.hash)) { // test hooks: seeded new-game boards
     var ngid = location.hash.slice(1).replace("demo", "");
     window["_" + ngid + "demo"] = 1;
     var ngm = (window.VobloxGames || []).filter(function (x) { return x.id === ngid; })[0];

@@ -43,5 +43,7 @@
   add("VobloxBossRush", { id: "bossrush", name: "Boss Rush", emoji: "🏰", color: 0xb03a4a, hub: true });
   add("VobloxMicro", { id: "micro", name: "Micro Mania", emoji: "🎪", color: 0xe0842e, hub: true });
   add("VobloxFactory", { id: "factory", name: "Word Factory", emoji: "🏭", color: 0x5a6478, hub: true });
+  add("VobloxWally", { id: "wally", name: "Wally Crash", emoji: "💥", color: 0xe0522e, hub: true });
+  add("VobloxClaw", { id: "claw", name: "Claw Champ", emoji: "🕹️", color: 0xc03a9c, hub: true });
   global.VobloxGames = games;
 })(typeof window !== "undefined" ? window : globalThis);
