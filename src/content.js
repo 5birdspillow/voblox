@@ -1861,6 +1861,168 @@
     ]
   };
 
+  var LESSON17 = {
+    lesson: 17,
+    title: "Lesson 17",
+    words: [
+      entry({
+        word: "address", emoji: "📬", pron: "uh-DRES",
+        senses: [
+          { pos: "verb", def: "to direct your words to someone",
+            example: "The head of the honor society addressed all the students." },
+          { pos: "verb", def: "to put your effort into something; to deal with it",
+            example: "As soon as Ms. Lu finishes solving one problem, she has to address a new one." },
+          { pos: "noun", def: "a written or spoken speech",
+            example: "President Lincoln scribbled the Gettysburg Address on an envelope." },
+          { pos: "noun", def: "the place where someone lives or gets mail",
+            example: "Let the post office know if you change your address." }
+        ],
+        synonyms: ["speak to", "deal with", "speech"], antonyms: ["ignore"],
+        mnemonic: "You address a letter, address a crowd, or address a problem — you point your words or effort AT it."
+      }),
+      entry({
+        word: "approve", emoji: "👍", pron: "uh-PROOV",
+        senses: [{ pos: "verb", def: "to think well of; to agree to",
+          example: "My friend Lucia approved my choice of a dress for the party." }],
+        forms: [{ word: "approval", pos: "noun", def: "thinking well of; agreeing to",
+          example: "My parents' approval is important to me." }],
+        synonyms: ["agree to", "accept", "okay"], antonyms: ["disapprove", "reject"],
+        mnemonic: "To approve is to give it the thumbs-up — you think it's good."
+      }),
+      entry({
+        word: "conclude", emoji: "🏁", pron: "kun-KLOOD",
+        senses: [
+          { pos: "verb", def: "to bring or come to an end",
+            example: "It took us ten minutes to reach the exit after the concert concluded." },
+          { pos: "verb", def: "to form an opinion after thinking",
+            example: "Jan concluded that mowing lawns was the best way to earn money next summer." }
+        ],
+        forms: [
+          { word: "conclusion", pos: "noun", def: "the end; or a judgment you reach",
+            example: "A bow by the magician marked the conclusion of the show." }
+        ],
+        synonyms: ["end", "finish", "decide"], antonyms: ["begin", "start"],
+        mnemonic: "To conclude is to CLOSE it out — the show ends, or your thinking lands on an answer."
+      }),
+      entry({
+        word: "deprive", emoji: "🚫", pron: "dih-PRYVE",
+        senses: [{ pos: "verb", def: "to keep from having; to take away from",
+          example: "The thunderstorm at 3:00 a.m. deprived me of a good night's sleep." }],
+        synonyms: ["take away", "deny", "rob"], antonyms: ["give", "provide"],
+        mnemonic: "To deprive is to take away something someone needs."
+      }),
+      entry({
+        word: "elder", emoji: "👴", pron: "EL-dur",
+        senses: [
+          { pos: "noun", def: "a person who is older",
+            example: "Sometimes we can learn a lot from our elders just by watching how they live." },
+          { pos: "noun", def: "a respected older leader",
+            example: "The elders of the town met to decide what to do about the need for new schools." },
+          { pos: "adj", def: "older",
+            example: "My elder brother is a senior in high school." }
+        ],
+        synonyms: ["older person", "senior"], antonyms: ["youngster", "junior"],
+        mnemonic: "An elder is older — and often wiser."
+      }),
+      entry({
+        word: "escort", emoji: "🛡️", pron: "es-KORT",
+        senses: [
+          { pos: "verb", def: "to travel with someone to guide or protect them",
+            example: "Anna asked her older sister to escort her to a movie with her friends." },
+          { pos: "noun", def: "a person (or group) who travels along to guard someone",
+            example: "The president always has a police escort when he travels by car." }
+        ],
+        synonyms: ["guide", "accompany", "guard"], antonyms: [],
+        mnemonic: "An escort goes along to keep you safe — like a guard by your side."
+      }),
+      entry({
+        word: "fare", emoji: "🎫", pron: "FAIR",
+        senses: [
+          { pos: "noun", def: "the money paid for a trip",
+            example: "What is the fare from Chicago to Orlando by plane?" },
+          { pos: "noun", def: "food and drink",
+            example: "The new restaurant serves Chinese fare." },
+          { pos: "verb", def: "to get along; to do well or badly",
+            example: "I wonder how my sister is faring on her mountain-climbing trip." }
+        ],
+        synonyms: ["ticket price", "food", "get along"], antonyms: [],
+        mnemonic: "Bus fare is what you pay; restaurant fare is what you eat; and 'how did you fare?' asks how it went."
+      }),
+      entry({
+        word: "forlorn", emoji: "🐶", pron: "for-LORN",
+        senses: [{ pos: "adj", def: "sad and lonely",
+          example: "Sam looked lost and forlorn as he sat waiting for his mother." }],
+        synonyms: ["lonely", "miserable", "abandoned"], antonyms: ["cheerful", "happy"],
+        mnemonic: "Forlorn is how a lost puppy looks — sad and all alone."
+      }),
+      entry({
+        word: "hearty", emoji: "💪", pron: "HAR-tee",
+        senses: [
+          { pos: "adj", def: "healthy; strong",
+            example: "At eighty-five, Grandpa still had a hearty appetite at every meal." },
+          { pos: "adj", def: "satisfying and full of flavor; tasty",
+            example: "The hearty vegetable chili hit the spot on a cold day." },
+          { pos: "adj", def: "friendly and enthusiastic",
+            example: "Uncle Pete gave a hearty chuckle when my little brother told a joke." }
+        ],
+        synonyms: ["strong", "filling", "warm"], antonyms: ["weak", "bland", "cold"],
+        mnemonic: "Hearty comes from HEART — strong, warm, and full."
+      }),
+      entry({
+        word: "inhale", emoji: "🌬️", pron: "in-HAYL",
+        senses: [{ pos: "verb", def: "to breathe in",
+          example: "I tried to catch my breath by inhaling deeply several times." }],
+        synonyms: ["breathe in"], antonyms: ["exhale", "breathe out"],
+        mnemonic: "Inhale pulls air IN; exhale lets it out."
+      }),
+      entry({
+        word: "merit", emoji: "🏅", pron: "MER-it",
+        senses: [
+          { pos: "verb", def: "to deserve",
+            example: "The students' ideas for the sports program merit the principal's attention." },
+          { pos: "noun", def: "good qualities; worth",
+            example: "Dalal's teacher thought his fund-raising idea had merit." },
+          { pos: "noun", def: "(the merits) the actual facts of a case",
+            example: "The school board judged the case for a shorter school day on its merits." }
+        ],
+        synonyms: ["deserve", "worth", "value"], antonyms: ["fault", "flaw"],
+        mnemonic: "Merit means worth — a good idea merits (deserves) attention."
+      }),
+      entry({
+        word: "stingy", emoji: "🪙", pron: "STIN-jee",
+        senses: [{ pos: "adj", def: "not generous",
+          example: "Azania is too stingy to share her candy with anyone." }],
+        synonyms: ["selfish", "cheap", "tight"], antonyms: ["generous", "giving"],
+        mnemonic: "A stingy person clings to every coin — no sharing."
+      }),
+      entry({
+        word: "summon", emoji: "📣", pron: "SUM-un",
+        senses: [
+          { pos: "verb", def: "to call or send for someone",
+            example: "My father summoned me to the phone." },
+          { pos: "verb", def: "to call forth; to gather up",
+            example: "I summoned all my courage and walked out on the stage." }
+        ],
+        synonyms: ["call", "send for", "gather"], antonyms: ["dismiss"],
+        mnemonic: "To summon is to call it to you — a person, or your own courage."
+      }),
+      entry({
+        word: "valiant", emoji: "🦸", pron: "VAL-yunt",
+        senses: [{ pos: "adj", def: "full of courage; brave",
+          example: "The firefighters were honored for their valiant deeds." }],
+        synonyms: ["brave", "courageous", "heroic"], antonyms: ["cowardly", "fearful"],
+        mnemonic: "Valiant heroes have valor — big brave hearts."
+      }),
+      entry({
+        word: "waft", emoji: "🍃", pron: "WAHFT",
+        senses: [{ pos: "verb", def: "to move or drift lightly through air or over water",
+          example: "Petals from the cherry blossoms wafted over the path on the gentle breeze." }],
+        synonyms: ["drift", "float", "glide"], antonyms: ["plummet", "sink"],
+        mnemonic: "Smells and petals waft — they float by on the breeze."
+      })
+    ]
+  };
+
   // ===== BOOK 2 (Liana) — 10 words per lesson =====
   var BOOK2_L10 = {
     lesson: 10, book: 2, title: "Lesson 10",
@@ -2050,7 +2212,7 @@
   var LESSONS = {
     "5": LESSON5, "6": LESSON6, "8": LESSON8, "9": LESSON9, "10": LESSON10,
     "11": LESSON11, "12": LESSON12, "13": LESSON13, "14": LESSON14, "15": LESSON15,
-    "16": LESSON16,
+    "16": LESSON16, "17": LESSON17,
     "b2-10": BOOK2_L10, "b2-12": BOOK2_L12
   };
   // which kid each book belongs to (used to label the lesson pickers)
