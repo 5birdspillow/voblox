@@ -2023,6 +2023,468 @@
     ]
   };
 
+  var LESSON18 = {
+    lesson: 18,
+    title: "Lesson 18",
+    words: [
+      entry({
+        word: "abreast", emoji: "👥", pron: "uh-BREST",
+        senses: [
+          { pos: "adj", def: "side by side",
+            example: "We walked three abreast, except where the path was too narrow." },
+          { pos: "adj", def: "up-to-date; keeping up with the news",
+            example: "I stay abreast of what is happening in the world by reading the news every day." }
+        ],
+        synonyms: ["side by side", "up-to-date", "informed"], antonyms: ["behind"],
+        mnemonic: "Walking abreast = shoulder to shoulder; staying abreast = keeping up."
+      }),
+      entry({
+        word: "barrier", emoji: "🚧", pron: "BAIR-ee-ur",
+        senses: [{ pos: "noun", def: "anything that stops progress or blocks the way",
+          example: "Lack of education is often a barrier to success in life." }],
+        synonyms: ["block", "obstacle", "wall"], antonyms: ["opening", "path"],
+        mnemonic: "A barrier BARS the way — a wall between you and where you're going."
+      }),
+      entry({
+        word: "breadth", emoji: "📏", pron: "BREDTH",
+        senses: [
+          { pos: "noun", def: "the distance from side to side; width",
+            example: "The arrow missed the target by no more than a hand's breadth." },
+          { pos: "noun", def: "wide range; largeness",
+            example: "Carlos got the job because of his breadth of experience." }
+        ],
+        synonyms: ["width", "range", "span"], antonyms: ["narrowness"],
+        mnemonic: "Breadth is how BROAD something is — side to side, or how wide your knowledge reaches."
+      }),
+      entry({
+        word: "capital", emoji: "🏛️", pron: "KAP-ih-tul",
+        senses: [
+          { pos: "noun", def: "money or wealth used to make more wealth",
+            example: "You don't need much capital to buy that pizza business." },
+          { pos: "noun", def: "the city where a state or country's government sits",
+            example: "The capital of Montana is Helena." },
+          { pos: "adj", def: "punishable by death",
+            example: "Murder is a capital crime in only a few countries." }
+        ],
+        synonyms: ["funds", "seat of government"], antonyms: [],
+        mnemonic: "Capital: the money that builds a business, or the city that runs the state."
+      }),
+      entry({
+        word: "ensure", emoji: "✅", pron: "in-SHOOR",
+        senses: [{ pos: "verb", def: "to make sure or certain",
+          example: "Wearing a seat belt will help ensure your safety in case of an accident." }],
+        synonyms: ["make sure", "guarantee", "secure"], antonyms: [],
+        mnemonic: "To ensure is to make SURE it happens."
+      }),
+      entry({
+        word: "external", emoji: "🧱", pron: "ek-STUR-nul",
+        senses: [{ pos: "adj", def: "on or related to the outside",
+          example: "The external walls of the building are brick." }],
+        synonyms: ["outside", "outer"], antonyms: ["internal", "inner"],
+        mnemonic: "External = the EXterior — the outside part."
+      }),
+      entry({
+        word: "feud", emoji: "⚔️", pron: "FYOOD",
+        senses: [
+          { pos: "noun", def: "a long, bitter quarrel, especially between two families",
+            example: "We did not want the argument between neighbors to turn into a feud." },
+          { pos: "verb", def: "to be enemies; to quarrel",
+            example: "The former friends feuded for years over a small disagreement." }
+        ],
+        synonyms: ["quarrel", "grudge", "conflict"], antonyms: ["friendship", "peace"],
+        mnemonic: "A feud is a fight that never cools — a grudge that goes on and on."
+      }),
+      entry({
+        word: "fortress", emoji: "🏰", pron: "FOR-trus",
+        senses: [{ pos: "noun", def: "a building with strong walls made to be defended against attack; a fort",
+          example: "Rather than attack the fortress directly, the invaders went around it." }],
+        synonyms: ["fort", "stronghold", "castle"], antonyms: [],
+        mnemonic: "A fortress is a super-strong fort — thick walls, hard to break."
+      }),
+      entry({
+        word: "frequent", emoji: "🔂", pron: "FREE-kwent",
+        senses: [
+          { pos: "adj", def: "happening often, over and over",
+            example: "My mother's business requires her to make frequent visits to Japan." },
+          { pos: "verb", def: "to go to a place over and over",
+            example: "We frequent the local bakery for whole-grain bread." }
+        ],
+        forms: [{ word: "frequency", pos: "noun", def: "the number of times something is repeated",
+          example: "My clarinet playing improved with the frequency of my practicing." }],
+        synonyms: ["often", "regular", "repeated"], antonyms: ["rare", "seldom"],
+        mnemonic: "Frequent means again and again — you frequent the places you visit a lot."
+      }),
+      entry({
+        word: "frontier", emoji: "🤠", pron: "frun-TEER",
+        senses: [
+          { pos: "noun", def: "the line between two countries",
+            example: "We said goodbye to France and crossed the frontier into Spain." },
+          { pos: "noun", def: "the outer edge of the settled part of a country",
+            example: "The American frontier moved slowly westward in the nineteenth century." },
+          { pos: "noun", def: "the outer limits of what we know",
+            example: "The frontiers of medicine are being pushed back at a rapidly increasing rate." }
+        ],
+        synonyms: ["border", "edge", "unknown territory"], antonyms: ["heartland"],
+        mnemonic: "The frontier is the FRONT line — of a country, the settled land, or what we know."
+      }),
+      entry({
+        word: "peasant", emoji: "🌾", pron: "PEZ-unt",
+        senses: [{ pos: "noun", def: "a person who makes a living working the soil, especially long ago or in poorer countries",
+          example: "The peasants of the Middle Ages worked hard to feed their families." }],
+        synonyms: ["farmer", "farmworker"], antonyms: ["noble", "lord"],
+        mnemonic: "A peasant worked the fields in the days of castles and kings."
+      }),
+      entry({
+        word: "petty", emoji: "🤏", pron: "PET-ee",
+        senses: [{ pos: "adj", def: "of little importance; small",
+          example: "A petty disagreement over a game of kickball led to an argument." }],
+        synonyms: ["small", "minor", "trivial"], antonyms: ["important", "major"],
+        mnemonic: "Petty problems are itty-bitty — too small to fight about."
+      }),
+      entry({
+        word: "threat", emoji: "⚠️", pron: "THRET",
+        senses: [{ pos: "noun", def: "a warning that one may do harm",
+          example: "Olivia tried to quiet her dog after her neighbor's threat to call the police." }],
+        forms: [
+          { word: "threaten", pos: "verb", def: "to make a threat",
+            example: "My brother threatened to tell my mother that I ate all the cake." },
+          { word: "threatening", pos: "adj", def: "suggesting harm or danger",
+            example: "The dark clouds looked very threatening." }
+        ],
+        synonyms: ["warning", "danger"], antonyms: ["promise", "reassurance"],
+        mnemonic: "A threat warns that trouble is coming."
+      }),
+      entry({
+        word: "utilize", emoji: "🔧", pron: "YOO-tuh-lize",
+        senses: [{ pos: "verb", def: "to put to use",
+          example: "We utilized whatever scraps of fabric we had to make a costume." }],
+        synonyms: ["use", "employ", "make use of"], antonyms: ["waste"],
+        mnemonic: "To utilize is to USE it — put it to work."
+      }),
+      entry({
+        word: "vast", emoji: "🌊", pron: "VAST",
+        senses: [{ pos: "adj", def: "very great in area or amount",
+          example: "The Pacific Ocean is a vast body of water." }],
+        synonyms: ["huge", "enormous", "immense"], antonyms: ["tiny", "small"],
+        mnemonic: "Vast is VERY big — ocean-sized big."
+      })
+    ]
+  };
+
+  var LESSON19 = {
+    lesson: 19,
+    title: "Lesson 19",
+    words: [
+      entry({
+        word: "audition", emoji: "🎤", pron: "aw-DISH-un",
+        senses: [
+          { pos: "noun", def: "a short tryout performance by an actor or musician",
+            example: "Auditions for the school band will be held tomorrow." },
+          { pos: "verb", def: "to try out for a part",
+            example: "Six people auditioned for the part of Helen Keller in the fourth-grade play." }
+        ],
+        synonyms: ["tryout", "test performance"], antonyms: [],
+        mnemonic: "An audition is your tryout on stage — they listen (AUDIO) to pick you."
+      }),
+      entry({
+        word: "create", emoji: "🎨", pron: "kree-AYT",
+        senses: [{ pos: "verb", def: "to bring into being; to make for the first time",
+          example: "The computer industry has created many new jobs." }],
+        forms: [
+          { word: "creative", pos: "adj", def: "having new and original ideas",
+            example: "Picasso was one of the most creative artists ever." },
+          { word: "creation", pos: "noun", def: "the act of making something; the thing made",
+            example: "The creation of three new schools means classrooms will be less crowded." }
+        ],
+        synonyms: ["make", "invent", "produce"], antonyms: ["destroy"],
+        mnemonic: "To create is to make something brand new exist."
+      }),
+      entry({
+        word: "elevate", emoji: "🛗", pron: "EL-uh-vayt",
+        senses: [{ pos: "verb", def: "to lift up; to raise to a higher level",
+          example: "The new director elevated the school play to new heights." }],
+        forms: [{ word: "elevation", pos: "noun", def: "height",
+          example: "I have to look up the elevation of Mt. Monadnock for my chart." }],
+        synonyms: ["raise", "lift", "boost"], antonyms: ["lower", "drop"],
+        mnemonic: "An elevator elevates you — up you go."
+      }),
+      entry({
+        word: "eliminate", emoji: "🗑️", pron: "ih-LIM-uh-nayt",
+        senses: [{ pos: "verb", def: "to get rid of; to remove or leave out",
+          example: "Zeb decided to eliminate the last paragraph because his report was too long." }],
+        forms: [{ word: "elimination", pos: "noun", def: "a getting rid of",
+          example: "The elimination of the Red Sox from the pennant race upset my mother terribly." }],
+        synonyms: ["remove", "cut", "get rid of"], antonyms: ["add", "include", "keep"],
+        mnemonic: "To eliminate is to knock it out of the lineup — gone."
+      }),
+      entry({
+        word: "engage", emoji: "🤝", pron: "in-GAYJ",
+        senses: [
+          { pos: "verb", def: "to put to work; to hire",
+            example: "The Beachfront Restaurant engages extra help every summer." },
+          { pos: "verb", def: "to keep busy or active",
+            example: "Wen Lin tried to engage her cousin in conversation, but she was very shy." },
+          { pos: "verb", def: "to promise to do something — especially to marry",
+            example: "My parents got engaged on the roof of a building." }
+        ],
+        synonyms: ["hire", "occupy", "involve"], antonyms: ["dismiss", "release"],
+        mnemonic: "Engage means to pull someone IN — into a job, a chat, or a promise."
+      }),
+      entry({
+        word: "entrance", emoji: "🤩", pron: "in-TRANS",
+        senses: [{ pos: "verb", def: "to fill with joy or delight",
+          example: "The young dancers entranced the audience with their grace and beauty." }],
+        forms: [{ word: "entrancing", pos: "adj", def: "delightful",
+          example: "The songs were so entrancing that we hated to see the performance end." }],
+        synonyms: ["delight", "charm", "enchant"], antonyms: ["bore"],
+        mnemonic: "To entrance is to put someone in a happy TRANCE — spellbound with delight."
+      }),
+      entry({
+        word: "essential", emoji: "🔑", pron: "ih-SEN-shul",
+        senses: [
+          { pos: "adj", def: "most important; very necessary",
+            example: "Fresh fruit and vegetables are essential to a good diet." },
+          { pos: "noun", def: "(essentials) the things you can't do without",
+            example: "I packed my overnight bag with my toothbrush and other essentials." }
+        ],
+        synonyms: ["necessary", "vital", "must-have"], antonyms: ["unnecessary", "optional"],
+        mnemonic: "Essential things are of the ESSENCE — you can't skip them."
+      }),
+      entry({
+        word: "foremost", emoji: "🥇", pron: "FOR-mohst",
+        senses: [{ pos: "adj", def: "first in importance, time, or place",
+          example: "This new book by Nigeria's foremost writer is wonderful." }],
+        synonyms: ["leading", "top", "first"], antonyms: ["least", "last"],
+        mnemonic: "Foremost = the one MOST at the FORE — out in front of all the rest."
+      }),
+      entry({
+        word: "forsake", emoji: "🚪", pron: "for-SAYK",
+        senses: [{ pos: "verb", def: "to have nothing more to do with; to turn your back on",
+          example: "I'd never forsake my old friends if I became rich and famous." }],
+        synonyms: ["abandon", "desert", "leave behind"], antonyms: ["stand by", "stay with"],
+        mnemonic: "To forsake is to walk away for good — never do it to your friends."
+      }),
+      entry({
+        word: "recognize", emoji: "🫡", pron: "REK-ig-nize",
+        senses: [
+          { pos: "verb", def: "to know and remember upon seeing",
+            example: "I recognized the name, but not the face." },
+          { pos: "verb", def: "to admit the truth of; to accept that something exists",
+            example: "My friends recognize my need to be by myself." },
+          { pos: "verb", def: "to accept and approve of",
+            example: "The company recognizes the good job my mother does." }
+        ],
+        synonyms: ["know", "identify", "acknowledge"], antonyms: ["overlook", "ignore"],
+        mnemonic: "To RE-cognize is to know it AGAIN when you see it."
+      }),
+      entry({
+        word: "sentimental", emoji: "🥲", pron: "sen-tuh-MEN-tul",
+        senses: [{ pos: "adj", def: "expressing feelings of love or pity — sometimes too much",
+          example: "The movie was so sentimental that everyone was in tears." }],
+        synonyms: ["emotional", "mushy", "tender"], antonyms: ["cold", "unemotional"],
+        mnemonic: "Sentimental is all about sentiments — big soft feelings."
+      }),
+      entry({
+        word: "source", emoji: "⛲", pron: "SORS",
+        senses: [{ pos: "noun", def: "the thing or place something comes from",
+          example: "We decided to research the source of the Nile River." }],
+        synonyms: ["origin", "start", "beginning"], antonyms: ["end", "mouth"],
+        mnemonic: "The source is where it all starts — a river's spring, a story's start."
+      }),
+      entry({
+        word: "tour", emoji: "🚌", pron: "TOOR",
+        senses: [
+          { pos: "noun", def: "a trip that usually returns to its starting point",
+            example: "The band played over twenty concerts on its tour of the Midwest." },
+          { pos: "verb", def: "to travel to different places",
+            example: "My cousin Anna and I toured the old part of Montreal in a horse-drawn carriage." }
+        ],
+        synonyms: ["trip", "journey", "travel"], antonyms: [],
+        mnemonic: "A tour takes you around and brings you home again."
+      }),
+      entry({
+        word: "tradition", emoji: "🎆", pron: "truh-DISH-un",
+        senses: [{ pos: "noun", def: "a belief, custom, or usual way of doing things, handed down in families or groups",
+          example: "Fireworks on July 4 are an American tradition." }],
+        forms: [{ word: "traditional", pos: "adj", def: "handed down from age to age",
+          example: "My whole family enjoys getting together for a traditional Sunday dinner." }],
+        synonyms: ["custom", "practice", "heritage"], antonyms: ["novelty"],
+        mnemonic: "A tradition is handed down like a family recipe — again every year."
+      }),
+      entry({
+        word: "trio", emoji: "🎻", pron: "TREE-oh",
+        senses: [{ pos: "noun", def: "a group of three people",
+          example: "Luis plays the cello in a trio." }],
+        synonyms: ["threesome", "triple"], antonyms: ["solo", "duo"],
+        mnemonic: "TRI means three — a trio is three together, like a tricycle's three wheels."
+      })
+    ]
+  };
+
+  var LESSON20 = {
+    lesson: 20,
+    title: "Lesson 20",
+    words: [
+      entry({
+        word: "arrest", emoji: "🛑", pron: "uh-REST",
+        senses: [
+          { pos: "verb", def: "to stop the movement or progress of",
+            example: "The doctors were able to arrest the spread of the disease." },
+          { pos: "verb", def: "to seize and charge with breaking the law",
+            example: "When the police arrested the suspect, they found the stolen jewelry in his pocket." },
+          { pos: "noun", def: "the act of arresting",
+            example: "The police officer made the arrest at the scene of the crime." }
+        ],
+        synonyms: ["stop", "halt", "capture"], antonyms: ["release", "free"],
+        mnemonic: "To arrest is to bring it to a REST — a disease stops spreading, a suspect stops running."
+      }),
+      entry({
+        word: "capable", emoji: "🛠️", pron: "KAY-puh-bul",
+        senses: [
+          { pos: "adj", def: "able to do things well; skilled",
+            example: "Companies try to hire the most capable workers." },
+          { pos: "adj", def: "(capable of) ready and able to; having what it takes for",
+            example: "Although she's only fourteen, Samantha is capable of babysitting two small children." }
+        ],
+        synonyms: ["able", "skilled", "competent"], antonyms: ["unable", "helpless"],
+        mnemonic: "Capable people are CAPtains of the job — they can handle it."
+      }),
+      entry({
+        word: "congratulate", emoji: "🎉", pron: "kun-GRACH-uh-layt",
+        senses: [{ pos: "verb", def: "to express pleasure at someone's success or good fortune",
+          example: "Allow me to congratulate you on your victory." }],
+        forms: [{ word: "congratulations", pos: "noun", def: "good wishes for a success",
+          example: "Our class made Zel a card that said, 'Congratulations on winning the 10K race!'" }],
+        synonyms: ["cheer", "praise", "applaud"], antonyms: [],
+        mnemonic: "You congratulate the winner — 'Way to go!'"
+      }),
+      entry({
+        word: "despise", emoji: "😤", pron: "dih-SPYZE",
+        senses: [{ pos: "verb", def: "to scorn and dislike strongly; to look down on",
+          example: "The French nobles despised the peasants, who were fighting to gain their freedom." }],
+        synonyms: ["scorn", "hate", "look down on"], antonyms: ["admire", "respect"],
+        mnemonic: "To despise is to look DOWN on someone — deep dislike plus no respect."
+      }),
+      entry({
+        word: "dispute", emoji: "🗣️", pron: "dih-SPYOOT",
+        senses: [
+          { pos: "noun", def: "a strong difference of opinion; an argument",
+            example: "The feuding neighbors were unable to settle their dispute." },
+          { pos: "verb", def: "to question the truth or value of",
+            example: "When her parents disputed the value of her new bike, Rona produced an article that praised it." }
+        ],
+        synonyms: ["argument", "quarrel", "challenge"], antonyms: ["agreement"],
+        mnemonic: "A dispute is a war of words — and to dispute a claim is to say 'prove it!'"
+      }),
+      entry({
+        word: "eventual", emoji: "⏳", pron: "ih-VEN-choo-ul",
+        senses: [{ pos: "adj", def: "coming at a later time; happening in the end as a result",
+          example: "Years of practice led to his eventual success as a Wimbledon tennis champion." }],
+        synonyms: ["final", "later", "resulting"], antonyms: ["immediate"],
+        mnemonic: "Eventual success EVENTUALLY arrives — after the work, in the end."
+      }),
+      entry({
+        word: "helm", emoji: "⚓", pron: "HELM",
+        senses: [
+          { pos: "noun", def: "the wheel or tiller used to steer a boat",
+            example: "The skipper said I could take the helm because the sea was calm." },
+          { pos: "noun", def: "a position of control",
+            example: "With a new coach at the helm, our swim team can expect some changes." }
+        ],
+        synonyms: ["wheel", "controls", "command"], antonyms: [],
+        mnemonic: "Whoever holds the helm steers the ship — or the team."
+      }),
+      entry({
+        word: "humiliate", emoji: "😳", pron: "hyoo-MIL-ee-ayt",
+        senses: [{ pos: "verb", def: "to treat in a way that takes away a person's pride or self-respect",
+          example: "The workers humiliated the newcomer because he seemed so strange." }],
+        forms: [{ word: "humiliation", pos: "noun", def: "the state of being humiliated",
+          example: "The queen tried to hide her humiliation at the way the villagers jeered at her." }],
+        synonyms: ["embarrass", "shame", "disgrace"], antonyms: ["honor", "praise"],
+        mnemonic: "To humiliate is to stomp on someone's pride — never kind."
+      }),
+      entry({
+        word: "implore", emoji: "🙏", pron: "im-PLOR",
+        senses: [{ pos: "verb", def: "to plead with or beg for with much feeling",
+          example: "I implored my parents to let me go with them." }],
+        synonyms: ["beg", "plead", "beseech"], antonyms: ["demand"],
+        mnemonic: "To implore is to beg with your whole heart — 'PLEASE!'"
+      }),
+      entry({
+        word: "insert", emoji: "🔑", pron: "in-SURT",
+        senses: [
+          { pos: "verb", def: "to put in",
+            example: "Please insert the key into the lock so we can get out of the rain." },
+          { pos: "noun", def: "an extra piece sewn or put in place",
+            example: "My new shirt has a lace insert at the neck." }
+        ],
+        synonyms: ["put in", "slot in", "add"], antonyms: ["remove", "take out"],
+        mnemonic: "Insert = IN it goes — a key, a coin, a bookmark."
+      }),
+      entry({
+        word: "outrage", emoji: "😡", pron: "OWT-rayj",
+        senses: [
+          { pos: "noun", def: "anger caused by injury or insult",
+            example: "The decision to close the school caused outrage among the parents." },
+          { pos: "noun", def: "a wicked or very unfair act or remark",
+            example: "Shutting the playground all summer felt like an outrage to the kids." },
+          { pos: "verb", def: "to fill with anger or resentment",
+            example: "The way some people let their dogs run without a leash outrages me." }
+        ],
+        synonyms: ["fury", "anger", "scandal"], antonyms: ["delight", "calm"],
+        mnemonic: "Outrage is anger that bursts OUT — at something truly unfair."
+      }),
+      entry({
+        word: "pierce", emoji: "📍", pron: "PEERS",
+        senses: [
+          { pos: "verb", def: "to pass or break through",
+            example: "A beam of light suddenly pierced the darkness." },
+          { pos: "verb", def: "to make a hole through",
+            example: "The needle pierced the thick fabric easily." }
+        ],
+        forms: [{ word: "piercing", pos: "adj", def: "very loud and shrill",
+          example: "The piercing cries of the seagulls woke me up." }],
+        synonyms: ["puncture", "stab", "break through"], antonyms: [],
+        mnemonic: "To pierce is to poke through — light through dark, a needle through cloth."
+      }),
+      entry({
+        word: "quiver", emoji: "🏹", pron: "KWIV-ur",
+        senses: [
+          { pos: "verb", def: "to shake with small, rapid movements; to tremble",
+            example: "The child's lip quivered as if he were about to cry." },
+          { pos: "noun", def: "a trembling",
+            example: "There was a quiver in her voice as Mira told us about the accident." },
+          { pos: "noun", def: "a case for holding arrows",
+            example: "Each archer was equipped with a bow and a quiver full of arrows." }
+        ],
+        synonyms: ["tremble", "shake", "shiver"], antonyms: ["hold still"],
+        mnemonic: "A lip can quiver, a voice can quiver — and an archer's arrows live in one."
+      }),
+      entry({
+        word: "release", emoji: "🕊️", pron: "rih-LEES",
+        senses: [
+          { pos: "verb", def: "to let go; to set free",
+            example: "The pigeons flew away as soon as I released them from their cages." },
+          { pos: "verb", def: "to make known to the public",
+            example: "A copy of the governor's speech was released to reporters at noon." },
+          { pos: "noun", def: "a setting free",
+            example: "Four years after his release from prison, Nelson Mandela was sworn in as South Africa's first black president." },
+          { pos: "noun", def: "an announcement of news",
+            example: "The governor's office sent a press release about the new program." }
+        ],
+        synonyms: ["free", "let go", "publish"], antonyms: ["capture", "hold", "arrest"],
+        mnemonic: "Release lets it go — a bird from a cage, or news to the world."
+      }),
+      entry({
+        word: "sullen", emoji: "😒", pron: "SUL-un",
+        senses: [{ pos: "adj", def: "silent from anger or hurt",
+          example: "Tom grew from a sullen teenager into a friendly and outgoing young man." }],
+        synonyms: ["grumpy", "moody", "gloomy"], antonyms: ["cheerful", "friendly"],
+        mnemonic: "Sullen is the silent sulk — arms crossed, not talking."
+      })
+    ]
+  };
+
   // ===== BOOK 2 (Liana) — 10 words per lesson =====
   var BOOK2_L10 = {
     lesson: 10, book: 2, title: "Lesson 10",
@@ -2212,7 +2674,7 @@
   var LESSONS = {
     "5": LESSON5, "6": LESSON6, "8": LESSON8, "9": LESSON9, "10": LESSON10,
     "11": LESSON11, "12": LESSON12, "13": LESSON13, "14": LESSON14, "15": LESSON15,
-    "16": LESSON16, "17": LESSON17,
+    "16": LESSON16, "17": LESSON17, "18": LESSON18, "19": LESSON19, "20": LESSON20,
     "b2-10": BOOK2_L10, "b2-12": BOOK2_L12
   };
   // which kid each book belongs to (used to label the lesson pickers)
