@@ -1709,6 +1709,158 @@
     ]
   };
 
+  var LESSON16 = {
+    lesson: 16,
+    title: "Lesson 16",
+    words: [
+      entry({
+        word: "apt", emoji: "🎯", pron: "APT",
+        senses: [
+          { pos: "adj", def: "well suited; fitting; just right",
+            example: "Marta's skill at fixing things earned her the apt nickname of Ms. Fix-It." },
+          { pos: "adj", def: "likely or almost certain",
+            example: "I am apt to do better on tests if I make vocabulary cards to study." }
+        ],
+        synonyms: ["fitting", "suitable", "likely"], antonyms: ["unsuitable", "unlikely"],
+        mnemonic: "An apt name fits perfectly — and if you're apt to do something, you probably will."
+      }),
+      entry({
+        word: "blossom", emoji: "🌸", pron: "BLAH-sum",
+        senses: [
+          { pos: "noun", def: "a flower",
+            example: "The white blossom stands out against the green leaves." },
+          { pos: "verb", def: "to come into bloom",
+            example: "Dogwood trees blossom in May." },
+          { pos: "verb", def: "to grow and develop",
+            example: "After two years of small parts, she blossomed into the star of the school play." }
+        ],
+        synonyms: ["flower", "bloom", "develop"], antonyms: ["wilt", "fade"],
+        mnemonic: "A blossom is a flower — and people blossom when they grow into their best."
+      }),
+      entry({
+        word: "bough", emoji: "🌳", pron: "BOW (rhymes with cow)",
+        senses: [{ pos: "noun", def: "a large branch of a tree",
+          example: "The boughs of the apple tree were heavy with fruit." }],
+        synonyms: ["branch", "limb"], antonyms: [],
+        mnemonic: "A bough BOWS down when it's heavy with apples — a big branch."
+      }),
+      entry({
+        word: "content", emoji: "😌", pron: "kun-TENT",
+        senses: [{ pos: "adj", def: "happy with what one has; satisfied",
+          example: "Give me a good book and a comfy armchair and I am content." }],
+        forms: [{ word: "contentment", pos: "noun", def: "the state of being satisfied and at peace",
+          example: "After a yummy dinner and a warm bath, I relaxed in total contentment." }],
+        synonyms: ["satisfied", "happy", "at peace"], antonyms: ["unhappy", "restless"],
+        mnemonic: "Content means you're happy with what's in your tent — satisfied."
+      }),
+      entry({
+        word: "detest", emoji: "🤢", pron: "dih-TEST",
+        senses: [{ pos: "verb", def: "to dislike strongly; to hate",
+          example: "Many people think they detest spinach until they try it." }],
+        forms: [{ word: "detestable", pos: "adj", def: "causing or deserving strong dislike",
+          example: "Lying to a friend is detestable behavior." }],
+        synonyms: ["hate", "loathe", "despise"], antonyms: ["love", "adore", "enjoy"],
+        mnemonic: "To detest something is to give it the thumbs-down TEST — you really dislike it."
+      }),
+      entry({
+        word: "dusk", emoji: "🌆", pron: "DUSK",
+        senses: [{ pos: "noun", def: "the time at the end of the day just before dark",
+          example: "The streetlights go on at dusk." }],
+        synonyms: ["twilight", "sundown", "evening"], antonyms: ["dawn", "sunrise"],
+        mnemonic: "Dusk is when the day gets dusty-dark — right before night."
+      }),
+      entry({
+        word: "extinguish", emoji: "🧯", pron: "ek-STING-gwish",
+        senses: [{ pos: "verb", def: "to put out, as a fire or a light",
+          example: "Before leaving, make sure you extinguish your campfire." }],
+        synonyms: ["put out", "douse", "quench"], antonyms: ["light", "ignite"],
+        mnemonic: "EXtinguish makes the flame EXit — the fire goes out."
+      }),
+      entry({
+        word: "familiar", emoji: "👋", pron: "fuh-MIL-yer",
+        senses: [
+          { pos: "adj", def: "often seen or experienced; known",
+            example: "I was happy to see a familiar face in the crowd." },
+          { pos: "adj", def: "having a good knowledge of something",
+            example: "Dad is familiar with the game because he has played it for many years." }
+        ],
+        synonyms: ["known", "well-known", "recognized"], antonyms: ["strange", "unknown", "new"],
+        mnemonic: "Familiar things feel like FAMILY — you know them well."
+      }),
+      entry({
+        word: "obtain", emoji: "🤲", pron: "ub-TAYN",
+        senses: [{ pos: "verb", def: "to gain or get by making an effort",
+          example: "We were lucky to obtain tickets for the concert because they sold out quickly." }],
+        synonyms: ["get", "gain", "acquire"], antonyms: ["lose", "give up"],
+        mnemonic: "To obtain is to get it by trying — effort earns it."
+      }),
+      entry({
+        word: "orchard", emoji: "🍎", pron: "OR-churd",
+        senses: [{ pos: "noun", def: "a place where fruit trees grow",
+          example: "Every fall we go to an orchard where you can pick your own apples." }],
+        synonyms: ["fruit farm", "grove"], antonyms: [],
+        mnemonic: "An orchard is rows and rows of fruit trees — apple-picking country."
+      }),
+      entry({
+        word: "practice", emoji: "🔁", pron: "PRAK-tis",
+        senses: [
+          { pos: "verb", def: "to do something over and over to get better at it",
+            example: "If you practice Spanish every day, you'll speak it with ease." },
+          { pos: "verb", def: "to do; to carry on or perform",
+            example: "He was raised from an early age to practice politeness." },
+          { pos: "verb", def: "to work at as a profession",
+            example: "Aunt Marianna is licensed to practice law in two states." },
+          { pos: "noun", def: "a repeated action or usual way of doing something",
+            example: "It's my mother's practice to swim thirty laps every morning." },
+          { pos: "noun", def: "the work of a profession",
+            example: "The practice of medicine has changed a lot recently." }
+        ],
+        synonyms: ["train", "rehearse", "habit"], antonyms: [],
+        mnemonic: "Practice makes progress — do it again and again until it's easy."
+      }),
+      entry({
+        word: "prune", emoji: "✂️", pron: "PROON",
+        senses: [
+          { pos: "verb", def: "to cut off branches",
+            example: "We had to prune the shrubs so we could see out the window." },
+          { pos: "noun", def: "a dried plum",
+            example: "Elijah soaks the prunes overnight and serves them for breakfast." }
+        ],
+        synonyms: ["trim", "clip", "cut back"], antonyms: [],
+        mnemonic: "Prune the branches with a snip — and a prune is a wrinkly dried plum."
+      }),
+      entry({
+        word: "stout", emoji: "💪", pron: "STOWT",
+        senses: [
+          { pos: "adj", def: "heavily built; thickset",
+            example: "He used to be thin, but he grew stout as he got older." },
+          { pos: "adj", def: "strong; not easily bent or broken",
+            example: "The roof of the barn was supported by six stout posts." }
+        ],
+        synonyms: ["sturdy", "strong", "solid"], antonyms: ["thin", "flimsy", "weak"],
+        mnemonic: "Stout means thick and strong — like a post that won't bend."
+      }),
+      entry({
+        word: "threadbare", emoji: "🧵", pron: "THRED-bair",
+        senses: [{ pos: "adj", def: "shabby and worn out",
+          example: "The threadbare blankets on the bed failed to keep us warm." }],
+        synonyms: ["worn out", "shabby", "ragged"], antonyms: ["brand-new", "plush"],
+        mnemonic: "Threadbare cloth is worn down to its bare threads."
+      }),
+      entry({
+        word: "wander", emoji: "🚶", pron: "WAHN-der",
+        senses: [
+          { pos: "verb", def: "to go from place to place with no plan or purpose",
+            example: "We wandered around downtown, waiting for the post office to open." },
+          { pos: "verb", def: "to drift off the subject; to stop working in the normal way",
+            example: "Luis tried to concentrate on his homework, but his mind began to wander." }
+        ],
+        synonyms: ["roam", "drift", "ramble"], antonyms: ["stay", "focus"],
+        mnemonic: "To wander is to walk (or think) wherever the wind takes you."
+      })
+    ]
+  };
+
   // ===== BOOK 2 (Liana) — 10 words per lesson =====
   var BOOK2_L10 = {
     lesson: 10, book: 2, title: "Lesson 10",
@@ -1898,6 +2050,7 @@
   var LESSONS = {
     "5": LESSON5, "6": LESSON6, "8": LESSON8, "9": LESSON9, "10": LESSON10,
     "11": LESSON11, "12": LESSON12, "13": LESSON13, "14": LESSON14, "15": LESSON15,
+    "16": LESSON16,
     "b2-10": BOOK2_L10, "b2-12": BOOK2_L12
   };
   // which kid each book belongs to (used to label the lesson pickers)
