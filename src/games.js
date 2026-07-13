@@ -52,5 +52,10 @@
   add("VobloxBrick", { id: "brick", name: "Brick Blitz", emoji: "🧱", color: 0xc0522e, hub: true });
   add("VobloxHopper", { id: "hopper", name: "Road Hopper", emoji: "🚸", color: 0x4aa03a, hub: true });
   add("VobloxGolf", { id: "golf", name: "Word Golf", emoji: "⛳", color: 0x2e8a4a, hub: true });
+  add("VobloxPinball", { id: "pinball", name: "Pinball Panic", emoji: "🪩", color: 0x8a3ad0, hub: true });
+  add("VobloxAirHockey", { id: "airhockey", name: "Air Hockey", emoji: "🏒", color: 0x2e6ac0, hub: true });
+  add("VobloxBoom", { id: "boom", name: "Boom Blocks", emoji: "💣", color: 0xd05a2e, hub: true });
+  add("VobloxSki", { id: "ski", name: "Ski Rush", emoji: "⛷️", color: 0x6ab8e0, hub: true });
+  add("VobloxIceMaze", { id: "icemaze", name: "Ice Maze", emoji: "🐧", color: 0x3a8ac8, hub: true });
   global.VobloxGames = games;
 })(typeof window !== "undefined" ? window : globalThis);
