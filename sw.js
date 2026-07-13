@@ -1,4 +1,4 @@
-/* Voblox service worker â€” offline cache for the installed app */
+/* Voblox service worker — offline cache for the installed app */
 var CACHE = "voblox-v92";
 var ASSETS = [
   "index.html", "study.html", "dashboard.html", "craft.html",
