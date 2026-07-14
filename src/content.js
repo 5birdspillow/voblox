@@ -2668,6 +2668,108 @@
     ]
   };
 
+  var BOOK2_L13 = {
+    lesson: 13, book: 2, title: "Lesson 13",
+    words: [
+      entry({
+        word: "bustle", emoji: "🏃", pron: "BUS-ul",
+        senses: [
+          { pos: "noun", def: "busy and noisy movement",
+            example: "Felix and Delia waited in the bustle of the lobby for the theater doors to open." },
+          { pos: "verb", def: "to move around in a busy, excited way",
+            example: "The students bustled from table to table choosing materials to make masks." }
+        ],
+        synonyms: ["hurry", "rush", "commotion"], antonyms: ["calm", "stillness"],
+        mnemonic: "A busy place bustles — everyone hustling and bustling around."
+      }),
+      entry({
+        word: "channel", emoji: "🌊", pron: "CHAN-ul",
+        senses: [
+          { pos: "noun", def: "the bed or path of a river or stream",
+            example: "The channel of this river is not deep enough for these large boats." },
+          { pos: "noun", def: "a groove or cut that lets water pass through",
+            example: "Mr. Skura built a brick channel down the slope to drain water from the garden." },
+          { pos: "noun", def: "a body of water joining two larger bodies of water",
+            example: "The English Channel joins the North Sea and the Atlantic Ocean." },
+          { pos: "noun", def: "a way to carry a signal to a television set",
+            example: "Without cable, our television doesn't get very many channels." }
+        ],
+        synonyms: ["waterway", "passage", "station"], antonyms: [],
+        mnemonic: "A channel is a path — for a river, for water, or for your favorite TV show."
+      }),
+      entry({
+        word: "connect", emoji: "🧩", pron: "kuh-NEKT",
+        senses: [{ pos: "verb", def: "to join or bring together",
+          example: "Follow Sea Street until it connects to the main highway." }],
+        synonyms: ["join", "link", "attach"], antonyms: ["separate", "disconnect"],
+        mnemonic: "Connect the pieces — click, they join together."
+      }),
+      entry({
+        word: "empire", emoji: "👑", pron: "EM-pire",
+        senses: [{ pos: "noun", def: "a group of countries or lands ruled by one ruler or government",
+          example: "The Romans ruled an empire that included all the countries around the Mediterranean Sea." }],
+        synonyms: ["kingdom", "realm"], antonyms: [],
+        mnemonic: "An empire is one ruler's HUGE collection of lands — an emperor runs it."
+      }),
+      entry({
+        word: "mention", emoji: "💬", pron: "MEN-shun",
+        senses: [{ pos: "verb", def: "to speak of something briefly, without a lot of detail",
+          example: "Did Carlos mention to you that he would be at the swimming pool this afternoon?" }],
+        synonyms: ["say", "note", "bring up"], antonyms: ["skip", "leave out"],
+        mnemonic: "To mention is to say it quickly in passing — just a quick word about it."
+      }),
+      entry({
+        word: "peak", emoji: "🏔️", pron: "PEEK",
+        senses: [
+          { pos: "noun", def: "the pointed top of a mountain",
+            example: "The highest peak in Africa is Mount Kilimanjaro." },
+          { pos: "noun", def: "any pointed top",
+            example: "Vera whipped the cream into stiff peaks." }
+        ],
+        synonyms: ["top", "summit", "point"], antonyms: ["bottom", "base"],
+        mnemonic: "A peak is the pointy top — of a mountain or whipped cream."
+      }),
+      entry({
+        word: "scholar", emoji: "🎓", pron: "SKOL-ur",
+        senses: [{ pos: "noun", def: "a person who has studied a subject and knows a great deal about it",
+          example: "The scholar who wrote this book knows all about the Iroquois people of the 1700s." }],
+        synonyms: ["expert", "learned person"], antonyms: [],
+        mnemonic: "A scholar goes to SCHOOL for years and years — an expert who loves to learn."
+      }),
+      entry({
+        word: "settle", emoji: "🏡", pron: "SET-ul",
+        senses: [
+          { pos: "verb", def: "to come to rest",
+            example: "A thick fog settled over the trees and houses." },
+          { pos: "verb", def: "to decide about some problem",
+            example: "Mrs. Reyes settled the argument by having us find the answer in the dictionary." },
+          { pos: "verb", def: "to make a place your home",
+            example: "When Sheng came to the United States from Laos, she settled in Houston, Texas." }
+        ],
+        synonyms: ["rest", "decide", "make a home"], antonyms: ["stir up"],
+        mnemonic: "Things settle DOWN — fog on trees, arguments, or a family in a new town."
+      }),
+      entry({
+        word: "vehicle", emoji: "🚑", pron: "VEE-ih-kul",
+        senses: [{ pos: "noun", def: "anything on wheels or runners that carries people or things from place to place",
+          example: "An emergency vehicle raced along the crowded street with its sirens wailing." }],
+        synonyms: ["car", "truck", "transport"], antonyms: [],
+        mnemonic: "Cars, buses, sleds — if it rolls or slides you along, it's a vehicle."
+      }),
+      entry({
+        word: "zigzag", emoji: "⚡", pron: "ZIG-zag",
+        senses: [
+          { pos: "noun", def: "a line that angles from side to side",
+            example: "The skier made a zigzag down the side of the hill." },
+          { pos: "verb", def: "to change direction at an angle, moving side to side",
+            example: "Matt and Ana carefully zigzagged the canoe past several rocks in the river." }
+        ],
+        synonyms: ["weave", "wind"], antonyms: ["straight line"],
+        mnemonic: "Zig one way, zag the other — a lightning-bolt path."
+      })
+    ]
+  };
+
   // Registry of lessons. Only lessons with a `words` array are "available" / playable.
   // Keys are unique lesson IDs (Book 4 uses the plain number; other books are prefixed,
   // e.g. "b2-10") so two books can both have a "Lesson 10" without colliding.
@@ -2675,7 +2777,7 @@
     "5": LESSON5, "6": LESSON6, "8": LESSON8, "9": LESSON9, "10": LESSON10,
     "11": LESSON11, "12": LESSON12, "13": LESSON13, "14": LESSON14, "15": LESSON15,
     "16": LESSON16, "17": LESSON17, "18": LESSON18, "19": LESSON19, "20": LESSON20,
-    "b2-10": BOOK2_L10, "b2-12": BOOK2_L12
+    "b2-10": BOOK2_L10, "b2-12": BOOK2_L12, "b2-13": BOOK2_L13
   };
   // which kid each book belongs to (used to label the lesson pickers)
   var BOOK_LABELS = { 2: "Liana", 4: "Leo" };
