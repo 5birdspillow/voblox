@@ -132,7 +132,7 @@
       '<div class="grow"><span id="ddfuel">⛽ 100%</span><span id="ddhull">🛡 100%</span>' +
       '<span id="dddepth">0m</span><span id="ddgold">🪙 0</span><span id="ddcargo">📦 0/10</span>' +
       '<button class="bossquit" id="quit">Leave</button></div></div>' +
-      '<div id="dditems" style="position:absolute;left:8px;bottom:calc(env(safe-area-inset-bottom, 0px) + 10px);display:flex;gap:5px;flex-wrap:wrap;max-width:60%;z-index:8"></div>' +
+      '<div id="dditems" style="position:absolute;left:calc(env(safe-area-inset-left, 0px) + 8px);bottom:calc(env(safe-area-inset-bottom, 0px) + 10px);display:flex;gap:5px;flex-wrap:wrap;max-width:60%;z-index:8"></div>' +
       '<div class="gmsg" id="ddbig"></div>' +
       '<div class="gover" id="ddshop" style="display:none"></div>' +
       '<div class="gover" id="ddq" style="display:none"></div>' +
@@ -146,12 +146,14 @@
     var juice = global.VobloxJuice ? global.VobloxJuice() : null;
     var sfx = global.VobloxSfx || null;
 
-    var W, H, cellPx, offX;
+    var W, H, cellPx, offX, safeB = 0;
     function resize() {
       W = cv.width = wrap.clientWidth || global.innerWidth || 360;
       H = cv.height = wrap.clientHeight || global.innerHeight || 640;
       cellPx = Math.max(24, Math.min(Math.floor(W / COLS), Math.floor(H / 13), 54));
       offX = Math.floor((W - cellPx * COLS) / 2);
+      // home-indicator inset, probed off the item bar's env()-based bottom (10px base)
+      try { safeB = Math.max(0, (parseFloat(getComputedStyle(itemBar).bottom) || 10) - 10); } catch (_) { safeB = 0; }
     }
     resize();
     window.addEventListener("resize", resize);
@@ -769,8 +771,10 @@
       if ((el = document.getElementById("dd_dive"))) el.onclick = startDive;
       if ((el = document.getElementById("dd_bank"))) el.onclick = endShift;
     }
+    var flyHintShown = false;
     function startDive() {
       leaveSurface();
+      if (!flyHintShown) { flyHintShown = true; big("⬆️ Hold ABOVE the pod to fly — fly up out of the hole to come home!", "#8ecdf7"); }
       // begin the shaft by drilling straight down through the first tile
       inY = 1; apiDrill("down"); inY = 0;
     }
@@ -885,7 +889,9 @@
       if (atSurface && inY > 0.35) leaveSurface();
       var drilling = false;
       if (!atSurface) drilling = tryDrill(inX, inY, dt);
-      if (!drilling) flyStep(inX, inY, dt);
+      if (!drilling && !atSurface) flyStep(inX, inY, dt); // docked pod is parked on the pad
+      // flying up out of the hole docks the pod back at the Base (menu reopens)
+      if (!atSurface && !inBoss && !over && !drillTarget && vy < 0 && py < -0.6) { arriveSurface(); hud(); return; }
       if (!atSurface) { quakeStep(dt); if (!over && depthM() > 500 && Math.random() < 0.0009) forceQuake(); }
       updateDepthEvents();
       cameraStep(dt);
@@ -954,12 +960,20 @@
         rg.addColorStop(0, "rgba(0,0,0,0)"); rg.addColorStop(1, "rgba(0,0,0,0.92)");
         ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H);
       }
+      // near the top? show the way home
+      if (!atSurface && !inBoss && !over && py < 2.5) {
+        ctx.save();
+        ctx.textAlign = "center"; ctx.font = "bold 16px 'Trebuchet MS', sans-serif";
+        ctx.fillStyle = "rgba(255,255,255,.95)"; ctx.shadowColor = "rgba(0,0,0,.7)"; ctx.shadowBlur = 4;
+        ctx.fillText("⬆️ Fly up to dock at 🏠 Base", W / 2, 128 + Math.sin(t0 * 4) * 3);
+        ctx.restore();
+      }
       // quake warning banner
-      if (quakeWarn > 0) { ctx.fillStyle = "rgba(200,40,20,.5)"; ctx.fillRect(0, 0, W, 6); ctx.fillRect(0, H - 6, W, 6); }
-      // fuel + hull gauges
+      if (quakeWarn > 0) { ctx.fillStyle = "rgba(200,40,20,.5)"; ctx.fillRect(0, 0, W, 6); ctx.fillRect(0, H - safeB - 6, W, 6); }
+      // fuel + hull gauges (above the iPhone home indicator)
       var bw = Math.min(320, W * 0.55), bx = (W - bw) / 2;
-      gauge(bx, H - 16, bw, fuelFrac(), "#69f0ae", "#ffb01f", "#ff5b5b");
-      gauge(bx, H - 8, bw, hullFrac(), "#8ecdf7", "#c9b6ff", "#ff5b5b");
+      gauge(bx, H - safeB - 16, bw, fuelFrac(), "#69f0ae", "#ffb01f", "#ff5b5b");
+      gauge(bx, H - safeB - 8, bw, hullFrac(), "#8ecdf7", "#c9b6ff", "#ff5b5b");
     }
     function gauge(x, y, w, f, hi, mid, lo) {
       ctx.fillStyle = "rgba(0,0,0,.4)"; ctx.fillRect(x, y, w, 6);
