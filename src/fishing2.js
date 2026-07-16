@@ -112,8 +112,13 @@
       '<div class="gmsg" id="f2big"></div>' +
       '<div class="gover" id="f2q" style="display:none"></div>' +
       '<div class="gover" id="f2card" style="display:none"></div>' +
-      '<div id="f2bar" style="position:absolute;left:0;right:0;bottom:0;padding:6px 8px calc(env(safe-area-inset-bottom) + 6px);display:flex;gap:6px;flex-wrap:nowrap;justify-content:safe center;z-index:8;overflow-x:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x;background:linear-gradient(transparent,rgba(0,0,0,.28))"></div>' +
-      '<div class="runhint" id="f2hint" style="bottom:calc(env(safe-area-inset-bottom) + 78px)">Tap the water to cast!</div>';
+      '<div id="f2bar" style="position:absolute;left:0;right:96px;bottom:0;padding:6px 8px calc(env(safe-area-inset-bottom) + 6px);display:flex;gap:6px;flex-wrap:wrap;align-items:flex-end;z-index:8;background:linear-gradient(transparent,rgba(0,0,0,.28))"></div>' +
+      // the REEL is the most important control in the game — a big fixed thumb
+      // button that can never be pushed off-screen by the lure chips
+      '<button id="f2reel" type="button" style="position:absolute;right:10px;bottom:calc(env(safe-area-inset-bottom) + 10px);width:80px;height:80px;z-index:9;' +
+      'border-radius:50%;border:3px solid #ffffff55;background:linear-gradient(#4fc3f7,#1a6ab0);color:#fff;font-family:inherit;font-weight:900;font-size:15px;' +
+      'box-shadow:0 5px 0 #0d3a66,0 8px 20px #0007;cursor:pointer;padding:0;line-height:1.15">🎣<br>REEL</button>' +
+      '<div class="runhint" id="f2hint" style="bottom:calc(env(safe-area-inset-bottom) + 104px)">Tap the water to cast!</div>';
     document.body.appendChild(wrap);
     var cv = wrap.querySelector("#f2cv"), ctx = cv.getContext("2d");
 
@@ -175,18 +180,23 @@
       store.save();
     }
 
-    // ---------- the tackle bar ----------
+    // ---------- the tackle bar (compact chips — the old wide buttons shoved
+    // the REEL clean off a phone screen, which made the game feel broken) ----------
     function renderBar() {
       var bar = document.getElementById("f2bar");
       var lb = LURE_ORDER.map(function (id) {
         var L = LURES[id], owned = !!lures[id];
-        var label = owned ? L.emoji + " " + L.name : L.emoji + " 🔒" + L.cost + (L.gated ? "📖" : "");
-        return '<button class="embtn' + (lure === id && owned ? " mode" : "") + '" data-lure="' + id + '">' +
-          '<span class="ebl">' + label + '</span><span class="ebs">' + L.tip + '</span></button>';
+        var sel = lure === id && owned;
+        var badge = owned ? "" :
+          '<span style="position:absolute;right:-4px;top:-6px;background:#ffd23f;color:#3a2a00;border-radius:9px;font-size:10px;font-weight:900;padding:1px 4px">🔒' + L.cost + '</span>';
+        return '<button data-lure="' + id + '" title="' + L.name + " — " + L.tip + '" style="position:relative;width:52px;height:52px;' +
+          'background:rgba(10,24,40,.66);border:2px solid ' + (sel ? "#ffe14d" : owned ? "rgba(255,255,255,.35)" : "rgba(255,255,255,.14)") + ';border-radius:14px;' +
+          'font-size:22px;padding:0;line-height:1;font-family:inherit;cursor:pointer;' + (owned ? "" : "opacity:.55;") + '">' + L.emoji + badge + '</button>';
       }).join("");
       bar.innerHTML = lb +
-        '<button class="embtn study" id="f2perf"><span class="ebl">🪝 Perfect Cast</span><span class="ebs">' + (buffed ? "ready!" : "answer = instant hook") + '</span></button>' +
-        '<button class="embtn" id="f2reel"><span class="ebl">🎣 REEL</span><span class="ebs">hold to reel in</span></button>';
+        '<button id="f2perf" title="Perfect Cast — answer a word, next bite is instant-hooked" style="position:relative;width:52px;height:52px;' +
+        'background:rgba(60,20,80,.7);border:2px solid ' + (buffed ? "#9be15d" : "rgba(255,255,255,.3)") + ';border-radius:14px;font-size:22px;padding:0;line-height:1;font-family:inherit;cursor:pointer">🪝' +
+        (buffed ? '<span style="position:absolute;right:-4px;top:-6px;background:#9be15d;color:#0a3014;border-radius:9px;font-size:10px;font-weight:900;padding:1px 4px">✓</span>' : "") + '</button>';
       Array.prototype.forEach.call(bar.querySelectorAll("[data-lure]"), function (btn) {
         btn.onclick = function () {
           var id = btn.dataset.lure;
@@ -195,12 +205,6 @@
         };
       });
       document.getElementById("f2perf").onclick = perfectCastQuiz;
-      var rb = document.getElementById("f2reel");
-      rb.onmousedown = function (e) { e.preventDefault(); reelHeld = true; };
-      rb.ontouchstart = function (e) { e.preventDefault(); reelHeld = true; };
-      rb.onmouseup = function () { reelHeld = false; };
-      rb.ontouchend = function () { reelHeld = false; };
-      rb.onmouseleave = function () { reelHeld = false; };
     }
 
     // ---------- buying lures (word-gated for glow + minnow) ----------
@@ -315,7 +319,7 @@
       if (sfx && sfx.whoosh) sfx.whoosh();
     }
     function steer(dx) { if (!cast || fight) return; lureX += dx * 1.4; if (lureX < 0.05) lureX = 0.05; if (lureX > 0.95) lureX = 0.95; }
-    function jig() { if (!cast || fight) return; jigT = 0.4; if (sfx && sfx.tone) sfx.tone(520, 0.05, "sine", 0.03); }
+    function jig() { if (!cast || fight) return; jigT = 0.9; if (sfx && sfx.tone) sfx.tone(520, 0.05, "sine", 0.03); }
     function sinkTo(m) {
       if (fight) return;
       cast = true;
@@ -487,16 +491,22 @@
     function winFight() { if (fight) { if (fight.wordPending) fight.wordPending = false; landFight(); } }
 
     // ---------- fish AI ----------
+    var homingN = 0; // fish currently charging the lure (slows the sink — bite anticipation!)
     function updateFish(dt) {
+      var nowHoming = 0;
       for (var i = 0; i < fishList.length; i++) {
         var f = fishList[i];
         f.wig += dt * 6;
         var band = ZONES[f.sp.zone];
-        if (cast && !fight && likes(f.sp, lure) && Math.abs(f.depth - depth) < sightR(f.sp) && Math.abs(f.x - lureX) < 0.35) {
-          // noticed the lure — home in
-          f.depth += (depth - f.depth > 0 ? 1 : -1) * 9 * dt;
-          f.x += (lureX - f.x > 0 ? 1 : -1) * 0.09 * dt;
-          if (Math.abs(f.depth - depth) < 3 && Math.abs(f.x - lureX) < 0.05) { strike(f); i--; continue; }
+        // jigging flashes the lure — fish notice from twice as far
+        var seeR = sightR(f.sp) * (jigT > 0 ? 2 : 1);
+        if (cast && !fight && likes(f.sp, lure) && Math.abs(f.depth - depth) < seeR && Math.abs(f.x - lureX) < 0.42) {
+          // noticed the lure — CHARGE it (much faster than the lure sinks, so
+          // strikes actually happen in real play, not just in forced tests)
+          nowHoming++;
+          f.depth += (depth - f.depth > 0 ? 1 : -1) * 26 * dt;
+          f.x += (lureX - f.x > 0 ? 1 : -1) * 0.28 * dt;
+          if (Math.abs(f.depth - depth) < 4 && Math.abs(f.x - lureX) < 0.09) { strike(f); i--; continue; }
         } else {
           // idle patrol within the band
           f.x += f.dir * 0.05 * dt;
@@ -511,6 +521,8 @@
         var view = cast ? depth : 12;
         fishList = fishList.filter(function (f) { return Math.abs(f.depth - view) < 90; });
       }
+      if (nowHoming > 0 && homingN === 0 && cast && !fight) hintEl.textContent = "❗ Something's coming — get ready!";
+      homingN = nowHoming;
     }
 
     // ---------- input ----------
@@ -546,6 +558,18 @@
     cv.addEventListener("mousedown", mDown);
     window.addEventListener("mousemove", mMove);
     window.addEventListener("mouseup", mUp);
+    // the big fixed REEL button (in-wrap, so its listeners die with the game)
+    (function () {
+      var rb = document.getElementById("f2reel");
+      function reelOn(e) { e.preventDefault(); reelHeld = true; }
+      function reelOff() { reelHeld = false; }
+      rb.addEventListener("touchstart", reelOn, { passive: false });
+      rb.addEventListener("touchend", reelOff);
+      rb.addEventListener("touchcancel", reelOff);
+      rb.addEventListener("mousedown", reelOn);
+      rb.addEventListener("mouseup", reelOff);
+      rb.addEventListener("mouseleave", reelOff);
+    })();
 
     // ---------- simulation ----------
     function step(dt) {
@@ -558,8 +582,10 @@
       else if (cast) {
         if (jigT > 0) jigT -= dt;
         if (reelHeld) depth -= reelSpeed() * dt;
-        else depth += 16 * dt * (jigT > 0 ? 0.25 : 1);
-        if (jigT > 0) depth -= 7 * dt;
+        // gentle sink (was a 16 m/s plummet no fish could catch); a charging
+        // fish slows it to a crawl so the strike lands — the anticipation IS the fun
+        else depth += (homingN > 0 ? 1.5 : 6.5) * dt * (jigT > 0 ? 0.25 : 1);
+        if (jigT > 0) depth -= 4 * dt;
         var md = maxDepth();
         if (depth < 0) depth = 0;
         if (depth > md) depth = md;

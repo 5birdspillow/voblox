@@ -17,15 +17,17 @@
 
   // XP needed to go from level n to n+1. Early levels come fast (dopamine), later ones cap out.
   function xpForLevel(n) { return Math.min(50 + (n - 1) * 25, 400); }
+  // Leo hit the old 99 cap — the ladder now climbs to 999 (each level past 15
+  // costs 400 XP, so 999 is a multi-year mountain, exactly the point)
   function levelForXP(xp) {
     var lv = 1, need = xpForLevel(1);
-    while (xp >= need && lv < 99) { xp -= need; lv++; need = xpForLevel(lv); }
+    while (xp >= need && lv < 999) { xp -= need; lv++; need = xpForLevel(lv); }
     return lv;
   }
   // progress inside the current level, for XP meters: { have, need, level }
   function xpInto(state) {
     var xp = state.xp || 0, lv = 1, need = xpForLevel(1);
-    while (xp >= need && lv < 99) { xp -= need; lv++; need = xpForLevel(lv); }
+    while (xp >= need && lv < 999) { xp -= need; lv++; need = xpForLevel(lv); }
     return { have: xp, need: need, level: lv };
   }
 

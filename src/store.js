@@ -9,7 +9,12 @@
   var RANKS = [
     { name: "Pawn", icon: "♟", at: 0 }, { name: "Knight", icon: "♞", at: 15 },
     { name: "Bishop", icon: "♝", at: 35 }, { name: "Rook", icon: "♜", at: 70 },
-    { name: "Queen", icon: "♛", at: 120 }, { name: "Grandmaster", icon: "👑", at: 200 }
+    { name: "Queen", icon: "♛", at: 120 }, { name: "Grandmaster", icon: "👑", at: 200 },
+    // beyond the chessboard — the prestige climb (Leo maxed Grandmaster)
+    { name: "Star Master", icon: "🌟", at: 350 }, { name: "Word Wizard", icon: "🧙", at: 550 },
+    { name: "Word Dragon", icon: "🐉", at: 800 }, { name: "Vocab Titan", icon: "🛡️", at: 1200 },
+    { name: "Galaxy Sage", icon: "🌌", at: 1700 }, { name: "Immortal", icon: "🏆", at: 2400 },
+    { name: "Diamond Legend", icon: "💎", at: 3200 }, { name: "MYTHIC CHAMPION", icon: "🌈", at: 4200 }
   ];
   var LOOT = ["🗡️", "🛡️", "💎", "🐉", "🐺", "🐱", "🎩", "👑", "🧱", "🌳", "⚡", "🔥", "🍄", "🏰", "🚀", "🦖"];
 
