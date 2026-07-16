@@ -1,9 +1,10 @@
 /* Voblox — Boss Battle overlay */
 .bosswrap {
   position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center;
-  padding: calc(env(safe-area-inset-top) + 12px) 14px calc(env(safe-area-inset-bottom) + 14px);
+  padding: calc(env(safe-area-inset-top) + 12px) calc(env(safe-area-inset-right) + 14px) calc(env(safe-area-inset-bottom) + 14px) calc(env(safe-area-inset-left) + 14px);
   background: radial-gradient(120% 90% at 50% 0%, #5b3a86 0%, #2a1e44 60%, #170f29 100%);
   font-family: "Trebuchet MS", "Segoe UI", sans-serif; color: #fff; overflow: auto;
+  -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
 }
 .bosstop { width: 100%; max-width: 620px; text-align: center; }
 .bossname { font-weight: 900; font-size: 20px; letter-spacing: 1px; text-shadow: 0 2px 0 #0006; }
@@ -21,10 +22,26 @@
 
 .bossbody { width: 100%; max-width: 620px; margin-top: 12px; }
 .bossbody .card { color: #20303a; }
+/* read-aloud button is a primary control for early readers — keep it fat-finger tappable */
+.bosswrap .replay { min-width: 44px; min-height: 44px; font-size: 18px; padding: 6px 10px; vertical-align: middle; }
 .hittoast { background: #ffffff; color: #1c7a2e; border: 4px solid #7fce8a; border-radius: 18px; padding: 22px;
   text-align: center; font-size: 26px; font-weight: 900; box-shadow: 0 8px 0 #0004; animation: pop .25s; }
 .hittoast .mastered { font-size: 18px; color: #176; margin-top: 8px; }
 @keyframes pop { from { transform: scale(.7); opacity: 0 } to { transform: scale(1); opacity: 1 } }
 
-.bossquit { margin-top: 14px; background: #ffffff22; color: #fff; border: 2px solid #ffffff55; border-radius: 10px; padding: 8px 14px; font-weight: bold; cursor: pointer; }
+.bossquit { margin-top: 14px; background: #ffffff22; color: #fff; border: 2px solid #ffffff55; border-radius: 10px; padding: 8px 14px; min-height: 44px; font-weight: bold; cursor: pointer; }
 .bossquit:active { transform: translateY(2px); }
+
+/* Short viewports (iPhone landscape 852×393, small phones): shrink the monster/HUD so the
+   answer buttons stay ON SCREEN instead of being pushed below a giant emoji. The wrap still
+   scrolls, but the fight is playable without scrolling past the boss to reach the choices. */
+@media (max-height: 560px) {
+  .monster { font-size: 48px; margin: 0; }
+  .bossname { font-size: 16px; }
+  .hpbar { height: 20px; margin: 3px auto; }
+  .hpbar span { line-height: 20px; font-size: 12px; }
+  .hearts { font-size: 18px; margin-top: 0; letter-spacing: 2px; }
+  .bossbody { margin-top: 6px; }
+  .bosswrap { padding-top: calc(env(safe-area-inset-top) + 6px); }
+  .bossquit { margin-top: 8px; }
+}

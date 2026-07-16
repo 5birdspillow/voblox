@@ -43,26 +43,41 @@
     wrap.innerHTML =
       '<canvas id="brcv"></canvas>' +
       '<div class="ghud"><div class="clue" id="brmsg">🏰 Boss Rush</div>' +
-      '<div class="grow"><span id="brhearts">❤️❤️❤️</span><span id="brboss"></span>' +
+      '<div class="grow" style="flex-wrap:wrap"><span id="brhearts">❤️❤️❤️</span><span id="brboss"></span>' +
       '<button class="bossquit" id="quit">Leave</button></div></div>' +
       '<div class="gmsg" id="brbig"></div>' +
       // ⚔ sword button (bottom-right): a discrete tap swings the sword
-      '<button type="button" id="brswing" style="position:absolute;right:14px;bottom:calc(env(safe-area-inset-bottom, 0px) + 16px);' +
+      '<button type="button" id="brswing" style="position:absolute;right:calc(env(safe-area-inset-right, 0px) + 14px);bottom:calc(env(safe-area-inset-bottom, 0px) + 16px);' +
       'width:76px;height:76px;background:rgba(20,16,30,.72);border:2px solid rgba(255,225,77,.55);border-radius:20px;' +
       'color:#ffd23f;font-size:34px;font-weight:900;font-family:inherit;padding:0;line-height:1;cursor:pointer;z-index:8">⚔</button>' +
       '<div class="gover" id="brq" style="display:none"></div>' +
       '<div class="gover" id="brbuff" style="display:none"></div>' +
       '<div class="gover" id="brcard" style="display:none"></div>';
     document.body.appendChild(wrap);
+    // compact, wrap-safe HUD chips so the row FITS 393px (Leave never clips) — digger pattern
+    (function () {
+      var gr = wrap.querySelector(".ghud .grow"); if (!gr) return;
+      gr.style.flexWrap = "wrap"; gr.style.gap = "6px";
+      Array.prototype.forEach.call(gr.children, function (el) {
+        el.style.flexShrink = "0"; el.style.whiteSpace = "nowrap";
+        if (el.tagName === "SPAN") { el.style.fontSize = "14px"; el.style.padding = "4px 8px"; }
+      });
+    })();
     var cv = wrap.querySelector("#brcv"), ctx = cv.getContext("2d");
 
     // ---------- responsive letterbox (one square fits both orientations) ----------
+    var ghudEl = wrap.querySelector(".ghud"), swingEl = wrap.querySelector("#brswing");
     var W, H, S, OX, OY, compact = false;
     function resize() {
       W = cv.width = wrap.clientWidth || 520;
       H = cv.height = wrap.clientHeight || 640;
       compact = Math.min(W, H) < 520;
-      var top = compact ? 88 : 118, bot = 96; // bottom breathing room for the ⚔ button
+      // start the arena BELOW the real HUD (clears the Dynamic Island) and leave room
+      // above the ⚔ button (which clears the home indicator via env safe-bottom)
+      var hudH = ghudEl ? Math.round(ghudEl.getBoundingClientRect().height) : (compact ? 88 : 118);
+      var safeB = 0;
+      try { safeB = Math.max(0, (parseFloat(getComputedStyle(swingEl).bottom) || 16) - 16); } catch (_) { safeB = 0; }
+      var top = Math.max(compact ? 88 : 118, hudH + 8), bot = 96 + safeB;
       var availW = W - 12, availH = H - top - bot;
       S = Math.min(availW / MW, availH / MH);
       if (S <= 0) S = 1;

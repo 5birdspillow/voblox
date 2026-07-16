@@ -106,13 +106,13 @@
       '<div class="grow"><span id="snkstat"></span><span id="snkstars"></span>' +
       '<button class="bossquit" id="quit">Leave</button></div></div>' +
       '<div class="gmsg" id="snkbig"></div>' +
-      '<button id="snkearn" type="button" style="display:none;position:absolute;left:12px;' +
+      '<button id="snkearn" type="button" style="display:none;position:absolute;left:calc(env(safe-area-inset-left, 0px) + 12px);' +
       'bottom:calc(env(safe-area-inset-bottom) + 14px);z-index:8;background:linear-gradient(#c9d6ff,#8a9bd8);' +
-      'color:#1c2340;border:none;border-radius:14px;padding:11px 15px;font-family:inherit;font-weight:900;' +
+      'color:#1c2340;border:none;border-radius:14px;padding:13px 16px;min-height:46px;box-sizing:border-box;font-family:inherit;font-weight:900;' +
       'font-size:14px;box-shadow:0 5px 0 #5a6aa8,0 8px 20px #0006;cursor:pointer">🕶 Smoke (a word)</button>' +
-      '<button id="snkuse" type="button" style="display:none;position:absolute;right:12px;' +
+      '<button id="snkuse" type="button" style="display:none;position:absolute;right:calc(env(safe-area-inset-right, 0px) + 12px);' +
       'bottom:calc(env(safe-area-inset-bottom) + 14px);z-index:8;background:#eef2ff;color:#2a3566;' +
-      'border:none;border-radius:14px;padding:11px 15px;font-family:inherit;font-weight:900;' +
+      'border:none;border-radius:14px;padding:13px 16px;min-height:46px;box-sizing:border-box;font-family:inherit;font-weight:900;' +
       'font-size:14px;box-shadow:0 5px 0 #aab3d8,0 8px 20px #0005;cursor:pointer">💨 Use Smoke</button>' +
       '<div class="gover" id="snkq" style="display:none"></div>' +
       '<div class="gover" id="snkend" style="display:none"></div>';
@@ -125,10 +125,19 @@
     var juice = global.VobloxJuice ? global.VobloxJuice() : null;
     var sfx = global.VobloxSfx || null;
 
-    var W, H, tile, OX, OY;
-    function resize() { W = cv.width = wrap.clientWidth || global.innerWidth || 360; H = cv.height = wrap.clientHeight || global.innerHeight || 640; metrics(); }
+    var W, H, tile, OX, OY, DPR = 1;
+    function resize() {
+      W = wrap.clientWidth || global.innerWidth || 360; H = wrap.clientHeight || global.innerHeight || 640;
+      DPR = Math.min(global.devicePixelRatio || 1, 2); // retina-crisp buffer; game stays in CSS px
+      cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR); ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      metrics();
+    }
     function metrics() {
-      var top = Math.min(W, H) < 520 ? 108 : 128, padH = 14, padB = 78;
+      // clear the top HUD (incl. Dynamic-Island inset via .ghud env padding) and the
+      // bottom smoke buttons (incl. home-indicator inset, probed off earnBtn's env bottom).
+      var hudB = 0; try { var gh = wrap.querySelector(".ghud"); if (gh) hudB = gh.getBoundingClientRect().bottom; } catch (e) { hudB = 0; }
+      var sb = 0; try { sb = Math.max(0, (parseFloat(getComputedStyle(earnBtn).bottom) || 14) - 14); } catch (e2) { sb = 0; }
+      var top = Math.max(Math.min(W, H) < 520 ? 108 : 128, Math.ceil(hudB) + 10), padH = 14, padB = 84 + sb;
       tile = Math.min((W - padH * 2) / COLS, (H - top - padB) / ROWS, 74);
       if (!(tile > 0)) tile = 1;
       OX = (W - tile * COLS) / 2; OY = top + Math.max(0, (H - top - padB - tile * ROWS) / 2);
@@ -524,6 +533,7 @@
       ctx.arc(x, y, R, g.face - g.half, g.face + g.half); ctx.closePath(); ctx.fill();
     }
     function draw() {
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
       ctx.clearRect(0, 0, W, H);
       var bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, "#20263a"); bg.addColorStop(1, "#12151f");
       ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);

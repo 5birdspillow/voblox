@@ -47,14 +47,14 @@
       '<div class="summary">' + summary(p, ready, L.words.length, atRisk) + '</div>';
 
     // per-word table
-    html += '<table><tr><th>Word</th><th>Quiz-ready?</th><th>Level</th><th>Tries</th><th>Correct</th></tr>';
+    html += '<div class="tablewrap"><table><tr><th>Word</th><th>Quiz-ready?</th><th>Level</th><th>Tries</th><th>Correct</th></tr>';
     L.words.forEach(function (w) {
       var c = s.cards[w.word], ok = Engine.isQuizReady(c);
       html += '<tr><td><b>' + esc(w.word) + '</b>' + (w.senses.length > 1 ? ' <span class="muted">(' + w.senses.length + " meanings)</span>" : "") + '</td>' +
         '<td>' + (ok ? '<span class="pill ready">ready ✓</span>' : '<span class="pill notready">practice</span>') + '</td>' +
         '<td>box ' + c.box + '/5</td><td>' + c.attempts + '</td><td>' + c.corrects + '</td></tr>';
     });
-    html += '</table>';
+    html += '</table></div>';
 
     html += '<div class="row2"><a class="btn" href="index.html" onclick="VOBLOX_setActive(\'' + L.id + '\')">▶ Make active &amp; open game</a>' +
       '<a class="btn alt" href="index.html#boss" onclick="VOBLOX_setActive(\'' + L.id + '\')">⚔️ Boss Battle this lesson</a></div>';

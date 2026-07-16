@@ -58,6 +58,7 @@
     var wrap = document.createElement("div"); wrap.className = "gamewrap merge";
     wrap.innerHTML =
       '<canvas id="mgcv"></canvas>' +
+      '<i id="mgsafeb" style="position:absolute;left:0;width:1px;height:1px;opacity:0;pointer-events:none;bottom:calc(env(safe-area-inset-bottom,0px) + 24px)"></i>' +
       '<div class="ghud"><div class="clue" id="mgmsg">🔷 Merge Forge</div>' +
       '<div class="grow"><span id="mgscore">✨ 0</span>' +
       '<button class="replay" id="mgforge" type="button" title="Forge pieces">🔤 FORGE PIECES</button>' +
@@ -68,14 +69,38 @@
       '<div class="gover" id="mgend" style="display:none"></div>';
     document.body.appendChild(wrap);
     var cv = wrap.querySelector("#mgcv"), ctx = cv.getContext("2d");
+    // The shared .gamewrap has padding (env safe-area insets + 12-16px). An in-flow canvas
+    // sits INSIDE that padding and overflows the viewport, clipping the rightmost board
+    // column under a scrollbar on iPhone. Take the canvas out of flow (like every other
+    // canvas game does in CSS) so it fills the whole wrap and nothing can scroll.
+    cv.style.position = "absolute"; cv.style.left = "0"; cv.style.top = "0"; cv.style.display = "block";
+    var ghudEl = wrap.querySelector(".ghud");          // top HUD (its padding clears the Dynamic Island)
+    var safeProbe = wrap.querySelector("#mgsafeb");     // probes env(safe-area-inset-bottom)
+
+    // touch targets: HUD action buttons default to ~25px tall (.replay 13px). Bump to >=44px.
+    (function () {
+      var f = wrap.querySelector("#mgforge"); if (f) { f.style.minHeight = "44px"; f.style.fontSize = "14px"; f.style.padding = "4px 12px"; }
+      var d = wrap.querySelector("#mgdex"); if (d) { d.style.minWidth = "44px"; d.style.minHeight = "44px"; d.style.fontSize = "20px"; d.style.lineHeight = "1"; }
+      var q = wrap.querySelector("#quit"); if (q) { q.style.minHeight = "44px"; q.style.marginTop = "0"; q.style.padding = "6px 14px"; }
+    })();
 
     // ---------- responsive letterbox: ONE logical board, both orientations ----------
-    var W, H, S, OX, OY, CELL;
+    var W, H, S, OX, OY, CELL, DPR = 1;
     function resize() {
-      W = cv.width = wrap.clientWidth; H = cv.height = wrap.clientHeight;
-      // portrait fits width, landscape fits height; center the leftover — uniform scale
-      var reserveTop = 66, reserveBot = 12;
-      var availH = H - reserveTop - reserveBot;
+      var cssW = wrap.clientWidth, cssH = wrap.clientHeight;
+      W = cssW; H = cssH;
+      // retina: back the canvas with up to 2x device pixels; ALL game math stays in CSS px.
+      DPR = Math.min(global.devicePixelRatio || 1, 2);
+      cv.style.width = cssW + "px"; cv.style.height = cssH + "px";
+      cv.width = Math.round(cssW * DPR); cv.height = Math.round(cssH * DPR);
+      // portrait fits width, landscape fits height; center the leftover — uniform scale.
+      // reserveTop = the ACTUAL HUD height (its top padding already includes
+      // env(safe-area-inset-top), so it clears the Dynamic Island); reserveBot = the
+      // home-indicator inset. The board is centered INSIDE this safe band — never clipped.
+      var reserveTop = (ghudEl ? ghudEl.offsetHeight : 66) + 6;
+      var safeB = safeProbe ? Math.max(0, (parseFloat(getComputedStyle(safeProbe).bottom) || 24) - 24) : 0;
+      var reserveBot = safeB + 10;
+      var availH = Math.max(10, H - reserveTop - reserveBot);
       S = Math.min(W / BW, availH / BH);
       OX = (W - BW * S) / 2;
       OY = reserveTop + (availH - BH * S) / 2;
@@ -313,6 +338,7 @@
     // ---------- drawing ----------
     function rrect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
     function draw(dt) {
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0); // retina scale; everything below is in CSS px
       ctx.clearRect(0, 0, W, H);
       // warm forge background gradient (bright enough that the gem emoji POP)
       var bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, "#7a4f2e"); bg.addColorStop(0.55, "#9a6a3c"); bg.addColorStop(1, "#6b4224");

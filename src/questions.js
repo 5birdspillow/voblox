@@ -333,8 +333,12 @@
     var def = data.senses[si].def;
     container.style.display = "flex"; container.style.flexDirection = "column"; container.style.minHeight = "0";
     container.style.overflow = "auto"; // NEVER hidden: if pinning can't fit, the card itself scrolls
+    container.style.setProperty("-webkit-overflow-scrolling", "touch");
+    container.style.overscrollBehavior = "contain";
     container.style.maxHeight = "calc(100vh - 76px)";
-    container.style.maxHeight = "calc(100dvh - 76px)"; // ignored where unsupported; vh above stays
+    // env()-aware cap so the pinned Hear/Quick-check buttons always clear the home indicator
+    // and the head clears the Dynamic Island on iPhone; ignored where unsupported (vh above stays)
+    container.style.maxHeight = "calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 32px)";
     var wrap = document.createElement("div");
     wrap.style.cssText = "display:flex;flex-direction:column;min-height:0;flex:1 1 auto";
     container.appendChild(wrap);
@@ -382,6 +386,27 @@
   // calls cb(correct, res). Multiple-choice only, so it never stalls the action.
   var MINI_FORMATS = ["word2def", "cloze_mc", "def2word_mc", "synonym", "antonym"];
   var lastMiniWord = null; // never ask the same word twice in a row, across all games
+  // ---- iPhone-16 layout hardening (style/layout only, no logic changes) ----
+  // Caps the card to the env() safe viewport so the Dynamic Island / home indicator
+  // never clip it, keeps it scrolling INTERNALLY (never clipped in landscape 852×393),
+  // and enforces fat-finger-safe touch targets: choices ≥48px, the read-aloud 🔊 and
+  // skip ≥44px. A mis-tap here costs a kid his streak, so the minimums are load-bearing.
+  function hardenMiniQuiz(container) {
+    var card = container.querySelector(".wqcard");
+    if (card) {
+      card.style.maxHeight = "calc(100vh - 24px)"; // fallback for no-dvh browsers
+      card.style.maxHeight = "calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px)";
+      card.style.overflowY = "auto";
+      card.style.setProperty("-webkit-overflow-scrolling", "touch");
+      card.style.touchAction = "pan-y";
+      card.style.overscrollBehavior = "contain";
+    }
+    Array.prototype.forEach.call(container.querySelectorAll(".wqc"), function (b) { b.style.minHeight = "48px"; });
+    var say = container.querySelector("#wqsay");
+    if (say) { say.style.minWidth = "44px"; say.style.minHeight = "44px"; say.style.fontSize = "18px"; say.style.padding = "6px 10px"; say.style.verticalAlign = "middle"; }
+    var skip = container.querySelector("#wqskip");
+    if (skip) skip.style.minHeight = "44px";
+  }
   function miniQuiz(container, words, store, o) {
     o = o || {};
     var Engine = global.VobloxEngine;
@@ -397,6 +422,7 @@
       '<div class="wqchoices">' + q.choices.map(function (ch, i) { return '<button class="wqc" data-i="' + i + '">' + esc(ch.label) + "</button>"; }).join("") + "</div>" +
       (o.skippable ? '<button class="wqskip" id="wqskip" type="button">skip (−' + COSTS.skip + ' 💎)</button>' : "") + "</div>";
     container.style.display = "flex";
+    hardenMiniQuiz(container);
     readQ(q);
     var born = Date.now();
     var fired = false; // a delayed correct-answer close must not double-fire after a skip

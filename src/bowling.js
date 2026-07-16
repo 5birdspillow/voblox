@@ -58,15 +58,15 @@
       '<canvas id="bwcv" style="position:absolute;inset:0;display:block;width:100%;height:100%"></canvas>' +
       '<div class="ghud"><div class="clue" id="bwmsg">🎳 Strike Zone — drag back to throw!</div>' +
       '<div class="grow"><span id="bwframe">Frame 1</span><span id="bwscore">Score 0</span>' +
-      '<button class="embtn" id="bwvs" style="min-width:70px;padding:3px 8px"><span class="ebl">🤖 VS</span></button>' +
+      '<button class="embtn" id="bwvs" style="min-width:70px;padding:8px 10px"><span class="ebl">🤖 VS</span></button>' +
       '<button class="bossquit" id="quit">Leave</button></div></div>' +
-      '<div class="bwsheet" id="bwsheet" style="position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top) + 44px);' +
+      '<div class="bwsheet" id="bwsheet" style="position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top) + 112px);' +
       'z-index:6;display:flex;gap:2px;justify-content:center;padding:2px 4px;pointer-events:none;font-family:Trebuchet MS,sans-serif"></div>' +
       '<div class="gmsg" id="bwbig"></div>' +
-      '<button id="bwpow" type="button" style="display:none;position:absolute;left:12px;bottom:calc(env(safe-area-inset-bottom) + 16px);' +
+      '<button id="bwpow" type="button" style="display:none;position:absolute;left:calc(env(safe-area-inset-left, 0px) + 12px);bottom:calc(env(safe-area-inset-bottom) + 16px);' +
       'z-index:8;background:linear-gradient(#ffd23f,#ff9f1f);color:#5a3d00;border:none;border-radius:14px;padding:10px 14px;' +
       'font-family:inherit;font-weight:900;font-size:14px;box-shadow:0 5px 0 #b9791a,0 8px 18px #0006;cursor:pointer">🎳 POWER BALL</button>' +
-      '<button id="bwrr" type="button" style="display:none;position:absolute;right:12px;bottom:calc(env(safe-area-inset-bottom) + 16px);' +
+      '<button id="bwrr" type="button" style="display:none;position:absolute;right:calc(env(safe-area-inset-right, 0px) + 12px);bottom:calc(env(safe-area-inset-bottom) + 16px);' +
       'z-index:8;background:linear-gradient(#8ecdf7,#3f8fd8);color:#06263f;border:none;border-radius:14px;padding:10px 14px;' +
       'font-family:inherit;font-weight:900;font-size:14px;box-shadow:0 5px 0 #2c6aa0,0 8px 18px #0006;cursor:pointer">🔁 RE-RACK</button>' +
       '<div class="gover" id="bwq" style="display:none"></div>' +
@@ -81,12 +81,21 @@
     var sfx = global.VobloxSfx || null;
 
     // ---------- responsive perspective lane ----------
+    // Retina-sharp backing store (min(dpr,2)); all game code stays in CSS px.
+    // The lane's far end starts below the score sheet (whose env() top already
+    // clears the Dynamic Island), so pins are never hidden under the HUD.
     var W, H, laneBot, laneTop, nearHalf, farHalf, laneCx;
+    var sheetEl = document.getElementById("bwsheet");
     function resize() {
-      W = cv.width = wrap.clientWidth || global.innerWidth || 360;
-      H = cv.height = wrap.clientHeight || global.innerHeight || 640;
+      var dpr = Math.min(global.devicePixelRatio || 1, 2);
+      W = wrap.clientWidth || global.innerWidth || 360;
+      H = wrap.clientHeight || global.innerHeight || 640;
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       laneCx = W / 2;
-      laneTop = Math.max(96, H * 0.16);
+      var sheetBot = 0;
+      try { sheetBot = (parseFloat(getComputedStyle(sheetEl).top) || 0) + 56; } catch (_) {}
+      laneTop = Math.max(96, H * 0.16, sheetBot);
       laneBot = H - Math.max(70, H * 0.14);
       nearHalf = Math.min(W * 0.42, 240);
       farHalf = nearHalf * 0.34;
@@ -442,13 +451,13 @@
         var cum = frameScores[f]; var flash = "";
         if (sheet[f].length && (sheet[f][0] === 10 || (sheet[f].length >= 2 && sheet[f][0] + sheet[f][1] === 10))) flash = ";box-shadow:0 0 0 2px #ffd23f inset";
         var here = f === cur ? ";border-color:#ffd23f;border-width:2px" : "";
-        var cells = tenth ? 3 : 2, cw = tenth ? 44 : 30;
+        var cells = tenth ? 3 : 2, cw = tenth ? 48 : 34; // 9×34 + 48 + gaps = 372px — fits a 393px screen
         var top = "";
-        for (var c = 0; c < cells; c++) top += '<span style="display:inline-block;width:' + (cw / cells) + 'px;border-left:1px solid #0003;font-size:11px;font-weight:900;color:#20303a">' + (mk[c] || "&nbsp;") + "</span>";
+        for (var c = 0; c < cells; c++) top += '<span style="display:inline-block;width:' + (cw / cells) + 'px;border-left:1px solid #0003;font-size:12px;font-weight:900;color:#20303a">' + (mk[c] || "&nbsp;") + "</span>";
         html += '<div style="width:' + cw + 'px;background:rgba(255,255,255,.92);border:1px solid #0004;border-radius:3px;overflow:hidden' + here + flash + '">' +
-          '<div style="font-size:8px;color:#5a6b7a;line-height:9px">' + (f + 1) + '</div>' +
-          '<div style="height:13px;line-height:13px">' + top + '</div>' +
-          '<div style="font-size:11px;font-weight:900;height:14px;line-height:14px;color:#0b1730;border-top:1px solid #0003">' + (cum != null ? cum : "&nbsp;") + '</div></div>';
+          '<div style="font-size:10px;color:#5a6b7a;line-height:11px">' + (f + 1) + '</div>' +
+          '<div style="height:15px;line-height:15px">' + top + '</div>' +
+          '<div style="font-size:14px;font-weight:900;height:17px;line-height:17px;color:#0b1730;border-top:1px solid #0003">' + (cum != null ? cum : "&nbsp;") + '</div></div>';
       }
       el.innerHTML = html;
     }

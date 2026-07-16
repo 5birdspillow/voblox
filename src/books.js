@@ -304,7 +304,12 @@
       '<div id="bkbar"></div>';
     document.body.appendChild(wrap);
     var cv = wrap.querySelector("#bkcv"), ctx = cv.getContext("2d");
-    var W, H, S, OX, OY, compact = false, vertical = false;
+    // 📱 safe-area probe: its env() paddings report the Dynamic Island / home-indicator
+    // insets in CSS px so the canvas (which draws in its own coords) can offset for them.
+    var probe = document.createElement("div");
+    probe.style.cssText = "position:absolute;top:0;left:0;width:0;height:0;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)";
+    wrap.appendChild(probe);
+    var W, H, S, OX, OY, compact = false, vertical = false, safeT = 0, safeB = 0, safeL = 0, safeR = 0;
     // responsive grid metrics. TWO orientations, ONE logic space:
     //  - landscape: lanes run left→right (zombies walk left), classic PvZ
     //  - portrait ("vertical"): the battlefield TRANSPOSES — lanes are columns,
@@ -312,29 +317,45 @@
     //    different screen mapping (X/Y below). No more rotate-your-phone gate.
     var MWv = MW, GXv = 118, GYv = 96, CWv = 92, CHv = 88, SPD = 1;
     function resize() {
-      W = cv.width = wrap.clientWidth; H = cv.height = wrap.clientHeight;
+      var cw = wrap.clientWidth, ch = wrap.clientHeight;
+      W = cw; H = ch;
+      // 📱 retina sharpening: back the canvas at devicePixelRatio (capped at 2 for perf),
+      // keep the CSS size in logical px, and scale the context ONCE. All draw math stays in
+      // CSS-logical space (X()/Y() do the orientation mapping in JS, not via ctx transforms),
+      // so this base scale is compatible and does NOT disturb the point transform.
+      var dpr = Math.max(1, Math.min(global.devicePixelRatio || 1, 2));
+      cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
+      cv.style.width = cw + "px"; cv.style.height = ch + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      // read the safe-area insets off the probe (0 on non-notched screens)
+      var pcs = probe ? getComputedStyle(probe) : null;
+      safeT = pcs ? (parseFloat(pcs.paddingTop) || 0) : 0;
+      safeB = pcs ? (parseFloat(pcs.paddingBottom) || 0) : 0;
+      safeL = pcs ? (parseFloat(pcs.paddingLeft) || 0) : 0;
+      safeR = pcs ? (parseFloat(pcs.paddingRight) || 0) : 0;
       vertical = H > W;
       compact = Math.min(W, H) < 520 || Math.max(W, H) < 900;
       wrap.classList.toggle("compact", compact);
       var rowsN = (compact && plan) ? Math.max(3, plan.rows.length) : ROWS;
       GYv = compact ? 10 : (vertical ? 14 : 96);
       CHv = (MH - GYv - 8) / rowsN;
+      var usableW = Math.max(200, W - safeL - safeR); // width free of the side insets (landscape island/home-bar)
       if (vertical) {
         // lanes across the WIDTH, depth down the HEIGHT
-        var reserveV = compact ? 96 : 140;
-        S = (W - 8) / MH;
+        var reserveV = (compact ? 96 : 140) + safeT + safeB; // grow the top/bottom gutters for the insets
+        S = (usableW - 8) / MH;
         MWv = Math.max(760, Math.floor((H - reserveV) / S) - 4);
         GXv = 54;
-        OX = Math.max(0, (W - MH * S) / 2);
-        OY = 44;
+        OX = safeL + Math.max(0, (usableW - MH * S) / 2);
+        OY = 44 + safeT;
       } else {
-        var reserve = compact ? 86 : 132;
+        var reserve = (compact ? 86 : 132) + safeT + safeB;
         S = (H - reserve) / MH;
-        if (!compact) S = Math.min(S, W / MW);
-        MWv = Math.max(MW, Math.floor(W / S) - 4);
+        if (!compact) S = Math.min(S, usableW / MW);
+        MWv = Math.max(MW, Math.floor(usableW / S) - 4);
         GXv = compact ? 66 : 118;
-        OX = Math.max(0, (W - MWv * S) / 2);
-        OY = compact ? 40 : Math.max(36, (H - reserve - MH * S) / 2 + 36);
+        OX = safeL + Math.max(0, (usableW - MWv * S) / 2);
+        OY = (compact ? 40 : Math.max(36, (H - reserve - MH * S) / 2 + 36)) + safeT;
       }
       CWv = (MWv - GXv - 16) / COLS;
       SPD = CWv / 92; // crossing-time balance no matter the tile size
@@ -699,12 +720,12 @@
       bar.innerHTML = avail.map(function (k) {
         var b = BOOKS[k];
         var can = ink >= b.cost;
-        return '<button class="embtn' + (selected === k ? " mode" : "") + '" style="min-width:86px' + (can ? "" : ";opacity:.5") + '" data-bk="' + k + '">' +
+        return '<button class="embtn' + (selected === k ? " mode" : "") + '" style="min-width:' + (compact ? 74 : 86) + 'px;min-height:44px;justify-content:center' + (can ? "" : ";opacity:.5") + '" data-bk="' + k + '">' +
           '<span class="ebl">' + b.emoji + " " + b.cost + '</span><span class="ebs">' + b.name + (b.word ? " 📖word" : "") + "</span></button>";
       }).join("") +
-        '<button class="embtn' + (selected === "broom" ? " mode" : "") + '" id="bkbroom"><span class="ebl">🧹 Broom</span><span class="ebs">sweep a book, ½ back</span></button>' +
-        '<button class="embtn study" id="bkrush"' + (rushCd > 0 ? ' style="opacity:.55"' : "") + '><span class="ebl">🖋 INK RUSH</span><span class="ebs">' + (rushCd > 0 ? Math.ceil(rushCd) + "s" : "answer = +150") + "</span></button>" +
-        '<button class="embtn' + (surge >= surgeMax ? " mode" : "") + '" id="bksurge"' + (surge < surgeMax ? ' style="opacity:.6"' : "") + '><span class="ebl">⚡ WORD SURGE</span><span class="ebs">' + (surge >= surgeMax ? "READY — tap!" : Math.floor(surge * 100 / surgeMax) + "% charged") + "</span></button>";
+        '<button class="embtn' + (selected === "broom" ? " mode" : "") + '" id="bkbroom" style="min-height:44px;justify-content:center"><span class="ebl">🧹 Broom</span><span class="ebs">sweep a book, ½ back</span></button>' +
+        '<button class="embtn study" id="bkrush" style="min-height:44px;justify-content:center' + (rushCd > 0 ? ";opacity:.55" : "") + '"><span class="ebl">🖋 INK RUSH</span><span class="ebs">' + (rushCd > 0 ? Math.ceil(rushCd) + "s" : "answer = +150") + "</span></button>" +
+        '<button class="embtn' + (surge >= surgeMax ? " mode" : "") + '" id="bksurge" style="min-height:44px;justify-content:center' + (surge < surgeMax ? ";opacity:.6" : "") + '"><span class="ebl">⚡ WORD SURGE</span><span class="ebs">' + (surge >= surgeMax ? "READY — tap!" : Math.floor(surge * 100 / surgeMax) + "% charged") + "</span></button>";
       Array.prototype.forEach.call(bar.querySelectorAll("[data-bk]"), function (b) {
         b.onclick = function () {
           var k = b.dataset.bk;
@@ -1323,10 +1344,11 @@
       // boss health bar across the top
       var boss = null; zombies.forEach(function (z) { if (ZOMBIES[z.type].big) boss = z; });
       if (boss) {
-        ctx.fillStyle = "rgba(0,0,0,.55)"; ctx.fillRect(W * 0.14, 8, W * 0.72, 16);
-        ctx.fillStyle = "#c9b6ff"; ctx.fillRect(W * 0.14 + 2, 10, (W * 0.72 - 4) * Math.max(0, boss.hp / boss.maxHp), 12);
-        ctx.fillStyle = "#fff"; ctx.font = "bold 11px Trebuchet MS"; ctx.textAlign = "center";
-        ctx.fillText(ZOMBIES[boss.type].emoji + " " + ZOMBIES[boss.type].name, W / 2, 17);
+        var bby = safeT + 8; // clear the Dynamic Island
+        ctx.fillStyle = "rgba(0,0,0,.55)"; ctx.fillRect(W * 0.14, bby, W * 0.72, 16);
+        ctx.fillStyle = "#c9b6ff"; ctx.fillRect(W * 0.14 + 2, bby + 2, (W * 0.72 - 4) * Math.max(0, boss.hp / boss.maxHp), 12);
+        ctx.fillStyle = "#fff"; ctx.font = "bold 12px Trebuchet MS"; ctx.textAlign = "center";
+        ctx.fillText(ZOMBIES[boss.type].emoji + " " + ZOMBIES[boss.type].name, W / 2, bby + 9);
       }
       if (juice) { juice.update(0.016); juice.draw(ctx); }
     }

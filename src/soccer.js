@@ -40,10 +40,21 @@
       '<button class="sbtn shoot" id="soshoot" type="button">SHOOT</button>' +
       '<div class="runhint">Drag to run • PASS / SHOOT (or X / Space)</div>';
     document.body.appendChild(wrap);
+    // landscape: keep the edge-anchored PASS/SHOOT buttons clear of the Dynamic Island's side inset
+    if (!document.getElementById("soccer-ios-fit")) {
+      var sst = document.createElement("style"); sst.id = "soccer-ios-fit";
+      sst.textContent =
+        ".gamewrap.soccer .sbtn.pass{left:calc(env(safe-area-inset-left, 0px) + 14px)}" +
+        ".gamewrap.soccer .sbtn.shoot{right:calc(env(safe-area-inset-right, 0px) + 14px)}";
+      document.head.appendChild(sst);
+    }
     var cv = wrap.querySelector("#socv"), ctx = cv.getContext("2d");
     var W, H, FX0, FX1, FY0, FY1, GW;
     function resize() {
-      W = cv.width = wrap.clientWidth; H = cv.height = wrap.clientHeight;
+      var dpr = Math.min(global.devicePixelRatio || 1, 2);
+      W = wrap.clientWidth; H = wrap.clientHeight;
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // render at device pixels, keep game code in CSS px
       FX0 = W * 0.05; FX1 = W * 0.95; FY0 = H * 0.2; FY1 = H * 0.9; GW = (FY1 - FY0) * 0.3;
     }
     resize(); window.addEventListener("resize", resize);

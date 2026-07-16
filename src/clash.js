@@ -80,7 +80,7 @@
     wrap.innerHTML =
       '<canvas id="clcv"></canvas>' +
       '<div class="ghud"><div class="clue" id="clmsg">👑 Card Clash</div>' +
-      '<div class="grow"><span id="clelx">💧 0</span>' +
+      '<div class="grow" style="flex-wrap:wrap;gap:6px"><span id="clelx" style="font-size:13px;white-space:nowrap;padding:4px 8px"></span>' +
       '<button class="embtn study" id="clsurge" style="min-width:0"><span class="ebl">⚡ SURGE</span><span class="ebs">answer a word</span></button>' +
       '<button class="bossquit" id="quit">Leave</button></div></div>' +
       '<div class="gmsg" id="clbig"></div>' +
@@ -93,9 +93,18 @@
     var cv = wrap.querySelector("#clcv"), ctx = cv.getContext("2d");
 
     // ---------- responsive letterbox (ONE logic space, both orientations) ----------
+    cv.style.touchAction = "none"; // iOS: the arena is a tap surface, never a scroll/zoom target
     var W, H, S, OX, OY;
     function resize() {
-      W = cv.width = wrap.clientWidth; H = cv.height = wrap.clientHeight;
+      // retina: keep ALL game math in CSS px (W/H), but back the canvas with a
+      // dpr-scaled buffer so emoji/text stay crisp at iPhone DPR3 (clamped to 2 for
+      // memory). Same pattern as bjj/chef/fishing/karts. clash never calls
+      // setTransform itself and its save/restore are balanced, so this is safe.
+      var dpr = Math.min(global.devicePixelRatio || 1, 2);
+      W = wrap.clientWidth; H = wrap.clientHeight;
+      cv.style.width = W + "px"; cv.style.height = H + "px"; // clash has no shared canvas-size CSS rule → set it here
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // draw in CSS px; buffer is dpr-scaled
       var reserve = 118; // room for the HUD (top) + card hand (bottom bar)
       S = Math.min(W / AW, (H - reserve) / AH); // uniform fit, portrait or landscape
       OX = Math.max(0, (W - AW * S) / 2);
@@ -145,8 +154,15 @@
     var msgEl = document.getElementById("clmsg"), bigEl = document.getElementById("clbig");
     function big(m, col) { bigEl.textContent = m; bigEl.style.color = col || "#fff"; bigEl.style.opacity = "1"; setTimeout(function () { bigEl.style.opacity = "0"; }, 1200); }
     function hud() {
-      var pips = "💧".repeat(Math.min(ELIXIR_CAP, Math.floor(elixir)));
-      document.getElementById("clelx").textContent = pips + " " + Math.floor(elixir) + (discount > 0 ? " (−1 next!)" : "");
+      var n = Math.floor(elixir);
+      var pips = "💧".repeat(Math.min(ELIXIR_CAP, n));
+      // compact chip: tiny pip icons + a big readable number (≥14px) + a short
+      // discount badge — fits the 393px HUD row. <i>/<b> (not <span>) so the shared
+      // ".ghud .grow span" white-pill rule can't wrap each inner piece.
+      document.getElementById("clelx").innerHTML =
+        '<i style="font-style:normal;font-size:11px">' + pips + '</i> ' +
+        '<b style="font-size:15px">' + n + '</b>' +
+        (discount > 0 ? ' <b style="color:#1e8f4e;font-size:12px">next −1</b>' : '');
       var sb = document.getElementById("clsurge");
       if (sb) { sb.style.opacity = surgeCd > 0 ? "0.55" : "1"; sb.querySelector(".ebs").textContent = surgeCd > 0 ? Math.ceil(surgeCd) + "s" : "answer a word"; }
     }

@@ -75,8 +75,8 @@
       '<button id="wcone" type="button" style="display:none;position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom) + 150px);' +
       'transform:translateX(-50%);z-index:9;background:linear-gradient(#ffe14d,#ff9f1f);color:#5a3d00;border:none;border-radius:20px;' +
       'padding:14px 30px;font-family:inherit;font-weight:900;font-size:22px;box-shadow:0 6px 0 #b9791a,0 10px 24px #0007;cursor:pointer">ONE! 🃏</button>' +
-      '<button id="wcww" type="button" style="position:absolute;right:12px;bottom:calc(env(safe-area-inset-bottom) + 14px);z-index:8;' +
-      'background:linear-gradient(#b06dff,#7a3fd0);color:#fff;border:none;border-radius:14px;padding:10px 14px;font-family:inherit;font-weight:900;' +
+      '<button id="wcww" type="button" style="position:absolute;right:calc(env(safe-area-inset-right, 0px) + 12px);bottom:calc(env(safe-area-inset-bottom) + 14px);z-index:8;' +
+      'background:linear-gradient(#b06dff,#7a3fd0);color:#fff;border:none;border-radius:14px;padding:12px 16px;min-height:44px;box-sizing:border-box;font-family:inherit;font-weight:900;' +
       'font-size:14px;box-shadow:0 4px 0 #5a2ea0;cursor:pointer">🎴 Word Wild</button>' +
       '<div class="wccolors" id="wcpick" style="display:none;position:absolute;inset:0;z-index:10;background:rgba(10,16,28,.6);' +
       'flex-direction:column;align-items:center;justify-content:center"></div>' +
@@ -91,8 +91,12 @@
     var juice = global.VobloxJuice ? global.VobloxJuice() : null;
     var sfx = global.VobloxSfx || null;
 
-    var W, H;
-    function resize() { W = cv.width = wrap.clientWidth || global.innerWidth || 360; H = cv.height = wrap.clientHeight || global.innerHeight || 640; }
+    var W, H, DPR = 1;
+    function resize() {
+      W = wrap.clientWidth || global.innerWidth || 360; H = wrap.clientHeight || global.innerHeight || 640;
+      DPR = Math.min(global.devicePixelRatio || 1, 2); // retina-crisp buffer; game stays in CSS px
+      cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR); ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    }
     resize(); window.addEventListener("resize", resize);
 
     // ---------- run state ----------
@@ -401,23 +405,28 @@
       ctx.textAlign = "center"; ctx.textBaseline = "middle";
       ctx.fillText(symGlyph(c), x + w / 2, y + h / 2);
     }
+    // home-indicator inset, probed off the Word Wild button's env()-based bottom (14px base)
+    function safeBottom() { var sb = 0; try { sb = Math.max(0, (parseFloat(getComputedStyle(wwBtn).bottom) || 14) - 14); } catch (e) { sb = 0; } return sb; }
+    // top y of the fanned hand: fully above the home indicator AND the bottom button strip
+    function handTop() { var cw = Math.min(W * 0.16, 78), ch = cw * 1.45; return H - safeBottom() - 64 - ch; }
     // layout the player's fanned hand → array of {x,y,w,h,i}
     function handLayout() {
       var n = hands ? hands[0].length : 0, out = [];
       var cw = Math.min(W * 0.16, 78), ch = cw * 1.45;
       var spread = Math.min(W * 0.62, n * cw * 0.62);
       var step = n > 1 ? spread / (n - 1) : 0, x0 = W / 2 - spread / 2;
-      var by = H - ch * 0.72;
+      var by = handTop();
       for (var i = 0; i < n; i++) { out.push({ x: (n > 1 ? x0 + i * step : W / 2) - cw / 2, y: by, w: cw, h: ch, i: i }); }
       return out;
     }
     function seatPos(seat) {
       if (seat === 0) return { x: W / 2, y: H - 40 };
       if (seat === 1) return { x: 44, y: H * 0.45 };
-      if (seat === 2) return { x: W / 2, y: 54 };
+      if (seat === 2) { var t = 54; try { var gh = wrap.querySelector(".ghud"); if (gh) t = Math.max(54, Math.ceil(gh.getBoundingClientRect().bottom) + 34); } catch (e) {} return { x: W / 2, y: t }; } // clear the top HUD + Dynamic Island
       return { x: W - 44, y: H * 0.45 };
     }
     function draw() {
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
       ctx.clearRect(0, 0, W, H);
       var g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#16603a"); g.addColorStop(1, "#0c3a24");
       ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
@@ -451,7 +460,7 @@
         var lift = matches(c) && turn === 0 ? 8 : 0;
         cardFace(r.x, r.y - lift, r.w, r.h, c, true);
       });
-      if (turn === 0) { ctx.fillStyle = "rgba(255,255,255,.85)"; ctx.font = "bold 13px Trebuchet MS"; ctx.textAlign = "center"; ctx.fillText("YOUR TURN", W / 2, H - Math.min(W * 0.16, 78) * 1.45 - 12); }
+      if (turn === 0) { ctx.fillStyle = "rgba(255,255,255,.85)"; ctx.font = "bold 13px Trebuchet MS"; ctx.textAlign = "center"; ctx.fillText("YOUR TURN", W / 2, handTop() - 10); }
       if (juice) { juice.update(0.016); juice.draw(ctx); }
     }
 

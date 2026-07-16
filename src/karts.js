@@ -48,6 +48,15 @@
       '<button class="kbtn use" id="kuse" type="button">USE 🎁</button>' +
       '<div class="runhint">Hold ◀ ▶ to steer • drive into ❓ boxes for items!</div>';
     document.body.appendChild(wrap);
+    // landscape: keep the edge-anchored steer/use buttons clear of the Dynamic Island's side inset
+    if (!document.getElementById("karts-ios-fit")) {
+      var kst = document.createElement("style"); kst.id = "karts-ios-fit";
+      kst.textContent =
+        ".gamewrap.karts .kbtn.left{left:calc(env(safe-area-inset-left, 0px) + 14px)}" +
+        ".gamewrap.karts .kbtn.right{left:calc(env(safe-area-inset-left, 0px) + 92px)}" +
+        ".gamewrap.karts .kbtn.use{right:calc(env(safe-area-inset-right, 0px) + 14px)}";
+      document.head.appendChild(kst);
+    }
     var cv = wrap.querySelector("#kcv"), ctx = cv.getContext("2d");
     var W, H, CXp, CYp, ROADW, way = [];
     var rng = P.rng(TR.seed);
@@ -62,7 +71,7 @@
       }
       ROADW = Math.max(58, Math.min(W, H) * 0.12);
     }
-    function resize() { W = cv.width = wrap.clientWidth; H = cv.height = wrap.clientHeight; rng = P.rng(TR.seed); buildTrack(); }
+    function resize() { var dpr = Math.min(global.devicePixelRatio || 1, 2); W = wrap.clientWidth; H = wrap.clientHeight; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); rng = P.rng(TR.seed); buildTrack(); }
     resize(); window.addEventListener("resize", resize);
 
     var juice = global.VobloxJuice ? global.VobloxJuice() : null;

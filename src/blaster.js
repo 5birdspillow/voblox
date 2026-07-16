@@ -31,7 +31,7 @@
     wrap.innerHTML =
       '<canvas id="bscv"></canvas>' +
       '<div class="ghud"><div class="clue" id="bsmsg">🚀 Star Blaster</div>' +
-      '<div class="grow"><span id="bsstat"></span>' +
+      '<div class="grow" style="flex-wrap:wrap"><span id="bsstat"></span>' +
       '<button class="bossquit" id="bwarp" title="Time Warp: slow the invaders">🕒</button>' +
       '<button class="bossquit" id="bbarr" title="Star Barrage: homing strikes">☄️</button>' +
       '<button class="bossquit" id="bmega" style="display:none">💥 MEGA</button>' +
@@ -40,13 +40,25 @@
       '<div class="gover" id="bsq" style="display:none"></div>' +
       '<div class="gover" id="bscard" style="display:none"></div>';
     document.body.appendChild(wrap);
+    // compact, wrap-safe HUD chips so the row FITS 393px (Leave never clips) — digger pattern
+    (function () {
+      var gr = wrap.querySelector(".ghud .grow"); if (!gr) return;
+      gr.style.flexWrap = "wrap"; gr.style.gap = "6px";
+      Array.prototype.forEach.call(gr.children, function (el) {
+        el.style.flexShrink = "0"; el.style.whiteSpace = "nowrap";
+        if (el.tagName === "SPAN") { el.style.fontSize = "14px"; el.style.padding = "4px 8px"; }
+      });
+    })();
 
     var cv = wrap.querySelector("#bscv"), ctx = cv.getContext("2d");
-    var W = 800, H = 600, SX = 1, SY = 1;
+    var ghudEl = wrap.querySelector(".ghud");
+    var W = 800, H = 600, SX = 1, SY = 1, hudH = 60;
+    function measureHud() { hudH = ghudEl ? Math.round(ghudEl.getBoundingClientRect().height) : 60; }
     function resize() {
       W = cv.width = wrap.clientWidth || 800;
       H = cv.height = wrap.clientHeight || 600;
       SX = W / VW; SY = H / VH;
+      measureHud();
     }
     resize();
     window.addEventListener("resize", resize);
@@ -82,6 +94,7 @@
       warpBtn.style.opacity = warpCd > 0 ? ".45" : "1";
       barrBtn.textContent = barrCd > 0 ? "☄️ " + Math.ceil(barrCd) : "☄️";
       barrBtn.style.opacity = barrCd > 0 ? ".45" : "1";
+      measureHud(); // HUD row may wrap taller as the stat text changes
     }
     // ---------- special abilities ----------
     function timeWarp() {
@@ -437,7 +450,7 @@
       if (boss) {
         ctx.font = Math.round(96 * Math.min(SX, SY)) + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
         ctx.fillText("🛸", boss.x * SX, boss.y * SY);
-        var by = 96;
+        var by = Math.max(96, hudH + 6); // sit BELOW the HUD (which clears the Dynamic Island via env safe-top)
         ctx.fillStyle = "rgba(0,0,0,.6)"; ctx.fillRect(W * 0.12, by, W * 0.76, 22);
         ctx.fillStyle = "#ff6b6b"; ctx.fillRect(W * 0.12 + 3, by + 3, (W * 0.76 - 6) * Math.max(0, boss.hp / boss.maxHp), 16);
         ctx.fillStyle = "#fff"; ctx.font = "bold 12px Trebuchet MS, sans-serif"; ctx.textAlign = "center";

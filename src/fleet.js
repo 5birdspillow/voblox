@@ -106,7 +106,10 @@
       '<button id="fllock" style="' + actBtn + ';background:linear-gradient(#5be07a,#1fa34d)">✅ Lock In</button></div>' +
       '<button id="flsonar" style="' + actBtn + ';left:50%;bottom:calc(env(safe-area-inset-bottom) + 22px);transform:translateX(-50%);background:linear-gradient(#5fd7c9,#1f9e8f);display:none">📡 Sonar Ping</button>' +
       '<button id="flrepair" style="' + actBtn + ';left:50%;bottom:calc(env(safe-area-inset-bottom) + 74px);transform:translateX(-50%);background:linear-gradient(#ffb24d,#ff6b1f);display:none">🛠 Emergency Repair</button>' +
-      '<div id="fllog" style="position:absolute;top:calc(env(safe-area-inset-top) + 70px);right:6px;z-index:7;width:74px;font-family:Trebuchet MS,sans-serif;font-size:11px;font-weight:bold;color:#dff;line-height:1.5;text-align:right;pointer-events:none;text-shadow:0 1px 2px #000"></div>' +
+      '<div id="fllog" style="position:absolute;top:calc(env(safe-area-inset-top) + 118px);right:calc(env(safe-area-inset-right, 0px) + 6px);z-index:7;width:82px;font-family:Trebuchet MS,sans-serif;font-size:12px;font-weight:bold;color:#dff;line-height:1.5;text-align:right;pointer-events:none;text-shadow:0 1px 2px #000"></div>' +
+      // invisible safe-area probes (digger pattern): resize() reads their computed offsets
+      '<div id="flsafet" style="position:absolute;left:0;top:calc(env(safe-area-inset-top, 0px) + 0px);width:0;height:0;pointer-events:none"></div>' +
+      '<div id="flsafeb" style="position:absolute;left:0;bottom:calc(env(safe-area-inset-bottom, 0px) + 10px);width:0;height:0;pointer-events:none"></div>' +
       '<div class="gover" id="flq" style="display:none"></div>' +
       '<div class="gover" id="flcard" style="display:none"></div>';
     document.body.appendChild(wrap);
@@ -125,34 +128,53 @@
     var curOpp = 0, rival = opponents[0];
 
     // ---------- responsive letterbox (portrait = stacked, landscape = side-by-side) ----------
-    var W, H, S, rects = { enemy: { ox: 0, oy: 0 }, you: { ox: 0, oy: 0 } };
+    // Retina-sharp backing store (min(dpr,2)); all game code stays in CSS px.
+    // PORTRAIT gives the grid you're ACTING on (yours in setup, the enemy's in
+    // battle) the big share of the screen so its cells stay finger-sized; the
+    // other grid shrinks to a readable minimap. Each rect carries its own scale
+    // in rect.s. Layout clears the .ghud + Dynamic Island via env() probes.
+    var W, H, S, rects = { enemy: { ox: 0, oy: 0, s: 24 }, you: { ox: 0, oy: 0, s: 24 } };
     var LB = 16; // label gutter
+    var safeTEl = document.getElementById("flsafet"), safeBEl = document.getElementById("flsafeb");
     function resize() {
-      W = cv.width = wrap.clientWidth || global.innerWidth || 360;
-      H = cv.height = wrap.clientHeight || global.innerHeight || 640;
-      var top = 84, bottom = 84, gap = 20, pad = 8;
-      if (H >= W) { // portrait — grids stacked
-        S = Math.min((W - 2 * pad - LB) / GRID, (H - top - bottom - gap - 2 * LB) / (2 * GRID));
-        var gw = S * GRID;
-        var ox = (W - (LB + gw)) / 2 + LB;
-        rects.enemy = { ox: ox, oy: top + LB };
-        rects.you = { ox: ox, oy: top + LB + gw + gap + LB };
-      } else { // landscape — grids side by side
+      var dpr = Math.min(global.devicePixelRatio || 1, 2);
+      W = wrap.clientWidth || global.innerWidth || 360;
+      H = wrap.clientHeight || global.innerHeight || 640;
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      var safeT = 0, safeB = 0;
+      try {
+        safeT = Math.max(0, parseFloat(getComputedStyle(safeTEl).top) || 0);
+        safeB = Math.max(0, (parseFloat(getComputedStyle(safeBEl).bottom) || 10) - 10);
+      } catch (_) {}
+      var top = 112 + safeT, bottom = 84 + safeB, gap = 20, pad = 8;
+      var battleBig = (phase !== "setup"); // enemy grid big in battle/over, yours big in setup
+      if (H >= W) { // portrait — grids stacked, active one big
+        var availH = H - top - bottom - gap - 2 * LB; // rows only
+        var bigS = Math.min((W - 2 * pad - LB) / GRID, (availH - GRID * 16) / GRID, 40);
+        if (bigS < 16) bigS = 16;
+        var smallS = Math.min(bigS, (availH - GRID * bigS) / GRID);
+        if (smallS < 12) smallS = 12;
+        var eS = battleBig ? bigS : smallS, yS = battleBig ? smallS : bigS;
+        rects.enemy = { ox: (W - (LB + eS * GRID)) / 2 + LB, oy: top + LB, s: eS };
+        rects.you = { ox: (W - (LB + yS * GRID)) / 2 + LB, oy: top + LB + eS * GRID + gap + LB, s: yS };
+        S = bigS;
+      } else { // landscape — grids side by side, equal
         S = Math.min((W - 2 * pad - 2 * LB - gap) / (2 * GRID), (H - top - bottom - LB) / GRID);
         var gw2 = S * GRID, blockW = LB + gw2;
         var startX = (W - (2 * blockW + gap)) / 2;
-        rects.enemy = { ox: startX + LB, oy: top + LB };
-        rects.you = { ox: startX + blockW + gap + LB, oy: top + LB };
+        rects.enemy = { ox: startX + LB, oy: top + LB, s: S };
+        rects.you = { ox: startX + blockW + gap + LB, oy: top + LB, s: S };
       }
     }
     resize(); window.addEventListener("resize", resize);
-    function cellX(rect, c) { return rect.ox + c * S; }
-    function cellY(rect, r) { return rect.oy + r * S; }
+    function cellX(rect, c) { return rect.ox + c * rect.s; }
+    function cellY(rect, r) { return rect.oy + r * rect.s; }
     function pointToCell(px, py) {
       var which, rect;
       for (var w2 = 0; w2 < 2; w2++) {
         which = w2 === 0 ? "enemy" : "you"; rect = rects[which];
-        var c = Math.floor((px - rect.ox) / S), r = Math.floor((py - rect.oy) / S);
+        var c = Math.floor((px - rect.ox) / rect.s), r = Math.floor((py - rect.oy) / rect.s);
         if (r >= 0 && r < GRID && c >= 0 && c < GRID) return { which: which, r: r, c: c };
       }
       return null;
@@ -191,12 +213,12 @@
       logEl.innerHTML = log.join("<br>");
     }
 
-    // ---------- fx (cosmetic only) ----------
+    // ---------- fx (cosmetic only; each remembers its grid's cell scale) ----------
     function addFx(kind, rect, r, c) {
-      fx.push({ kind: kind, x: cellX(rect, c) + S / 2, y: cellY(rect, r) + S / 2, t: 0, dur: kind === "shell" ? 0.4 : 0.6 });
+      fx.push({ kind: kind, sc: rect.s, x: cellX(rect, c) + rect.s / 2, y: cellY(rect, r) + rect.s / 2, t: 0, dur: kind === "shell" ? 0.4 : 0.6 });
     }
     function shell(fromRect, toRect, r, c) {
-      fx.push({ kind: "shell", x0: fromRect.ox + S * 5, y0: fromRect.oy + S * 5, x: cellX(toRect, c) + S / 2, y: cellY(toRect, r) + S / 2, t: 0, dur: 0.35 });
+      fx.push({ kind: "shell", sc: toRect.s, x0: fromRect.ox + fromRect.s * 5, y0: fromRect.oy + fromRect.s * 5, x: cellX(toRect, c) + toRect.s / 2, y: cellY(toRect, r) + toRect.s / 2, t: 0, dur: 0.35 });
     }
 
     // ---------- firing (turn-based, synchronous) ----------
@@ -402,20 +424,22 @@
       hits = 0; shots = 0; botShots = 0; quizOpen = false;
       sonarUsed = false; repairUsed = false; repairOffered = false;
       sonarCells = []; sonarT = 0; fx = []; log = []; logEl.innerHTML = "";
-      selShip = -1; dragging = false; botTargets = []; botHits = [];
+      selShip = -1; dragging = false; aimCell = null; botTargets = []; botHits = [];
       botParity = rival.skill >= 0.5; botPar = Math.floor(Math.random() * 2); // sharper admirals hunt on parity
       cardEl.style.display = "none"; qEl.style.display = "none";
       msgEl.innerHTML = "⚓ <b>Place your fleet</b> — vs Admiral " + rival.name;
       big("⚓ Deploy your fleet, Captain!", "#ffe14d");
+      resize(); // setup phase → your grid takes the big share
       updateHud();
     }
     function lockIn() {
       if (phase !== "setup") return false;
       if (!allPlaced(you)) { big("⚓ Place all 5 ships first!", "#ffd740"); return false; }
-      phase = "battle"; turn = "you"; selShip = -1;
+      phase = "battle"; turn = "you"; selShip = -1; aimCell = null;
       msgEl.innerHTML = "🚢 <b>Battle stations!</b> — vs Admiral " + rival.name;
       big("🎯 FIRE! Sink " + rival.name + "'s fleet!", "#ffe14d");
       if (sfx && sfx.whoosh) sfx.whoosh();
+      resize(); // battle phase → the enemy grid takes the big share
       updateHud();
       return true;
     }
@@ -441,13 +465,20 @@
       } else if (owner >= 0) selShip = owner; // select a ship
       updateHud();
     }
-    var downCell = null, moved = false;
+    var downCell = null, moved = false, aimCell = null;
     function pt(e, touch) { var rc = cv.getBoundingClientRect(); var s = touch || e; return { x: s.clientX - rc.left, y: s.clientY - rc.top }; }
-    function onDown(px, py) {
+    function onDown(px, py, isTouch) {
       if (paused || quizOpen) return;
       var hit = pointToCell(px, py);
       if (!hit) return;
-      if (phase === "battle" && hit.which === "enemy" && turn === "you") { fire(hit.r, hit.c); return; }
+      if (phase === "battle" && hit.which === "enemy" && turn === "you") {
+        if (isTouch) { // fat-finger-safe two-tap: first tap aims the 🎯, tapping it again fires
+          if (aimCell && aimCell.r === hit.r && aimCell.c === hit.c) { aimCell = null; fire(hit.r, hit.c); }
+          else if (enemy.shot[hit.r * 10 + hit.c] === 0) aimCell = { r: hit.r, c: hit.c };
+          else aimCell = null;
+        } else { aimCell = null; fire(hit.r, hit.c); }
+        return;
+      }
       if (phase === "setup" && hit.which === "you") {
         downCell = hit; moved = false;
         var owner = shipAt(hit.r * 10 + hit.c);
@@ -473,7 +504,7 @@
     cv.addEventListener("mousedown", function (e) { var p = pt(e); onDown(p.x, p.y); });
     cv.addEventListener("mousemove", function (e) { var p = pt(e); onMove(p.x, p.y); });
     cv.addEventListener("mouseup", function (e) { var p = pt(e); onUp(p.x, p.y); });
-    cv.addEventListener("touchstart", function (e) { e.preventDefault(); var p = pt(e, e.changedTouches[0]); onDown(p.x, p.y); }, { passive: false });
+    cv.addEventListener("touchstart", function (e) { e.preventDefault(); var p = pt(e, e.changedTouches[0]); onDown(p.x, p.y, true); }, { passive: false });
     cv.addEventListener("touchmove", function (e) { e.preventDefault(); var p = pt(e, e.changedTouches[0]); onMove(p.x, p.y); }, { passive: false });
     cv.addEventListener("touchend", function (e) { e.preventDefault(); var t = e.changedTouches[0]; var p = pt(e, t); onUp(p.x, p.y); }, { passive: false });
     document.getElementById("flrotate").onclick = rotateSel;
@@ -504,58 +535,66 @@
     // ---------- drawing ----------
     function roundRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
     function drawGrid(board, rect, isYou) {
-      var gw = S * GRID;
+      var sc = rect.s, gw = sc * GRID;
       // labels
-      ctx.fillStyle = "rgba(220,245,255,.75)"; ctx.font = "bold " + Math.max(9, Math.round(S * 0.32)) + "px Trebuchet MS, sans-serif";
+      ctx.fillStyle = "rgba(220,245,255,.75)"; ctx.font = "bold " + Math.max(9, Math.round(sc * 0.32)) + "px Trebuchet MS, sans-serif";
       ctx.textAlign = "center"; ctx.textBaseline = "middle";
-      for (var c = 0; c < GRID; c++) ctx.fillText(String.fromCharCode(65 + c), cellX(rect, c) + S / 2, rect.oy - LB / 2);
+      for (var c = 0; c < GRID; c++) ctx.fillText(String.fromCharCode(65 + c), cellX(rect, c) + sc / 2, rect.oy - LB / 2);
       ctx.textAlign = "right";
-      for (var r = 0; r < GRID; r++) ctx.fillText(String(r + 1), rect.ox - 3, cellY(rect, r) + S / 2);
+      for (var r = 0; r < GRID; r++) ctx.fillText(String(r + 1), rect.ox - 3, cellY(rect, r) + sc / 2);
       ctx.textAlign = "center";
       // water cells (shimmer)
       for (r = 0; r < GRID; r++) for (c = 0; c < GRID; c++) {
         var x = cellX(rect, c), y = cellY(rect, r);
         var sh = Math.sin(r * 0.7 + c * 1.3 + gt * 1.8) * 10;
         ctx.fillStyle = "rgb(" + (24 + sh) + "," + (70 + sh) + "," + (120 + sh) + ")";
-        ctx.fillRect(x, y, S, S);
+        ctx.fillRect(x, y, sc, sc);
       }
       // your ships (visible bodies)
       if (isYou) board.ships.forEach(function (s) {
         if (!s.placed) return;
         var head = s.cells[0], tail = s.cells[s.cells.length - 1];
         var hx = cellX(rect, head % 10), hy = cellY(rect, Math.floor(head / 10));
-        var tx = cellX(rect, tail % 10) + S, ty = cellY(rect, Math.floor(tail / 10)) + S;
+        var tx = cellX(rect, tail % 10) + sc, ty = cellY(rect, Math.floor(tail / 10)) + sc;
         ctx.fillStyle = s.sunk ? "#5a2530" : "#556170";
-        roundRect(hx + S * 0.12, hy + S * 0.12, (tx - hx) - S * 0.24, (ty - hy) - S * 0.24, S * 0.22); ctx.fill();
+        roundRect(hx + sc * 0.12, hy + sc * 0.12, (tx - hx) - sc * 0.24, (ty - hy) - sc * 0.24, sc * 0.22); ctx.fill();
         if (selShip >= 0 && board.ships[selShip] === s) { ctx.strokeStyle = "#ffd23f"; ctx.lineWidth = 3; ctx.stroke(); }
       });
       else board.ships.forEach(function (s) { // enemy: reveal only sunk hulls
         if (!s.sunk) return;
         var head = s.cells[0], tail = s.cells[s.cells.length - 1];
         var hx = cellX(rect, head % 10), hy = cellY(rect, Math.floor(head / 10));
-        var tx = cellX(rect, tail % 10) + S, ty = cellY(rect, Math.floor(tail / 10)) + S;
-        ctx.fillStyle = "#5a2530"; roundRect(hx + S * 0.12, hy + S * 0.12, (tx - hx) - S * 0.24, (ty - hy) - S * 0.24, S * 0.22); ctx.fill();
+        var tx = cellX(rect, tail % 10) + sc, ty = cellY(rect, Math.floor(tail / 10)) + sc;
+        ctx.fillStyle = "#5a2530"; roundRect(hx + sc * 0.12, hy + sc * 0.12, (tx - hx) - sc * 0.24, (ty - hy) - sc * 0.24, sc * 0.22); ctx.fill();
       });
       // sonar ghosts (enemy only)
       if (!isYou && sonarT > 0) {
         ctx.globalAlpha = 0.35 + Math.sin(gt * 6) * 0.12;
         sonarCells.forEach(function (cl) {
-          if (board.occ[cl] >= 0 && board.shot[cl] === 0) { ctx.fillStyle = "#5fd7c9"; ctx.fillRect(cellX(rect, cl % 10) + S * 0.2, cellY(rect, Math.floor(cl / 10)) + S * 0.2, S * 0.6, S * 0.6); }
+          if (board.occ[cl] >= 0 && board.shot[cl] === 0) { ctx.fillStyle = "#5fd7c9"; ctx.fillRect(cellX(rect, cl % 10) + sc * 0.2, cellY(rect, Math.floor(cl / 10)) + sc * 0.2, sc * 0.6, sc * 0.6); }
         });
         ctx.globalAlpha = 1;
         ctx.strokeStyle = "rgba(95,215,201,.7)"; ctx.lineWidth = 2;
-        if (sonarCells.length) { var c0 = sonarCells[0]; ctx.strokeRect(cellX(rect, c0 % 10), cellY(rect, Math.floor(c0 / 10)), S * 3, S * 3); }
+        if (sonarCells.length) { var c0 = sonarCells[0]; ctx.strokeRect(cellX(rect, c0 % 10), cellY(rect, Math.floor(c0 / 10)), sc * 3, sc * 3); }
       }
       // shot markers + smoke on burning ships
-      ctx.font = Math.round(S * 0.62) + "px serif";
+      ctx.font = Math.round(sc * 0.62) + "px serif";
       for (r = 0; r < GRID; r++) for (c = 0; c < GRID; c++) {
-        var cell = r * 10 + c, sx = cellX(rect, c) + S / 2, sy = cellY(rect, r) + S / 2;
-        if (board.shot[cell] === 2) { ctx.fillText("💥", sx, sy); if (Math.sin((r + c) * 2 + gt * 3) > 0.3) { ctx.globalAlpha = 0.35; ctx.fillStyle = "rgba(60,60,60,1)"; ctx.beginPath(); ctx.arc(sx, sy - S * 0.4 - Math.sin(gt * 2 + cell) * 4, S * 0.18, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; } }
-        else if (board.shot[cell] === 1) { ctx.fillStyle = "rgba(255,255,255,.85)"; ctx.beginPath(); ctx.arc(sx, sy, S * 0.13, 0, Math.PI * 2); ctx.fill(); }
+        var cell = r * 10 + c, sx = cellX(rect, c) + sc / 2, sy = cellY(rect, r) + sc / 2;
+        if (board.shot[cell] === 2) { ctx.fillText("💥", sx, sy); if (Math.sin((r + c) * 2 + gt * 3) > 0.3) { ctx.globalAlpha = 0.35; ctx.fillStyle = "rgba(60,60,60,1)"; ctx.beginPath(); ctx.arc(sx, sy - sc * 0.4 - Math.sin(gt * 2 + cell) * 4, sc * 0.18, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; } }
+        else if (board.shot[cell] === 1) { ctx.fillStyle = "rgba(255,255,255,.85)"; ctx.beginPath(); ctx.arc(sx, sy, sc * 0.13, 0, Math.PI * 2); ctx.fill(); }
+      }
+      // aim crosshair (enemy grid, battle): first tap aims, second tap fires
+      if (!isYou && aimCell && phase === "battle" && turn === "you" && !over) {
+        var ax = cellX(rect, aimCell.c), ay = cellY(rect, aimCell.r);
+        ctx.strokeStyle = "rgba(255,210,63," + (0.6 + Math.sin(gt * 7) * 0.35) + ")"; ctx.lineWidth = 3;
+        ctx.strokeRect(ax + 1.5, ay + 1.5, sc - 3, sc - 3);
+        ctx.font = Math.round(sc * 0.6) + "px serif";
+        ctx.fillText("🎯", ax + sc / 2, ay + sc / 2);
       }
       // grid lines + frame
       ctx.strokeStyle = "rgba(255,255,255,.15)"; ctx.lineWidth = 1;
-      for (var g = 0; g <= GRID; g++) { ctx.beginPath(); ctx.moveTo(rect.ox + g * S, rect.oy); ctx.lineTo(rect.ox + g * S, rect.oy + gw); ctx.stroke(); ctx.beginPath(); ctx.moveTo(rect.ox, rect.oy + g * S); ctx.lineTo(rect.ox + gw, rect.oy + g * S); ctx.stroke(); }
+      for (var g = 0; g <= GRID; g++) { ctx.beginPath(); ctx.moveTo(rect.ox + g * sc, rect.oy); ctx.lineTo(rect.ox + g * sc, rect.oy + gw); ctx.stroke(); ctx.beginPath(); ctx.moveTo(rect.ox, rect.oy + g * sc); ctx.lineTo(rect.ox + gw, rect.oy + g * sc); ctx.stroke(); }
       ctx.strokeStyle = isYou ? "#69f0ae" : (turn === "you" && phase === "battle" ? "#ffd23f" : "#ff6b6b"); ctx.lineWidth = 3;
       ctx.strokeRect(rect.ox, rect.oy, gw, gw);
     }
@@ -573,10 +612,10 @@
           ctx.fillStyle = "#ffd23f"; ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill();
         } else if (f.kind === "splash") {
           ctx.strokeStyle = "rgba(150,220,255," + (1 - p) + ")"; ctx.lineWidth = 2;
-          ctx.beginPath(); ctx.arc(f.x, f.y, S * 0.2 + p * S * 0.4, 0, Math.PI * 2); ctx.stroke();
+          ctx.beginPath(); ctx.arc(f.x, f.y, f.sc * 0.2 + p * f.sc * 0.4, 0, Math.PI * 2); ctx.stroke();
         } else if (f.kind === "boom") {
           ctx.fillStyle = "rgba(255," + Math.round(140 - p * 100) + ",40," + (1 - p) + ")";
-          ctx.beginPath(); ctx.arc(f.x, f.y, S * 0.2 + p * S * 0.5, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(f.x, f.y, f.sc * 0.2 + p * f.sc * 0.5, 0, Math.PI * 2); ctx.fill();
         }
       }
       if (juice) juice.draw(ctx);

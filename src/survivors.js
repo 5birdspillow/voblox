@@ -92,13 +92,13 @@
     wrap.innerHTML =
       '<canvas id="svcv" style="position:absolute;inset:0;display:block;width:100%;height:100%"></canvas>' +
       '<div class="ghud"><div class="clue" id="svmsg">🧟 Word Survivors — dodge the swarm!</div>' +
-      '<div class="grow"><span id="svhearts">❤️❤️❤️❤️❤️</span><span id="svtime">10:00</span>' +
+      '<div class="grow" style="flex-wrap:wrap"><span id="svhearts">❤️❤️❤️❤️❤️</span><span id="svtime">10:00</span>' +
       '<span id="svelapsed">⏱ 0:00</span><span id="svkills">🧟 0</span>' +
       '<span id="svlvl">Lv 1</span>' +
       '<button class="bossquit" id="quit">Leave</button></div></div>' +
       '<div class="gmsg" id="svbig"></div>' +
       // 💥🌀 active-ability buttons (bottom-right, die with the wrap)
-      '<div id="svab" style="position:absolute;right:10px;bottom:calc(env(safe-area-inset-bottom, 0px) + 14px);display:flex;flex-direction:column;gap:10px;z-index:8">' +
+      '<div id="svab" style="position:absolute;right:calc(env(safe-area-inset-right, 0px) + 10px);bottom:calc(env(safe-area-inset-bottom, 0px) + 14px);display:flex;flex-direction:column;gap:10px;z-index:8">' +
       '<button type="button" id="svnova" style="width:64px;height:64px;background:rgba(40,20,60,.72);border:2px solid rgba(255,210,63,.6);border-radius:16px;color:#ffd23f;font-family:inherit;padding:0;line-height:1.05;cursor:pointer"><div style="font-size:24px">💥</div><div class="abt" id="svnovat" style="font-size:10px;font-weight:900">NOVA</div></button>' +
       '<button type="button" id="svdash" style="width:64px;height:64px;background:rgba(20,36,60,.72);border:2px solid rgba(120,220,255,.6);border-radius:16px;color:#8ef;font-family:inherit;padding:0;line-height:1.05;cursor:pointer"><div style="font-size:24px">🌀</div><div class="abt" id="svdasht" style="font-size:10px;font-weight:900">DASH</div></button>' +
       '</div>' +
@@ -107,6 +107,15 @@
       '<div class="gover" id="svpick" style="display:none"></div>' +
       '<div class="gover" id="svcard" style="display:none"></div>';
     document.body.appendChild(wrap);
+    // compact, wrap-safe HUD chips so the row FITS 393px (Leave never clips) — digger pattern
+    (function () {
+      var gr = wrap.querySelector(".ghud .grow"); if (!gr) return;
+      gr.style.flexWrap = "wrap"; gr.style.gap = "6px";
+      Array.prototype.forEach.call(gr.children, function (el) {
+        el.style.flexShrink = "0"; el.style.whiteSpace = "nowrap";
+        if (el.tagName === "SPAN") { el.style.fontSize = "14px"; el.style.padding = "4px 8px"; }
+      });
+    })();
 
     var cv = wrap.querySelector("#svcv"), ctx = cv.getContext("2d");
     var svq = document.getElementById("svq"), svpick = document.getElementById("svpick"), svcard = document.getElementById("svcard");
@@ -114,10 +123,17 @@
     var juice = global.VobloxJuice ? global.VobloxJuice() : null;
     var sfx = global.VobloxSfx || null;
 
-    var W, H;
+    var ghudEl = wrap.querySelector(".ghud"), svabEl = document.getElementById("svab");
+    var W, H, hudH = 60, safeB = 0;
+    var DPR = Math.min(global.devicePixelRatio || 1, 2); // retina sharpen; game code stays in CSS px
+    function measureHud() { hudH = ghudEl ? Math.round(ghudEl.getBoundingClientRect().height) : 60; }
     function resize() {
-      W = cv.width = wrap.clientWidth || global.innerWidth || 360;
-      H = cv.height = wrap.clientHeight || global.innerHeight || 640;
+      W = wrap.clientWidth || global.innerWidth || 360;
+      H = wrap.clientHeight || global.innerHeight || 640;
+      cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+      measureHud();
+      // home-indicator inset, probed off the ability buttons' env()-based bottom (14px base)
+      try { safeB = Math.max(0, (parseFloat(getComputedStyle(svabEl).bottom) || 14) - 14); } catch (_) { safeB = 0; }
     }
     resize();
     window.addEventListener("resize", resize);
@@ -164,6 +180,7 @@
       var nb = document.getElementById("svnova"), db = document.getElementById("svdash");
       if (nb) nb.style.opacity = novaCd > 0 ? "0.5" : "1";
       if (db) db.style.opacity = dashCd > 0 ? "0.5" : "1";
+      measureHud(); // hearts row can wrap taller as max hearts grow
     }
 
     function begin(mode) {
@@ -862,6 +879,7 @@
 
     // ---------- drawing ----------
     function draw() {
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0); // buffer is retina; all drawing stays in CSS px
       ctx.clearRect(0, 0, W, H);
       // tiled grass meadow (checker pattern, scrolls with the camera)
       var ts = 64;
@@ -928,15 +946,16 @@
       if (!(invuln > 0 && Math.floor(runT * 12) % 2)) {
         ctx.font = "34px serif"; ctx.fillText("🧙", W / 2, H / 2 + Math.sin(runT * 5) * 2);
       }
-      // boss health bar across the top
+      // boss health bar — sit BELOW the HUD (which clears the Dynamic Island via env safe-top)
       if (boss && mobs.indexOf(boss) >= 0) {
-        ctx.fillStyle = "rgba(0,0,0,.55)"; ctx.fillRect(W * 0.14, 8, W * 0.72, 16);
-        ctx.fillStyle = "#ff6b6b"; ctx.fillRect(W * 0.14 + 2, 10, (W * 0.72 - 4) * Math.max(0, boss.hp / boss.maxHp), 12);
-        ctx.fillStyle = "#fff"; ctx.font = "bold 11px Trebuchet MS"; ctx.textAlign = "center";
-        ctx.fillText((boss.e || "👹") + " " + bossName(boss.bk), W / 2, 17);
+        var bby = hudH + 6;
+        ctx.fillStyle = "rgba(0,0,0,.55)"; ctx.fillRect(W * 0.14, bby, W * 0.72, 16);
+        ctx.fillStyle = "#ff6b6b"; ctx.fillRect(W * 0.14 + 2, bby + 2, (W * 0.72 - 4) * Math.max(0, boss.hp / boss.maxHp), 12);
+        ctx.fillStyle = "#fff"; ctx.font = "bold 12px Trebuchet MS"; ctx.textAlign = "center";
+        ctx.fillText((boss.e || "👹") + " " + bossName(boss.bk), W / 2, bby + 9);
       }
-      // xp bar hugging the bottom
-      var bw2 = Math.min(360, W * 0.7), bx2 = (W - bw2) / 2, by2 = H - 14;
+      // xp bar hugging the bottom (above the home indicator via env safe-bottom)
+      var bw2 = Math.min(360, W * 0.7), bx2 = (W - bw2) / 2, by2 = H - 14 - safeB;
       ctx.fillStyle = "rgba(0,0,0,.4)"; ctx.fillRect(bx2, by2, bw2, 8);
       ctx.fillStyle = "#5bd0ff"; ctx.fillRect(bx2, by2, bw2 * Math.max(0, Math.min(1, xp / xpNeed)), 8);
       if (juice) juice.draw(ctx);

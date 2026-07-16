@@ -106,9 +106,16 @@
       '<div class="gover" id="bjq" style="display:none"></div>' +
       '<div class="bjcards" id="bjcards"></div>';
     document.body.appendChild(wrap);
+    // landscape: keep the technique-card bar clear of the Dynamic Island's side insets
+    if (!document.getElementById("bjj-ios-fit")) {
+      var bst = document.createElement("style"); bst.id = "bjj-ios-fit";
+      bst.textContent =
+        ".gamewrap.bjj .bjcards{padding-left:calc(env(safe-area-inset-left, 0px) + 10px);padding-right:calc(env(safe-area-inset-right, 0px) + 10px)}";
+      document.head.appendChild(bst);
+    }
     var cv = wrap.querySelector("#bjcv"), ctx = cv.getContext("2d");
     var W, H;
-    function resize() { W = cv.width = wrap.clientWidth; H = cv.height = wrap.clientHeight; }
+    function resize() { var dpr = Math.min(global.devicePixelRatio || 1, 2); W = wrap.clientWidth; H = wrap.clientHeight; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
     resize(); window.addEventListener("resize", resize);
 
     var juice = global.VobloxJuice ? global.VobloxJuice() : null;

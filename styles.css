@@ -23,13 +23,18 @@ body {
   min-height: 100%;
   -webkit-text-size-adjust: 100%;
 }
-#app { max-width: 760px; margin: 0 auto; padding: 14px 16px 60px; }
+/* #app is used ONLY by study.html + dashboard.html (never index.html/craft.html);
+   safe-area insets are additive (0 on non-notched displays). */
+#app { max-width: 760px; margin: 0 auto;
+  padding: calc(14px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(60px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left)); }
 
 /* error bar */
 #errbar { display:none; background:#b00020; color:#fff; padding:8px 12px; border-radius:8px; margin-bottom:10px; font-size:13px; }
 
 /* HUD */
-#hud { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+/* #hud exists ONLY on study.html — reserve the top-right corner so the fixed
+   .worldlink button never overlaps the rank chips / predicted-score meter. */
+#hud { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px; padding-right:120px; }
 .hud-left { display:flex; gap:8px; flex-wrap:wrap; }
 .chip {
   background:#fff; border:3px solid #0002; border-bottom-width:5px; border-radius:12px;
@@ -64,7 +69,7 @@ body {
 .lpick {
   font-family:inherit; font-weight:bold; font-size:14px; color:var(--ink); background:#fff;
   border:3px solid #0002; border-bottom-width:5px; border-radius:12px; padding:6px 14px;
-  cursor:pointer; box-shadow:0 2px 0 var(--shadow);
+  cursor:pointer; box-shadow:0 2px 0 var(--shadow); min-height:44px;
 }
 .lpick.on { color:#fff; background:var(--grass); border-color:var(--grass-dark); }
 .lpick:active { transform:translateY(2px); border-bottom-width:3px; }
@@ -177,7 +182,8 @@ button { font-family:inherit; cursor:pointer; }
 hr { border:none; border-top:2px dashed #cdd; margin:14px 0; }
 
 /* cross-page link button */
-.worldlink { position:fixed; top:10px; right:10px; z-index:30; text-decoration:none;
+/* .worldlink is used ONLY by study.html + dashboard.html; insets are additive. */
+.worldlink { position:fixed; top:calc(10px + env(safe-area-inset-top)); right:calc(10px + env(safe-area-inset-right)); z-index:30; text-decoration:none;
   background:#fff; border:3px solid #0002; border-bottom-width:5px; border-radius:12px;
   padding:8px 12px; font-weight:bold; color:#20303a; font-family:"Trebuchet MS",sans-serif; }
 .worldlink:active { transform:translateY(2px); }

@@ -281,6 +281,19 @@
 
     var wrap = document.createElement("div"); wrap.className = "gamewrap chessclub";
     document.body.appendChild(wrap);
+    // iPhone fit: the in-game HUD row (token + Word/Hint/Takeback + Leave) overflows
+    // 393px, so compact + wrap it; push the board/lobby below the Dynamic Island + HUD.
+    if (!document.getElementById("cc-ios-fit")) {
+      var st = document.createElement("style"); st.id = "cc-ios-fit";
+      st.textContent =
+        ".gamewrap.chessclub .ghud .grow{flex-wrap:wrap;gap:6px;padding:0 4px}" +
+        ".gamewrap.chessclub .ghud .grow span{padding:3px 8px;font-size:13px;white-space:nowrap;border-width:2px;border-bottom-width:3px}" +
+        ".gamewrap.chessclub .ghud .grow .replay{font-size:12px;padding:3px 8px;white-space:nowrap}" +
+        ".gamewrap.chessclub .ghud .grow .bossquit{font-size:13px;padding:4px 10px;margin-top:0;white-space:nowrap}" +
+        ".gamewrap.chessclub .cc-lobby{padding-top:calc(env(safe-area-inset-top) + 104px)}" +
+        ".gamewrap.chessclub .cc-boardwrap{margin-top:calc(env(safe-area-inset-top) + 104px)}";
+      document.head.appendChild(st);
+    }
     var sfx = global.VobloxSfx || null;
     var tokens = 0, lastFmt = null;
 

@@ -70,7 +70,7 @@
       '<div class="gmsg" id="arbig"></div>' +
       '<button id="arsteady" type="button" style="display:none;position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom) + 34px);' +
       'transform:translateX(-50%);z-index:8;background:linear-gradient(#b9f6ca,#69f0ae);color:#134a2b;' +
-      'border:none;border-radius:16px;padding:12px 20px;font-family:inherit;font-weight:900;font-size:16px;' +
+      'border:none;border-radius:16px;padding:13px 20px;min-height:48px;box-sizing:border-box;font-family:inherit;font-weight:900;font-size:16px;' +
       'box-shadow:0 6px 0 #2e9e63,0 10px 24px #0006;cursor:pointer">🧘 STEADY AIM — bank a word</button>' +
       '<div class="gover" id="arq" style="display:none"></div>' +
       '<div class="gover" id="arcard" style="display:none"></div>';
@@ -83,10 +83,13 @@
     var juice = global.VobloxJuice ? global.VobloxJuice() : null;
     var sfx = global.VobloxSfx || null;
 
-    var W, H, S, OX, OY, camDX = 0;
+    var W, H, S, OX, OY, camDX = 0, DPR = 1;
     function resize() {
-      W = cv.width = wrap.clientWidth || global.innerWidth || 360;
-      H = cv.height = wrap.clientHeight || global.innerHeight || 640;
+      W = wrap.clientWidth || global.innerWidth || 360;
+      H = wrap.clientHeight || global.innerHeight || 640;
+      DPR = Math.min(global.devicePixelRatio || 1, 2); // retina-crisp buffer; game stays in CSS px
+      cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
       S = Math.min(W / WW, H / WH);
       OX = (W - WW * S) / 2;
       OY = (H - WH * S) / 2;
@@ -447,6 +450,7 @@
       ctx.strokeStyle = "#7a5a34"; ctx.lineWidth = 5 * S; ctx.beginPath(); ctx.moveTo(cx, cy + R); ctx.lineTo(cx, sy(0)); ctx.stroke();
     }
     function draw() {
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
       ctx.clearRect(0, 0, W, H);
       var g = ctx.createLinearGradient(0, 0, 0, H);
       g.addColorStop(0, "#8fd3ff"); g.addColorStop(0.7, "#cdeeff"); g.addColorStop(1, "#dff3e0");

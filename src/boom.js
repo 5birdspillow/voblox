@@ -72,10 +72,14 @@
     var sfx = global.VobloxSfx || null;
 
     // ---------- responsive letterbox (both orientations fit the SAME grid) ----------
+    // Retina-sharp backing store (min(dpr,2)); all game code stays in CSS px.
     var W, H, TS, OX, OY;
     function resize() {
-      W = cv.width = wrap.clientWidth || global.innerWidth || 360;
-      H = cv.height = wrap.clientHeight || global.innerHeight || 640;
+      var dpr = Math.min(global.devicePixelRatio || 1, 2);
+      W = wrap.clientWidth || global.innerWidth || 360;
+      H = wrap.clientHeight || global.innerHeight || 640;
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       var top = Math.min(W, H) < 520 ? 84 : 110, bot = 96; // room for HUD + drop button
       TS = Math.min((W - 12) / COLS, (H - top - bot) / ROWS);
       if (TS <= 0) TS = 1;

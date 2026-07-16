@@ -112,14 +112,35 @@
       '<div class="gover" id="emend" style="display:none"></div>' +
       '<div id="embar"></div>';
     document.body.appendChild(wrap);
+    // empire's wrap isn't in games.css's "padding:0; overflow:hidden" canvas list, so it
+    // keeps the default .gamewrap padding — that inset the in-flow canvas ~14px on the left
+    // (page bled through) and pushed it to overflow/scroll. Zero it inline so the field
+    // fills edge-to-edge; the .ghud and #embar keep their own env() safe-area insets.
+    wrap.style.padding = "0"; wrap.style.overflow = "hidden";
+    // compact CSS (.gamewrap.compact .ghud) strips the shared safe-area top padding,
+    // so re-assert Dynamic-Island clearance inline (wins over the stylesheet in both modes)
+    var emGhud = wrap.querySelector(".ghud");
+    if (emGhud) emGhud.style.paddingTop = "calc(env(safe-area-inset-top, 0px) + 8px)";
+    var emQuit = wrap.querySelector("#quit"); // 44px min touch target for the exit button
+    if (emQuit) emQuit.style.minHeight = "44px";
     var cv = wrap.querySelector("#emcv"), ctx = cv.getContext("2d");
-    var W, H, S, OX, OY, vertical = false, compact = false;
+    var W, H, S, OX, OY, dpr = 1, vertical = false, compact = false;
     // TWO orientations, ONE logic space (the Books vs Zombies pattern):
     //  - landscape: your castle left, the foe right — classic RTS
     //  - portrait: the battlefield TRANSPOSES — your castle at the bottom,
     //    the enemy marches DOWN from the top. No more rotate-your-phone gate.
     function resize() {
-      W = cv.width = wrap.clientWidth; H = cv.height = wrap.clientHeight;
+      // render the canvas at the device pixel ratio (capped at 2) so sprites/text stay
+      // crisp on the iPhone's DPR-3 screen, while all game code keeps working in CSS px.
+      // display:block + an explicit CSS size also stops the inline-canvas gap that let the
+      // page behind bleed through at the left edge.
+      var cssW = wrap.clientWidth, cssH = wrap.clientHeight;
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      cv.style.position = "absolute"; cv.style.left = "0"; cv.style.top = "0";
+      cv.style.display = "block"; cv.style.width = cssW + "px"; cv.style.height = cssH + "px";
+      cv.width = Math.round(cssW * dpr); cv.height = Math.round(cssH * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      W = cssW; H = cssH;
       vertical = H > W;
       compact = Math.min(W, H) < 520 || Math.max(W, H) < 900;
       wrap.classList.toggle("compact", compact);
@@ -247,7 +268,7 @@
     }
     function armyUsed() { return units.filter(function (u) { return u.team === 0 && u.kind !== "worker"; }).length; }
     function workerCount() { return units.filter(function (u) { return u.team === 0 && u.kind === "worker"; }).length; }
-    function barBtn(id, label, sub, cls) { return '<button class="embtn ' + (cls || "") + '" id="' + id + '"><span class="ebl">' + label + '</span><span class="ebs">' + sub + "</span></button>"; }
+    function barBtn(id, label, sub, cls) { return '<button class="embtn ' + (cls || "") + '" id="' + id + '" style="min-height:44px;justify-content:center"><span class="ebl">' + label + '</span><span class="ebs">' + sub + "</span></button>"; }
     function renderBar() {
       var bar = document.getElementById("embar");
       bar.innerHTML =
@@ -1009,6 +1030,7 @@
 
     // ---------- drawing ----------
     function draw() {
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // keep the DPR transform; game draws in CSS px
       ctx.clearRect(0, 0, W, H);
       // field
       var g1 = ctx.createLinearGradient(0, 0, 0, H); g1.addColorStop(0, "#8fd062"); g1.addColorStop(1, "#5cab3e");

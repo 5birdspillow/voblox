@@ -6,21 +6,26 @@ html, body.world { margin:0; height:100%; overflow:hidden; background:#9fd6ff; t
 .loading { position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
   font-family:"Trebuchet MS",sans-serif; font-size:24px; color:#0a3a52; font-weight:bold; }
 
-/* HUD */
-#whud { position:fixed; top:0; left:0; right:0; display:flex; gap:8px; align-items:center;
-  padding:calc(env(safe-area-inset-top) + 8px) 10px 8px; font-family:"Trebuchet MS",sans-serif; }
-#whud .hud-left { display:flex; gap:6px; }
+/* HUD — the two icon buttons are pinned top-right (absolute); chips + meter flow in the
+   space left of them and wrap as needed, so the menu button can NEVER be shoved off-screen. */
+#whud { position:fixed; top:0; left:0; right:0; display:flex; flex-wrap:wrap; gap:6px 8px; align-items:center;
+  padding:calc(env(safe-area-inset-top) + 8px) calc(env(safe-area-inset-right) + 108px) 8px calc(env(safe-area-inset-left) + 10px);
+  font-family:"Trebuchet MS",sans-serif; }
+#whud .hud-left { display:flex; flex-wrap:wrap; gap:6px; flex:1 1 auto; min-width:0; }
 #whud .chip { background:#ffffffdd; border:3px solid #0002; border-bottom-width:4px; border-radius:11px;
-  padding:5px 9px; font-weight:bold; font-size:14px; }
+  padding:5px 9px; font-weight:bold; font-size:14px; white-space:nowrap; }
+/* long rank names ("MYTHIC CHAMPION", "Diamond Legend") ellipsize instead of shoving the menu off-screen */
+#whud #rankchip { min-width:0; max-width:200px; overflow:hidden; text-overflow:ellipsis; }
 #whud .chip.combo { background:#fff3cf; border-color:#e6b800; }
-#whud .meter { position:relative; flex:1; height:26px; background:#00000026; border:3px solid #0003;
-  border-radius:13px; overflow:hidden; min-width:90px; }
+#whud .meter { position:relative; flex:1 1 100%; order:10; height:26px; background:#00000026; border:3px solid #0003;
+  border-radius:13px; overflow:hidden; min-width:0; }
 #whud .meter-fill { height:100%; width:0; background:linear-gradient(90deg,#76d275,#43c34a); transition:width .5s; }
 #whud .meter-tick { position:absolute; top:0; bottom:0; width:3px; background:#1c63b8; }
 #whud .meter-tick.a { background:#c026d3; }
 #whud .meter-label { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
   font-size:12px; font-weight:bold; color:#0a2a12; text-shadow:0 1px 0 #fff8; }
-.hud-right { display:flex; gap:6px; }
+.hud-right { position:absolute; top:calc(env(safe-area-inset-top) + 8px); right:calc(env(safe-area-inset-right) + 10px);
+  display:flex; gap:6px; }
 .iconbtn { width:42px; height:42px; display:flex; align-items:center; justify-content:center;
   font-size:20px; text-decoration:none; background:#ffffffdd; border:3px solid #0002; border-bottom-width:4px;
   border-radius:11px; color:#222; cursor:pointer; }
@@ -39,8 +44,9 @@ html, body.world { margin:0; height:100%; overflow:hidden; background:#9fd6ff; t
   font-family:"Trebuchet MS",sans-serif; box-shadow:0 4px 0 #0003; }
 .actbtn:active { transform:translateY(3px); border-bottom-width:4px; }
 
-/* build/version label */
-.ver { position: fixed; right: 7px; bottom: 3px; z-index: 4; font: 600 11px "Trebuchet MS", sans-serif;
+/* build/version label — sit above the home indicator */
+.ver { position: fixed; right: calc(env(safe-area-inset-right) + 7px); bottom: calc(env(safe-area-inset-bottom) + 3px);
+  z-index: 4; font: 600 11px "Trebuchet MS", sans-serif;
   color: #ffffffb0; text-shadow: 0 1px 2px #0007; pointer-events: none; }
 
 /* virtual joystick */
@@ -51,17 +57,28 @@ html, body.world { margin:0; height:100%; overflow:hidden; background:#9fd6ff; t
 
 /* overlay (quizzes / menu) reuses the .card/.choice styles from styles.css */
 .overlay { position:fixed; inset:0; z-index:20; background:#0006; backdrop-filter:blur(2px);
-  display:flex; align-items:center; justify-content:center; padding:14px;
+  display:flex; align-items:center; justify-content:center;
+  padding:calc(env(safe-area-inset-top) + 12px) calc(env(safe-area-inset-right) + 12px) calc(env(safe-area-inset-bottom) + 12px) calc(env(safe-area-inset-left) + 12px);
   font-family:"Trebuchet MS","Segoe UI",sans-serif; color:#20303a; }
-.overlaybox { width:100%; max-width:620px; max-height:92vh; overflow:auto; }
+/* cap to the visible viewport (minus the Dynamic Island + home-indicator insets) and scroll inside */
+.overlaybox { width:100%; max-width:620px;
+  max-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px);
+  overflow-y:auto; -webkit-overflow-scrolling:touch; touch-action:pan-y; overscroll-behavior:contain; }
 .overlaybox .card { background:#fff; border:4px solid #0002; border-bottom-width:7px; border-radius:18px;
   padding:18px; box-shadow:0 8px 0 #0003; }
 .gatehead { display:flex; justify-content:space-between; align-items:center; color:#fff; font-weight:bold;
   margin-bottom:8px; }
-.gatehead .x { background:#ffffffcc; border:3px solid #0003; border-radius:10px; padding:5px 10px; font-weight:bold; cursor:pointer; }
+/* keep the coloured gate header pinned while its card scrolls */
+.overlaybox > .gatehead { position:sticky; top:0; z-index:3; padding:6px 2px;
+  background:linear-gradient(#000000cc,#00000099); border-radius:12px; }
+/* every overlay close/exit control is a >=44px tap target */
+.overlaybox .x { min-width:44px; min-height:44px; box-sizing:border-box; display:inline-flex;
+  align-items:center; justify-content:center; background:#ffffffcc; border:3px solid #0003;
+  border-radius:10px; padding:0 10px; font-weight:bold; cursor:pointer; }
 
-/* menu list */
-.menucard h2 { margin:2px 0 12px; }
+/* menu list — pin the title + close button so long lists (all 59 games) scroll under it */
+.menucard h2 { position:sticky; top:0; z-index:2; background:#fff;
+  margin:-18px -18px 12px; padding:16px 18px 10px; border-radius:14px 14px 0 0; }
 .menubtn { display:flex; align-items:center; gap:10px; width:100%; text-align:left; text-decoration:none;
   background:#f4f8ff; border:3px solid #0002; border-bottom-width:6px; border-radius:14px; padding:13px 15px;
   font-size:18px; font-weight:600; color:#20303a; margin-bottom:10px; cursor:pointer; }

@@ -27,7 +27,10 @@
     var cv = wrap.querySelector("#pkcv"), ctx = cv.getContext("2d");
     var W, H, GY, NETX, NETTOP;
     function resize() {
-      W = cv.width = wrap.clientWidth; H = cv.height = wrap.clientHeight;
+      var dpr = Math.min(global.devicePixelRatio || 1, 2);
+      W = wrap.clientWidth; H = wrap.clientHeight;
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // render at device pixels, keep game code in CSS px
       GY = H * 0.78; NETX = W / 2; NETTOP = GY - H * 0.12;
     }
     resize();

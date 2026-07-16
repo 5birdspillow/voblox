@@ -92,6 +92,9 @@
         '<button id="askbot" class="lifeline"' + (askBot ? "" : " disabled") + '>🤖 Ask ' + VQ.esc(rivals[0].name) + "</button>" +
         '<button id="quit" class="lifeline">Leave</button></div></div></div>';
       drawHeads();
+      // iPhone: let the lifeline row wrap (long bot names) and keep 44px tap targets
+      var toolsEl = wrap.querySelector(".qs-tools"); if (toolsEl) { toolsEl.style.flexWrap = "wrap"; toolsEl.style.justifyContent = "center"; }
+      Array.prototype.forEach.call(wrap.querySelectorAll(".lifeline"), function (b) { b.style.minHeight = "44px"; });
       document.getElementById("quit").onclick = leave;
       var replay = wrap.querySelector(".replay"); if (replay) replay.onclick = function () { VQ.readQ(q); };
       var btns = wrap.querySelectorAll(".ans");

@@ -259,12 +259,14 @@
     var wrap = document.createElement("div"); wrap.className = "gamewrap dungeon";
     wrap.innerHTML =
       '<canvas id="dgcv"></canvas>' +
+      // invisible safe-area probe: lets resize()/mini-map read env(safe-area-inset-top) in canvas px (Dynamic Island clearance)
+      '<div id="dgprobe" style="position:absolute;top:calc(env(safe-area-inset-top, 0px) + 1000px);left:0;width:0;height:0;visibility:hidden;pointer-events:none"></div>' +
       '<div class="ghud"><div class="clue" id="dgmsg">🗡️ Word Dungeon</div>' +
       '<div class="grow"><span id="dghearts">❤️❤️❤️</span><span id="dgkeys">🗝️ 0</span>' +
       '<span id="dgcoins">💰 0</span><button class="bossquit" id="quit">Leave</button></div></div>' +
       '<div class="gmsg" id="dgbig"></div>' +
       // ⚔ attack cross (bottom-right): four buttons, one per direction
-      '<div id="dgpad" style="position:absolute;right:10px;bottom:calc(env(safe-area-inset-bottom, 0px) + 12px);width:156px;height:156px;z-index:8">' +
+      '<div id="dgpad" style="position:absolute;right:calc(env(safe-area-inset-right, 0px) + 10px);bottom:calc(env(safe-area-inset-bottom, 0px) + 12px);width:156px;height:156px;z-index:8">' +
       ['N;top:0;left:52px;▲', 'W;top:52px;left:0;◀', 'E;top:52px;right:0;▶', 'S;bottom:0;left:52px;▼'].map(function (s) {
         var p = s.split(";");
         return '<button type="button" class="dgatk" data-atk="' + p[0] + '" style="position:absolute;' + p[1] + ';' + p[2] + ';width:52px;height:52px;' +
@@ -274,22 +276,25 @@
       '<div style="position:absolute;top:52px;left:52px;width:52px;height:52px;display:flex;align-items:center;justify-content:center;font-size:24px;opacity:.8;pointer-events:none">⚔️</div>' +
       '</div>' +
       // 🎒 power-up satchel (bottom-left): tap an item to use it
-      '<div id="dginv" style="position:absolute;left:10px;bottom:calc(env(safe-area-inset-bottom, 0px) + 12px);display:flex;gap:6px;z-index:8"></div>' +
+      '<div id="dginv" style="position:absolute;left:calc(env(safe-area-inset-left, 0px) + 10px);bottom:calc(env(safe-area-inset-bottom, 0px) + 12px);display:flex;gap:6px;z-index:8"></div>' +
       '<div class="gover" id="dgq" style="display:none"></div>' +
       '<div class="gover" id="dgend" style="display:none"></div>';
     document.body.appendChild(wrap);
     var cv = wrap.querySelector("#dgcv"), ctx = cv.getContext("2d");
 
     // ---------- responsive letterbox (both orientations fit the SAME square) ----------
-    var W, H, S, OX, OY, compact = false;
+    var W, H, S, OX, OY, compact = false, safeTop = 0;
     function resize() {
       W = cv.width = wrap.clientWidth || 480;
       H = cv.height = wrap.clientHeight || 640;
       compact = Math.min(W, H) < 520;
+      // read the Dynamic Island / status-bar inset in canvas px (probe positioned at env(top)+1000)
+      var probe = document.getElementById("dgprobe");
+      safeTop = probe ? Math.max(0, (parseFloat(getComputedStyle(probe).top) || 1000) - 1000) : 0;
       // reserve room top (HUD) and a little bottom breathing space; then fit the
       // square uniformly and center it. No transpose — a square reads fine in
       // portrait OR landscape; the mini-map/HUD never overlap the room.
-      var top = compact ? 88 : 118, bot = 14;
+      var top = (compact ? 88 : 118) + safeTop, bot = 14;
       var availW = W - 12, availH = H - top - bot;
       S = Math.min(availW / MW, availH / MH);
       if (S <= 0) S = 1;
@@ -346,7 +351,7 @@
         '<div class="wqtitle" style="font-size:20px">Word Dungeon</div>' +
         '<div style="margin:4px 0 10px;color:#5a6b7a;font-weight:bold">Crawl the dungeon. Runed doors 📜 open for a WORD. Beat the boss to unlock the next.</div>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">' + rows + "</div>" +
-        '<div style="font-size:11px;color:#8a98a8;margin-top:8px">Move: drag / WASD · Sword: tap, Space, or the ⚔ cross · Tap a 🎒 power-up to use it · Doors 📜 & the boss ask a word</div></div>';
+        '<div style="font-size:12px;color:#8a98a8;margin-top:8px">Move: drag / WASD · Sword: tap, Space, or the ⚔ cross · Tap a 🎒 power-up to use it · Doors 📜 & the boss ask a word</div></div>';
       end.style.display = "flex";
       Array.prototype.forEach.call(end.querySelectorAll("[data-dg]"), function (b) {
         b.onclick = function () {
@@ -527,7 +532,7 @@
         return '<button type="button" class="dgitem" data-item="' + k + '" title="' + ITEMS[k].name + " — " + ITEMS[k].desc + '" style="position:relative;width:48px;height:48px;' +
           'background:rgba(20,16,30,.72);border:2px solid ' + (n ? "rgba(155,232,112,.6)" : "rgba(255,255,255,.14)") + ';border-radius:14px;' +
           'font-size:22px;padding:0;line-height:1;font-family:inherit;cursor:pointer;' + (n ? "" : "opacity:.4;") + '">' + ITEMS[k].emoji +
-          (n ? '<span style="position:absolute;right:-4px;top:-6px;background:#ffd23f;color:#3a2a00;border-radius:9px;font-size:11px;font-weight:900;padding:1px 5px">' + n + "</span>" : "") +
+          (n ? '<span style="position:absolute;right:-4px;top:-6px;background:#ffd23f;color:#3a2a00;border-radius:9px;font-size:12px;font-weight:900;padding:1px 5px">' + n + "</span>" : "") +
           "</button>";
       }).join("");
       Array.prototype.forEach.call(bar.querySelectorAll("[data-item]"), function (b) {
@@ -1252,7 +1257,7 @@
     // the bottom-right corner now belongs to the ⚔ attack cross.
     function drawMiniMap() {
       var cell = compact ? 12 : 15, pad = 4, mw = GRID * cell + pad * 2;
-      var mx = W - mw - 8, my = (compact ? 92 : 122) + pad;
+      var mx = W - mw - 8, my = (compact ? 92 : 122) + safeTop + pad;
       ctx.fillStyle = "rgba(0,0,0,.45)"; rrect(mx - pad, my - pad, mw, GRID * cell + pad * 2, 6); ctx.fill();
       for (var r = 0; r < GRID; r++) for (var c = 0; c < GRID; c++) {
         var rm = map[r] && map[r][c]; if (!rm) continue;

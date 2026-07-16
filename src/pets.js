@@ -52,9 +52,9 @@
       '<canvas id="ptcv"></canvas>' +
       '<div class="ghud"><div class="clue" id="ptmsg">🐾 Pet Paradise</div>' +
       '<div class="grow"><span id="ptgems">💎 0</span>' +
-      '<button class="replay" id="pteggs" type="button">🥚 Eggs</button>' +
-      '<button class="replay" id="ptbattle" type="button">⚔️ Battle</button>' +
-      '<button class="bossquit" id="quit">Leave</button></div></div>' +
+      '<button class="replay" id="pteggs" type="button" style="font-size:14px;min-height:44px;padding:0 12px;display:inline-flex;align-items:center;justify-content:center">🥚 Eggs</button>' +
+      '<button class="replay" id="ptbattle" type="button" style="font-size:14px;min-height:44px;padding:0 12px;display:inline-flex;align-items:center;justify-content:center">⚔️ Battle</button>' +
+      '<button class="bossquit" id="quit" style="margin-top:0;min-height:44px;padding:0 16px;display:inline-flex;align-items:center;justify-content:center">Leave</button></div></div>' +
       '<div class="gmsg" id="ptbig"></div>' +
       '<div class="gover" id="ptq" style="display:none"></div>' +
       '<div class="gover" id="ptcard" style="display:none"></div>' +
@@ -62,7 +62,12 @@
     document.body.appendChild(wrap);
     var cv = wrap.querySelector("#ptcv"), ctx = cv.getContext("2d");
     var W, H;
-    function resize() { W = cv.width = wrap.clientWidth; H = cv.height = wrap.clientHeight; }
+    var DPR = Math.min(global.devicePixelRatio || 1, 2); // crisp emoji/text on retina (iPhone DPR3) without over-rendering
+    function resize() {
+      W = wrap.clientWidth; H = wrap.clientHeight;
+      cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR); // backing store scaled...
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0); // ...but all game code keeps drawing in CSS px. (setTransform used ONLY here)
+    }
     resize(); window.addEventListener("resize", resize);
 
     var juice = global.VobloxJuice ? global.VobloxJuice() : null;
@@ -388,8 +393,15 @@
       for (var d = 0; d < 8; d++) { var r = P.rng(50 + d); ctx.fillText(["🌼", "🌷", "🌳", "🍄"][d % 4], r() * W, H * (0.42 + r() * 0.5)); }
       ctx.font = "26px serif"; ctx.fillText("🏠", W * 0.9, H * 0.34);
       if (!state.pets.length) {
-        ctx.font = "bold " + Math.round(H * 0.035) + "px Trebuchet MS, sans-serif"; ctx.fillStyle = "#20303a";
-        ctx.fillText("Your meadow is empty — tap 🥚 Eggs to hatch your first pet!", W / 2, H * 0.5);
+        ctx.fillStyle = "#20303a"; ctx.textAlign = "center";
+        var emptyLines = ["Your meadow is empty!", "Tap 🥚 Eggs to hatch your first pet!"];
+        var efs = Math.round(H * 0.03);
+        ctx.font = "bold " + efs + "px Trebuchet MS, sans-serif";
+        var ew = Math.max(ctx.measureText(emptyLines[0]).width, ctx.measureText(emptyLines[1]).width);
+        var elim = W * 0.9; // never let the message run off the 393px screen
+        if (ew > elim) { efs = Math.max(12, Math.floor(efs * elim / ew)); ctx.font = "bold " + efs + "px Trebuchet MS, sans-serif"; }
+        ctx.fillText(emptyLines[0], W / 2, H * 0.5 - efs * 0.7);
+        ctx.fillText(emptyLines[1], W / 2, H * 0.5 + efs * 0.7);
       }
       state.pets.forEach(function (p, i) {
         var w2 = wander[i]; if (!w2) return;

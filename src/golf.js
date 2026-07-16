@@ -70,6 +70,9 @@
       '<span id="gfstroke">Strokes 0</span><span id="gftot">E</span>' +
       '<button class="bossquit" id="quit">Leave</button></div></div>' +
       '<div class="gmsg" id="gfbig"></div>' +
+      '<div id="gfsafe" style="position:absolute;top:0;left:0;width:0;height:0;pointer-events:none;' +
+      'padding-top:env(safe-area-inset-top, 0px);padding-bottom:env(safe-area-inset-bottom, 0px);' +
+      'padding-left:env(safe-area-inset-left, 0px);padding-right:env(safe-area-inset-right, 0px)"></div>' +
       '<div class="gover" id="gfq" style="display:none"></div>' +
       '<div class="gover" id="gfcard" style="display:none"></div>';
     document.body.appendChild(wrap);
@@ -82,15 +85,24 @@
 
     // ---------- responsive letterbox (both orientations fit the SAME field) ----------
     var W, H, S, OX, OY, compact = false;
+    var gfsafe = document.getElementById("gfsafe");
     function resize() {
       W = cv.width = wrap.clientWidth || 480;
       H = cv.height = wrap.clientHeight || 800;
       compact = Math.min(W, H) < 520;
-      var top = compact ? 70 : 96, bot = 12;
-      var availW = W - 12, availH = H - top - bot;
+      // safe-area insets (Dynamic Island top / home-indicator bottom / landscape sides)
+      var insT = 0, insB = 0, insL = 0, insR = 0;
+      try {
+        var cs = getComputedStyle(gfsafe);
+        insT = parseFloat(cs.paddingTop) || 0; insB = parseFloat(cs.paddingBottom) || 0;
+        insL = parseFloat(cs.paddingLeft) || 0; insR = parseFloat(cs.paddingRight) || 0;
+      } catch (_) {}
+      var top = (compact ? 70 : 96) + insT, bot = 12 + insB;
+      var mL = insL + 6, mR = insR + 6;
+      var availW = W - mL - mR, availH = H - top - bot;
       S = Math.min(availW / MW, availH / MH);
       if (S <= 0) S = 1;
-      OX = Math.max(0, (W - MW * S) / 2);
+      OX = mL + Math.max(0, (availW - MW * S) / 2);
       OY = top + Math.max(0, (availH - MH * S) / 2);
     }
     resize(); window.addEventListener("resize", resize);

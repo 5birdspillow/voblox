@@ -37,7 +37,7 @@
     wrap.innerHTML =
       '<canvas id="slcv" style="position:absolute;inset:0;display:block;width:100%;height:100%"></canvas>' +
       '<div class="ghud"><div class="clue" id="slmsg">🥷 Ninja Slice — drag to slice!</div>' +
-      '<div class="grow"><span id="slscore">🍉 0</span><span id="slhearts">❤️❤️❤️</span>' +
+      '<div class="grow" style="flex-wrap:wrap"><span id="slscore">🍉 0</span><span id="slhearts">❤️❤️❤️</span>' +
       '<span id="slwave">Wave 1</span>' +
       '<button class="bossquit" id="quit">Leave</button></div></div>' +
       '<div class="gmsg" id="slbig"></div>' +
@@ -48,6 +48,15 @@
       '<div class="gover" id="slq" style="display:none"></div>' +
       '<div class="gover" id="slcard" style="display:none"></div>';
     document.body.appendChild(wrap);
+    // compact, wrap-safe HUD chips so the row FITS 393px (Leave never clips) — digger pattern
+    (function () {
+      var gr = wrap.querySelector(".ghud .grow"); if (!gr) return;
+      gr.style.flexWrap = "wrap"; gr.style.gap = "6px";
+      Array.prototype.forEach.call(gr.children, function (el) {
+        el.style.flexShrink = "0"; el.style.whiteSpace = "nowrap";
+        if (el.tagName === "SPAN") { el.style.fontSize = "14px"; el.style.padding = "4px 8px"; }
+      });
+    })();
 
     var cv = wrap.querySelector("#slcv"), ctx = cv.getContext("2d");
     var slq = document.getElementById("slq"), slcard = document.getElementById("slcard");
@@ -56,11 +65,15 @@
     var juice = global.VobloxJuice ? global.VobloxJuice() : null;
     var sfx = global.VobloxSfx || null;
 
-    var W, H, objR2;
+    var W, H, objR2, safeB = 0;
+    var DPR = Math.min(global.devicePixelRatio || 1, 2); // retina sharpen (game code stays in CSS px)
     function resize() {
-      W = cv.width = wrap.clientWidth || global.innerWidth || 360;
-      H = cv.height = wrap.clientHeight || global.innerHeight || 640;
+      W = wrap.clientWidth || global.innerWidth || 360;
+      H = wrap.clientHeight || global.innerHeight || 640;
+      cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
       objR2 = Math.max(24, Math.min(W, H) * 0.062); // fruit radius
+      // home-indicator inset, probed off the frenzy button's env()-based bottom (40px base)
+      try { safeB = Math.max(0, (parseFloat(getComputedStyle(frzBtn).bottom) || 40) - 40); } catch (_) { safeB = 0; }
     }
     resize();
     window.addEventListener("resize", resize);
@@ -351,6 +364,7 @@
 
     // ---------- drawing ----------
     function draw() {
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0); // all game drawing stays in CSS px; buffer is retina
       ctx.clearRect(0, 0, W, H);
       var g = ctx.createLinearGradient(0, 0, 0, H);
       if (frenzyOn) { g.addColorStop(0, "#3a2f10"); g.addColorStop(1, "#120d02"); }
@@ -393,7 +407,7 @@
       ctx.restore();
 
       // frenzy meter — a fat gold bar hugging the bottom
-      var bw = Math.min(320, W * 0.6), bx = (W - bw) / 2, by = H - 16;
+      var bw = Math.min(320, W * 0.6), bx = (W - bw) / 2, by = H - 16 - safeB;
       ctx.fillStyle = "rgba(0,0,0,.4)"; ctx.fillRect(bx, by, bw, 8);
       ctx.fillStyle = frenzyOn ? "#ff6b6b" : "#ffd23f";
       ctx.fillRect(bx, by, bw * (frenzyOn ? Math.max(0, frenzyT / 10) : frenzy), 8);

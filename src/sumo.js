@@ -67,10 +67,13 @@
     var juice = global.VobloxJuice ? global.VobloxJuice() : null;
     var sfx = global.VobloxSfx || null;
 
-    var W, H, scale;
+    var W, H, scale, DPR = 1;
     function resize() {
-      W = cv.width = wrap.clientWidth || global.innerWidth || 360;
-      H = cv.height = wrap.clientHeight || global.innerHeight || 640;
+      W = wrap.clientWidth || global.innerWidth || 360;
+      H = wrap.clientHeight || global.innerHeight || 640;
+      DPR = Math.min(global.devicePixelRatio || 1, 2); // retina-crisp buffer; game stays in CSS px
+      cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
       scale = Math.min(W, H) * 0.46 / BASE_R; // constant scale → shrinking ring reads clearly
     }
     resize();
@@ -505,6 +508,7 @@
       if (b.chatAge < 2.4 && Bots && Bots.bubble) Bots.bubble(ctx, { x: sx, y: sy - r - 26, text: b.chatText, age: b.chatAge });
     }
     function draw() {
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
       ctx.clearRect(0, 0, W, H);
       var g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#10233a"); g.addColorStop(1, "#050b16");
       ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);

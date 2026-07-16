@@ -18,7 +18,8 @@
       '<div class="gmsg" id="gmsg"></div>';
     document.body.appendChild(wrap);
     var cv = wrap.querySelector("#gcv"), ctx = cv.getContext("2d");
-    var W, H; function resize() { W = cv.width = wrap.clientWidth; H = cv.height = wrap.clientHeight; } resize();
+    var DPR = Math.min(global.devicePixelRatio || 1, 2);
+    var W, H; function resize() { W = wrap.clientWidth; H = wrap.clientHeight; cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR); } resize();
     window.addEventListener("resize", resize);
     document.getElementById("quit").onclick = leave;
 
@@ -102,6 +103,7 @@
 
     function roundRect(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
     function draw() {
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
       var ox = juice ? juice.ox : 0, oy = juice ? juice.oy : 0;
       ctx.save(); ctx.translate(ox, oy);
       var g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#9fd6ff"); g.addColorStop(1, "#d6efff"); ctx.fillStyle = g; ctx.fillRect(-10, -10, W + 20, H + 20);

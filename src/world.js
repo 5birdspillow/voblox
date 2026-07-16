@@ -488,6 +488,9 @@
   canvas.addEventListener("touchstart", function (e) {
     for (var i = 0; i < e.changedTouches.length; i++) {
       var t = e.changedTouches[i];
+      // leave the iPhone home-indicator swipe zone (bottom ~24px) alone so a walk/look
+      // drag never fights the system swipe-up gesture
+      if (t.clientY > window.innerHeight - 24) continue;
       if (t.clientX < window.innerWidth * 0.5 && !joy.active) { joy.active = true; joy.id = t.identifier; joy.ox = t.clientX; joy.oy = t.clientY; joy.x = 0; joy.y = 0; showJoy(t.clientX, t.clientY); }
       else if (look.id === null) { look.id = t.identifier; look.x = t.clientX; look.y = t.clientY; look.tap = { x: t.clientX, y: t.clientY, moved: 0 }; }
     }

@@ -20,6 +20,8 @@
       var m = document.createElement("button"); m.className = "mole"; m.type = "button";
       h.appendChild(m); holesEl.appendChild(h); holes.push({ mole: m, word: null, up: false, golden: false });
     }
+    // keep the bottom row of holes clear of the iOS home-indicator inset
+    holesEl.style.paddingBottom = "calc(env(safe-area-inset-bottom, 0px) + 14px)";
     var target = null, score = 0, timeLeft = 45, lastSpoken = "", running = true, popT = null, tickT = null;
     var combo = 0, bestCombo = 0, feverUntil = 0, gemsBank = 0;
     document.getElementById("quit").onclick = leave;

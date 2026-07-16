@@ -55,6 +55,7 @@
       'background:linear-gradient(#ffe14d,#ffb01f);color:#5a3d00;border:none;border-radius:16px;' +
       'padding:14px 22px;font-family:inherit;font-weight:900;font-size:18px;' +
       'box-shadow:0 6px 0 #b9791a,0 10px 24px #0006;cursor:pointer">📜 +15 seconds — answer a word!</button>' +
+      '<div id="pnsafe" style="position:absolute;left:0;bottom:calc(env(safe-area-inset-bottom, 0px) + 20px);width:0;height:0;pointer-events:none"></div>' +
       '<div class="gover" id="pnq" style="display:none"></div>' +
       '<div class="gover" id="pncard" style="display:none"></div>';
     document.body.appendChild(wrap);
@@ -65,10 +66,13 @@
     var juice = global.VobloxJuice ? global.VobloxJuice() : null;
     var sfx = global.VobloxSfx || null;
 
-    var W, H;
+    var W, H, safeB = 0;
+    var safeEl = wrap.querySelector("#pnsafe");
     function resize() {
       W = cv.width = wrap.clientWidth || global.innerWidth || 360;
       H = cv.height = wrap.clientHeight || global.innerHeight || 640;
+      // home-indicator inset, probed off an env()-based element (20px base)
+      try { safeB = Math.max(0, (parseFloat(getComputedStyle(safeEl).bottom) || 20) - 20); } catch (_) { safeB = 0; }
     }
     resize();
     window.addEventListener("resize", resize);
@@ -307,24 +311,24 @@
     // ---------- drawing ----------
     function colW() { return W / COLS; }
     function colCenter(c) { return c * colW() + colW() / 2; }
-    function rowH() { return H / VISROWS; }
+    function rowH() { return (H - safeB) / VISROWS; }
     function draw() {
       ctx.clearRect(0, 0, W, H);
       var g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#1a1030"); g.addColorStop(1, "#0b0716");
       ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-      var cw = colW(), rh = rowH();
+      var cw = colW(), rh = rowH(), PB = H - safeB; // PB = playfield bottom, above the home indicator
       // column separators
       ctx.strokeStyle = "rgba(255,255,255,.06)"; ctx.lineWidth = 1;
       for (var c = 1; c < COLS; c++) { ctx.beginPath(); ctx.moveTo(c * cw, 0); ctx.lineTo(c * cw, H); ctx.stroke(); }
       // ACTIVE ZONE band at the bottom — glow hue shifts up with speed, gold in FEVER
       var hue = Math.max(0, Math.min(300, (speed - 1) * 120));
       var zoneCol = feverT > 0 ? "rgba(255,210,63,.28)" : "hsla(" + Math.round(200 - hue) + ",90%,60%,.18)";
-      ctx.fillStyle = zoneCol; ctx.fillRect(0, H - rh, W, rh);
+      ctx.fillStyle = zoneCol; ctx.fillRect(0, PB - rh, W, rh);
       ctx.strokeStyle = feverT > 0 ? "#ffd23f" : "hsl(" + Math.round(200 - hue) + ",90%,65%)";
-      ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, H - rh); ctx.lineTo(W, H - rh); ctx.stroke();
+      ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, PB - rh); ctx.lineTo(W, PB - rh); ctx.stroke();
       // tiles: rows[0] is the bottom active row; higher indices climb the screen
       for (var i = 0; i < rows.length && i < VISROWS + 1; i++) {
-        var y = H - rh * (i + 1) + scroll * rh;
+        var y = PB - rh * (i + 1) + scroll * rh;
         for (var col = 0; col < COLS; col++) {
           var black = rows[i].black === col;
           var x = col * cw;
@@ -341,7 +345,7 @@
       }
       // desktop key hints along the bottom
       ctx.fillStyle = "rgba(255,255,255,.5)"; ctx.font = "bold 16px sans-serif"; ctx.textAlign = "center";
-      for (var kc = 0; kc < COLS; kc++) ctx.fillText(KEYCH[kc], colCenter(kc), H - 12);
+      for (var kc = 0; kc < COLS; kc++) ctx.fillText(KEYCH[kc], colCenter(kc), PB - 12);
       // strike flash overlay
       if (strikeFlashT > 0) { ctx.fillStyle = "rgba(255,60,60," + (strikeFlashT * 0.6) + ")"; ctx.fillRect(0, 0, W, H); }
       if (juice) { juice.update(0.016); juice.draw(ctx); }

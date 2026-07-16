@@ -72,10 +72,12 @@
     var juice = global.VobloxJuice ? global.VobloxJuice() : null;
     var sfx = global.VobloxSfx || null;
 
-    var W, H;
+    var W, H, DPR = 1;
     function resize() {
-      W = cv.width = wrap.clientWidth || global.innerWidth || 360;
-      H = cv.height = wrap.clientHeight || global.innerHeight || 640;
+      W = wrap.clientWidth || global.innerWidth || 360;
+      H = wrap.clientHeight || global.innerHeight || 640;
+      DPR = Math.min(global.devicePixelRatio || 1, 2); // retina-crisp buffer; game stays in CSS px
+      cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
     }
     resize();
     window.addEventListener("resize", resize);
@@ -433,7 +435,7 @@
       }
     }
     function draw() {
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
       ctx.clearRect(0, 0, W, H);
       ctx.save();
       if (juice) ctx.translate(juice.ox || 0, juice.oy || 0);

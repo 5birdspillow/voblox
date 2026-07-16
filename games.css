@@ -205,10 +205,10 @@
 /* compact chrome on phones: title hidden, tighter HUD, shorter bar buttons —
    every pixel goes to the battlefield */
 .gamewrap.compact .ghud .clue { display: none; }
-.gamewrap.compact .ghud { padding: 4px 6px; gap: 4px; }
-.gamewrap.compact #embar .embtn, .gamewrap.compact #bkbar .embtn { min-width: 60px; padding: 4px 8px; }
+.gamewrap.compact .ghud { padding: calc(env(safe-area-inset-top) + 4px) 6px 0; gap: 4px; } /* keep Dynamic Island clearance in compact mode */
+.gamewrap.compact #embar .embtn, .gamewrap.compact #bkbar .embtn { min-width: 68px; padding: 4px 8px; }
 .gamewrap.compact #embar .ebl, .gamewrap.compact #bkbar .ebl { font-size: 12px; }
-.gamewrap.compact #embar .ebs, .gamewrap.compact #bkbar .ebs { font-size: 9.5px; }
+.gamewrap.compact #embar .ebs, .gamewrap.compact #bkbar .ebs { font-size: 11px; }
 
 /* rotate-your-phone gate for the RTS/lane games (portrait is unplayable-small) */
 .rotgate { display: none; position: absolute; inset: 0; z-index: 20; background: rgba(12,18,30,.9);
@@ -415,6 +415,9 @@
 /* ---- batch-1 new games: fullscreen canvas layout ---- */
 .gamewrap.blaster, .gamewrap.beat, .gamewrap.dungeon { padding: 0; overflow: hidden; touch-action: none; }
 .gamewrap.blaster canvas, .gamewrap.beat canvas, .gamewrap.dungeon canvas#dgcv { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+
+/* ---- iPhone: every game's Leave button is a full 44px thumb target ---- */
+.ghud .grow .bossquit { min-height: 44px; padding: 8px 14px; }
 
 /* ---- Gold Digger: Deep Core — 5 chips + Leave must fit a 393px iPhone ---- */
 .gamewrap.digger .ghud .grow { flex-wrap: wrap; gap: 5px; padding: 0 4px; }

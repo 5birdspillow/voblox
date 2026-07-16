@@ -62,7 +62,7 @@
         });
       }
     }
-    function resize() { W = cv.width = wrap.clientWidth; H = cv.height = wrap.clientHeight; rng = P.rng(MAP.seed); buildMap(); relinkTowers(); }
+    function resize() { var dpr = Math.min(global.devicePixelRatio || 1, 2); W = wrap.clientWidth; H = wrap.clientHeight; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); rng = P.rng(MAP.seed); buildMap(); relinkTowers(); }
     var towers = [];
     function relinkTowers() { towers.forEach(function (t, i) { if (pads[t.padIdx]) { pads[t.padIdx].tower = t; t.x = pads[t.padIdx].x; t.y = pads[t.padIdx].y; } }); }
     resize(); window.addEventListener("resize", resize);

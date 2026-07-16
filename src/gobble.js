@@ -54,13 +54,22 @@
     wrap.innerHTML =
       '<canvas id="gbcv" style="position:absolute;inset:0;display:block;width:100%;height:100%"></canvas>' +
       '<div class="ghud"><div class="clue" id="gbmsg">🟢 Gobble Blob — hold to steer, eat &amp; grow!</div>' +
-      '<div class="grow"><span id="gbmass">🟢 0</span><span id="gbtime">3:00</span>' +
+      '<div class="grow" style="flex-wrap:wrap"><span id="gbmass">🟢 0</span><span id="gbtime">3:00</span>' +
       '<button class="bossquit" id="quit">Leave</button></div></div>' +
       '<div class="gmsg" id="gbbig"></div>' +
       '<div class="gover" id="gbq" style="display:none"></div>' +
       '<div class="gover" id="gbpick" style="display:none"></div>' +
       '<div class="gover" id="gbcard" style="display:none"></div>';
     document.body.appendChild(wrap);
+    // compact, wrap-safe HUD chips so the row FITS 393px (Leave never clips) — digger pattern
+    (function () {
+      var gr = wrap.querySelector(".ghud .grow"); if (!gr) return;
+      gr.style.flexWrap = "wrap"; gr.style.gap = "6px";
+      Array.prototype.forEach.call(gr.children, function (el) {
+        el.style.flexShrink = "0"; el.style.whiteSpace = "nowrap";
+        if (el.tagName === "SPAN") { el.style.fontSize = "14px"; el.style.padding = "4px 8px"; }
+      });
+    })();
 
     var cv = wrap.querySelector("#gbcv"), ctx = cv.getContext("2d");
     var msgEl = wrap.querySelector("#gbmsg"), bigEl = wrap.querySelector("#gbbig");
@@ -68,8 +77,16 @@
     var juice = global.VobloxJuice ? global.VobloxJuice() : null;
     var sfx = global.VobloxSfx || null;
 
-    var W, H;
-    function resize() { W = cv.width = wrap.clientWidth || global.innerWidth || 360; H = cv.height = wrap.clientHeight || global.innerHeight || 640; }
+    var ghudEl = wrap.querySelector(".ghud");
+    var W, H, hudH = 60;
+    var DPR = Math.min(global.devicePixelRatio || 1, 2); // retina sharpen; game code stays in CSS px
+    function measureHud() { hudH = ghudEl ? Math.round(ghudEl.getBoundingClientRect().height) : 60; }
+    function resize() {
+      W = wrap.clientWidth || global.innerWidth || 360;
+      H = wrap.clientHeight || global.innerHeight || 640;
+      cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+      measureHud();
+    }
     resize();
     window.addEventListener("resize", resize);
 
@@ -88,6 +105,7 @@
     function hud() {
       document.getElementById("gbmass").textContent = "🟢 " + Math.round(self.mass) + (surgeT > 0 ? " ⚡" : "");
       document.getElementById("gbtime").textContent = fmtTime(ROUND_LEN - roundT);
+      measureHud();
     }
     function updatePeak() { if (self.mass > peakScore) peakScore = self.mass; }
 
@@ -379,6 +397,7 @@
       if (b.chatAge < 2.4 && Bots && Bots.bubble) Bots.bubble(ctx, { x: sx, y: sy - r - 22, text: b.chatText, age: b.chatAge });
     }
     function draw() {
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0); // buffer is retina; all drawing stays in CSS px
       // camera: follow the player; zoom OUT as you grow (bigger = more map)
       camX = self.x; camY = self.y;
       var view = 340 + rOf(self.mass) * 4;
@@ -416,8 +435,8 @@
       var all = bots.slice(); all.push(self);
       all.sort(function (a, b) { return b.mass - a.mass; });
       var top = all.slice(0, 5);
-      // sit BELOW the HUD row (which wraps taller on narrow screens) so the Leave button is never covered
-      var lx = W - 168, ly = Math.min(W, H) < 520 ? 124 : 96, lw = 156, lh = 20 + top.length * 20;
+      // sit BELOW the measured HUD (clears the Dynamic Island) and fully inside the right edge
+      var lw = 156, lx = W - lw - 8, ly = hudH + 8, lh = 20 + top.length * 20;
       ctx.fillStyle = "rgba(8,18,28,.62)"; ctx.fillRect(lx, ly, lw, lh);
       ctx.fillStyle = "#ffd23f"; ctx.font = "bold 13px Trebuchet MS, sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
       ctx.fillText("🏆 Leaderboard", lx + 8, ly + 12);

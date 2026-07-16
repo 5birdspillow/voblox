@@ -55,6 +55,9 @@
       'transform:translateX(-50%);z-index:8;background:linear-gradient(#5be07a,#1fa34d);color:#fff;border:none;border-radius:16px;' +
       'padding:12px 20px;font-family:inherit;font-weight:900;font-size:16px;box-shadow:0 6px 0 #17773a,0 10px 24px #0006;cursor:pointer">' +
       '🧤 CLUTCH SAVE — answer a word!</button>' +
+      // invisible safe-area probes (digger pattern): resize() reads their computed offsets
+      '<div id="ahsafet" style="position:absolute;left:0;top:calc(env(safe-area-inset-top, 0px) + 0px);width:0;height:0;pointer-events:none"></div>' +
+      '<div id="ahsafeb" style="position:absolute;left:0;bottom:calc(env(safe-area-inset-bottom, 0px) + 10px);width:0;height:0;pointer-events:none"></div>' +
       '<div class="gover" id="ahq" style="display:none"></div>' +
       '<div class="gover" id="ahcard" style="display:none"></div>';
     document.body.appendChild(wrap);
@@ -67,14 +70,26 @@
     var sfx = global.VobloxSfx || null;
 
     // ---------- responsive letterbox (ONE logic space) ----------
-    var W, H, S, OX, OY;
+    // Retina-sharp backing store (min(dpr,2)); all game code stays in CSS px.
+    // The rink clears the .ghud strip (plus the Dynamic Island via the env() probe)
+    // up top, and stays off the home-indicator swipe zone at the bottom.
+    var W, H, S, OX, OY, safeT = 0, safeB = 0;
+    var safeTEl = document.getElementById("ahsafet"), safeBEl = document.getElementById("ahsafeb");
     function resize() {
-      W = cv.width = wrap.clientWidth || global.innerWidth || 360;
-      H = cv.height = wrap.clientHeight || global.innerHeight || 640;
-      var reserve = 96; // room for the HUD strip
-      S = Math.min(W / AW, (H - reserve) / AH);
+      var dpr = Math.min(global.devicePixelRatio || 1, 2);
+      W = wrap.clientWidth || global.innerWidth || 360;
+      H = wrap.clientHeight || global.innerHeight || 640;
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      try {
+        safeT = Math.max(0, parseFloat(getComputedStyle(safeTEl).top) || 0);
+        safeB = Math.max(0, (parseFloat(getComputedStyle(safeBEl).bottom) || 10) - 10);
+      } catch (_) { safeT = 0; safeB = 0; }
+      var topPad = 112 + safeT;   // clear the HUD strip + Dynamic Island
+      var botPad = 96 + safeB;    // room for the POWER PUCK button + home-indicator zone
+      S = Math.min(W / AW, (H - topPad - botPad) / AH);
       OX = Math.max(0, (W - AW * S) / 2);
-      OY = Math.max(30, (H - reserve - AH * S) / 2 + 30);
+      OY = topPad + Math.max(0, (H - topPad - botPad - AH * S) / 2);
     }
     resize(); window.addEventListener("resize", resize);
     function X(x) { return OX + x * S; }

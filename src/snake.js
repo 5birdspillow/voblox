@@ -13,9 +13,10 @@
       '<div class="dpad"><button data-d="u">▲</button><div class="dmid"><button data-d="l">◀</button><button data-d="r">▶</button></div><button data-d="d">▼</button></div>';
     document.body.appendChild(wrap);
     var cv = wrap.querySelector("#scv"), ctx = cv.getContext("2d");
+    var DPR = Math.min(global.devicePixelRatio || 1, 2);
     var W, H, board, cell, ox, oy;
     function resize() {
-      W = cv.width = wrap.clientWidth; H = cv.height = wrap.clientHeight;
+      W = wrap.clientWidth; H = wrap.clientHeight; cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
       board = Math.min(W, H * 0.78) * 0.96; cell = board / GRID; ox = (W - board) / 2; oy = (H - board) / 2 + H * 0.05;
     }
     resize(); window.addEventListener("resize", resize);
@@ -114,6 +115,7 @@
     function gx(x) { return ox + x * cell; } function gy(y) { return oy + y * cell; }
     function draw() {
       cv._snake = { foods: foods, head: snake[0], walls: walls }; // test hook
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
       ctx.clearRect(0, 0, W, H);
       ctx.fillStyle = "#163b1f"; ctx.fillRect(0, 0, W, H);
       // board

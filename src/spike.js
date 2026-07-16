@@ -48,11 +48,11 @@
       '<div class="gmsg" id="spbig"></div>' +
       '<button id="sppow" type="button" style="display:none;position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom) + 40px);' +
       'transform:translateX(-50%);z-index:8;background:linear-gradient(#ffb24d,#ff6b1f);color:#fff;border:none;border-radius:16px;' +
-      'padding:14px 22px;font-family:inherit;font-weight:900;font-size:18px;box-shadow:0 6px 0 #b9491a,0 10px 24px #0006;cursor:pointer">' +
+      'padding:14px 22px;min-height:52px;box-sizing:border-box;font-family:inherit;font-weight:900;font-size:18px;box-shadow:0 6px 0 #b9491a,0 10px 24px #0006;cursor:pointer">' +
       '🔥 POWER SPIKE — answer a word!</button>' +
       '<button id="spsave" type="button" style="display:none;position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom) + 96px);' +
       'transform:translateX(-50%);z-index:8;background:linear-gradient(#5be0e0,#1f8aa3);color:#fff;border:none;border-radius:16px;' +
-      'padding:12px 20px;font-family:inherit;font-weight:900;font-size:16px;box-shadow:0 6px 0 #176677,0 10px 24px #0006;cursor:pointer">' +
+      'padding:13px 20px;min-height:48px;box-sizing:border-box;font-family:inherit;font-weight:900;font-size:16px;box-shadow:0 6px 0 #176677,0 10px 24px #0006;cursor:pointer">' +
       '🛡 SAVE — answer a word!</button>' +
       '<div class="gover" id="spq" style="display:none"></div>' +
       '<div class="gover" id="spcard" style="display:none"></div>';
@@ -66,10 +66,13 @@
     var sfx = global.VobloxSfx || null;
 
     // ---------- responsive letterbox (ONE logic space) ----------
-    var W, H, S, OX, OY;
+    var W, H, S, OX, OY, DPR = 1;
     function resize() {
-      W = cv.width = wrap.clientWidth || global.innerWidth || 360;
-      H = cv.height = wrap.clientHeight || global.innerHeight || 640;
+      W = wrap.clientWidth || global.innerWidth || 360;
+      H = wrap.clientHeight || global.innerHeight || 640;
+      DPR = Math.min(global.devicePixelRatio || 1, 2); // retina-crisp buffer; game stays in CSS px
+      cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
       var reserve = 92; // room for the HUD strip
       S = Math.min(W / CW, (H - reserve) / CH);
       OX = Math.max(0, (W - CW * S) / 2);
@@ -424,6 +427,7 @@
       ctx.restore();
     }
     function draw() {
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
       ctx.clearRect(0, 0, W, H);
       var g = ctx.createLinearGradient(0, Y(0), 0, Y(GROUND)); // sky
       g.addColorStop(0, "#8fd3ff"); g.addColorStop(1, "#d9f0ff");

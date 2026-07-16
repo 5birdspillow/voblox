@@ -91,9 +91,20 @@
       'transform:translateX(-50%);z-index:8;background:linear-gradient(#ff8a5b,#ff5b6e);color:#fff;' +
       'border:none;border-radius:16px;padding:12px 20px;font-family:inherit;font-weight:900;font-size:17px;' +
       'box-shadow:0 6px 0 #b93a49,0 10px 24px #0006;cursor:pointer">💥 BLASTER — answer a word!</button>' +
+      '<div id="bbsafe" style="position:absolute;left:0;bottom:calc(env(safe-area-inset-bottom, 0px) + 20px);width:0;height:0;pointer-events:none"></div>' +
       '<div class="gover" id="bbq" style="display:none"></div>' +
       '<div class="gover" id="bbcard" style="display:none"></div>';
     document.body.appendChild(wrap);
+    // compact HUD row so a long level name (e.g. "Lv 7 · Checkerboard") wraps
+    // instead of shoving the Leave button off the right edge of a phone screen
+    (function () {
+      var st = document.createElement("style");
+      st.textContent =
+        ".gamewrap.brick .ghud .grow{flex-wrap:wrap;gap:6px;padding:0 4px}" +
+        ".gamewrap.brick .ghud .grow span{font-size:14px;padding:3px 8px;white-space:nowrap;border-width:2px;border-bottom-width:3px}" +
+        ".gamewrap.brick .ghud .grow .bossquit{white-space:nowrap}";
+      wrap.appendChild(st);
+    })();
 
     var cv = wrap.querySelector("#bbcv"), ctx = cv.getContext("2d");
     var bbq = document.getElementById("bbq"), bbcard = document.getElementById("bbcard");
@@ -103,7 +114,8 @@
     var sfx = global.VobloxSfx || null;
 
     // ---------- responsive metrics ----------
-    var W, H, gridX0, gridY0, brickW, brickH, radius, paddleY, paddleBaseW, paddleH;
+    var W, H, gridX0, gridY0, brickW, brickH, radius, paddleY, paddleBaseW, paddleH, safeB = 0;
+    var bbsafe = document.getElementById("bbsafe");
     var maxShift, fieldSpeed, speedBase;
     var curDef = null, curCols = 0, curRows = 0, curMove = false;
     function computeMetrics() {
@@ -112,7 +124,7 @@
       brickH = Math.max(9, Math.min(H * 0.03, brickW * 0.55));
       gridX0 = side; gridY0 = H * 0.10;
       radius = Math.max(4, Math.min(W, H) * 0.013);
-      paddleY = H - Math.max(26, H * 0.06);
+      paddleY = H - safeB - Math.max(26, H * 0.06);
       paddleBaseW = Math.max(60, W * 0.16);
       paddleH = Math.max(9, H * 0.016);
       maxShift = brickW * 0.9; fieldSpeed = brickW * 0.6;
@@ -121,6 +133,8 @@
     function resize() {
       W = cv.width = wrap.clientWidth || global.innerWidth || 360;
       H = cv.height = wrap.clientHeight || global.innerHeight || 640;
+      // home-indicator inset, probed off an env()-based element (20px base)
+      try { safeB = Math.max(0, (parseFloat(getComputedStyle(bbsafe).bottom) || 20) - 20); } catch (_) { safeB = 0; }
       computeMetrics();
       if (paddleX !== undefined) paddleX = clampPaddle(paddleX);
     }
@@ -472,8 +486,8 @@
         ctx.beginPath(); ctx.arc(b.x, b.y, radius, 0, Math.PI * 2); ctx.fill();
         if (b.fire > 0) { ctx.strokeStyle = "rgba(255,120,40,.7)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(b.x, b.y, radius * 1.5, 0, Math.PI * 2); ctx.stroke(); }
       }
-      // charge meter — a fat gold bar hugging the bottom
-      var bw = Math.min(320, W * 0.6), bx = (W - bw) / 2, by = H - 14;
+      // charge meter — a fat gold bar hugging the bottom (above the home indicator)
+      var bw = Math.min(320, W * 0.6), bx = (W - bw) / 2, by = H - safeB - 14;
       ctx.fillStyle = "rgba(0,0,0,.4)"; ctx.fillRect(bx, by, bw, 8);
       ctx.fillStyle = charge >= 1 ? "#ff5b6e" : "#ffd23f"; ctx.fillRect(bx, by, bw * charge, 8);
       ctx.fillStyle = "rgba(255,255,255,.8)"; ctx.font = "bold 10px Trebuchet MS"; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";

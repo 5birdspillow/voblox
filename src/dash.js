@@ -89,11 +89,20 @@
       '<div class="gover" id="dhend" style="display:none"></div>';
     document.body.appendChild(wrap);
     var cv = wrap.querySelector("#dhcv"), ctx = cv.getContext("2d");
+    // No `.gamewrap.dash` rule exists in games.css, so this fullscreen canvas game
+    // never inherited the layout the shared sheet gives .run/.blaster/.digger. Claim
+    // it inline: kill the base .gamewrap padding/scroll and pin the canvas to the
+    // viewport (env safe-areas on the .ghud HUD are handled by the shared sheet).
+    wrap.style.padding = "0"; wrap.style.overflow = "hidden"; wrap.style.touchAction = "none";
+    cv.style.position = "absolute"; cv.style.left = "0"; cv.style.top = "0";
+    cv.style.width = "100%"; cv.style.height = "100%"; cv.style.display = "block";
 
     // ---------- responsive letterbox: WORLD_H is fixed, scale to fit ----------
-    var W, H, S, OY; // scale, and vertical offset (portrait centers the track)
+    var W, H, S, OY, dpr = 1; // scale, vertical offset (portrait centers the track), retina factor
     function resize() {
-      W = cv.width = wrap.clientWidth; H = cv.height = wrap.clientHeight;
+      W = wrap.clientWidth; H = wrap.clientHeight;      // game logic stays in CSS px
+      dpr = Math.min(global.devicePixelRatio || 1, 2);  // retina buffer: DPR3 iPhone → crisp, capped at 2
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
       S = H / WORLD_H;
       // in portrait the runner is still horizontal; just cap the scale so the
       // whole track fits the width too, then center it vertically under the HUD.
@@ -151,7 +160,7 @@
         '<div class="wqtitle" style="font-size:20px">Word Dash</div>' +
         '<div style="margin:4px 0 10px;color:#5a6b7a;font-weight:bold">Tap to jump. Answer WORD GATES to charge checkpoints & shields!</div>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">' + cards + endlessBtn + "</div>" +
-        '<div style="font-size:11px;color:#8a98a8;margin-top:8px">Tap anywhere (or Space / ↑) to jump — tap again mid-air to double-jump.</div></div>';
+        '<div style="font-size:12px;color:#8a98a8;margin-top:8px">Tap anywhere (or Space / ↑) to jump — tap again mid-air to double-jump.</div></div>';
       end.style.display = "flex";
       Array.prototype.forEach.call(end.querySelectorAll("[data-lv]"), function (b) {
         b.onclick = function () {
@@ -406,6 +415,7 @@
     function draw() {
       var ox = 0, oy = 0;
       if (juice) { ox = juice.ox || 0; oy = juice.oy || 0; }
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);  // draw in CSS px onto the retina buffer (game never sets its own transform)
       ctx.clearRect(0, 0, W, H);
       // gradient sky per level
       var pal = SKY[(level || 1) - 1] || SKY[0];

@@ -92,9 +92,15 @@
       '<button class="wtab" id="fbait" type="button">🪱 Word Bait</button>' +
       '<div class="runhint" id="fhint">Tap to cast!</div>';
     document.body.appendChild(wrap);
+    // landscape: keep the edge-anchored Word Bait button clear of the Dynamic Island's side inset
+    if (!document.getElementById("fishing-ios-fit")) {
+      var fst = document.createElement("style"); fst.id = "fishing-ios-fit";
+      fst.textContent = ".gamewrap.fishing #fbait{left:calc(env(safe-area-inset-left, 0px) + 12px)}";
+      document.head.appendChild(fst);
+    }
     var cv = wrap.querySelector("#fcv"), ctx = cv.getContext("2d");
     var W, H, WY, DOCKX;
-    function resize() { W = cv.width = wrap.clientWidth; H = cv.height = wrap.clientHeight; WY = H * 0.52; DOCKX = W * 0.16; }
+    function resize() { var dpr = Math.min(global.devicePixelRatio || 1, 2); W = wrap.clientWidth; H = wrap.clientHeight; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); WY = H * 0.52; DOCKX = W * 0.16; }
     resize(); window.addEventListener("resize", resize);
 
     var juice = global.VobloxJuice ? global.VobloxJuice() : null;

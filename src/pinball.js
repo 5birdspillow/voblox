@@ -77,10 +77,14 @@
     var sfx = global.VobloxSfx || null;
 
     // ---------- letterbox (logical 480×800 -> centered on the canvas) ----------
+    // Retina-sharp: backing store at min(devicePixelRatio, 2); ALL game code stays in CSS px.
     var W, H, S, OX, OY;
     function resize() {
-      W = cv.width = wrap.clientWidth || global.innerWidth || 360;
-      H = cv.height = wrap.clientHeight || global.innerHeight || 640;
+      var dpr = Math.min(global.devicePixelRatio || 1, 2);
+      W = wrap.clientWidth || global.innerWidth || 360;
+      H = wrap.clientHeight || global.innerHeight || 640;
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       S = Math.min(W / TW, H / TH);
       OX = (W - TW * S) / 2; OY = (H - TH * S) / 2;
     }
@@ -335,7 +339,7 @@
       spawnPlungerBall(); ballSaverStart();
       pbcard.style.display = "none"; pbq.style.display = "none";
       updateHud();
-      big("🪩 PULL &amp; LAUNCH!", "#8ef");
+      big("🪩 PULL & LAUNCH!", "#8ef");
     }
 
     // ---------- physics ----------

@@ -108,13 +108,37 @@
       '<button class="replay" id="pkcash" type="button">💰 Cash out</button>' +
       '<button class="replay" id="pkrebuild" type="button" style="display:none">🌟 REBUILD</button>' +
       '<button class="bossquit" id="quit">Leave</button></div></div>' +
-      '<div class="pkgoals" id="pkgoals" style="position:absolute;left:8px;top:118px;z-index:6;background:rgba(20,30,40,.55);color:#fff;font:600 11px/1.35 Trebuchet MS,sans-serif;padding:6px 8px;border-radius:10px;pointer-events:none;max-width:190px"></div>' +
+      '<div class="pkgoals" id="pkgoals" style="position:absolute;left:8px;top:calc(env(safe-area-inset-top,0px) + 112px);z-index:6;background:rgba(20,30,40,.55);color:#fff;font:600 12px/1.35 Trebuchet MS,sans-serif;padding:6px 8px;border-radius:10px;pointer-events:none;max-width:190px"></div>' +
       '<div class="gmsg" id="pkbig"></div>' +
       '<div class="gover" id="pkq" style="display:none"></div>' +
       '<div class="gover" id="pkend" style="display:none"></div>' +
       '<div class="gover" id="pkcard" style="display:none"></div>';
     document.body.appendChild(wrap);
     var cv = wrap.querySelector("#pkcv"), ctx = cv.getContext("2d");
+
+    // iPhone fit: the shared .ghud .grow is a NOWRAP centered row; park's 6 pills+buttons
+    // overflow a 393px screen (Cash out / Leave get clipped). Compact + wrap them inline
+    // (mirrors the .gamewrap.digger compact-fit reference) so nothing clips. UI only.
+    (function () {
+      var grow = wrap.querySelector(".grow");
+      if (!grow) return;
+      grow.style.flexWrap = "wrap";
+      grow.style.gap = "5px";
+      grow.style.padding = "0 4px";
+      Array.prototype.forEach.call(grow.children, function (el) {
+        el.style.whiteSpace = "nowrap";
+        if (el.tagName === "SPAN") {              // 🟡 gold + ⭐ rating pills
+          el.style.fontSize = "13px";
+          el.style.padding = "3px 8px";
+          el.style.borderWidth = "2px";
+          el.style.borderBottomWidth = "3px";
+        } else {                                  // PERMIT / Shop / Cash out / REBUILD / Leave
+          el.style.fontSize = "13px";
+          el.style.padding = "6px 9px";
+          el.style.margin = "0";                  // kill .bossquit margin-top:14px so the row aligns
+        }
+      });
+    })();
 
     // ---------- responsive letterbox (one logic space, both orientations) ----------
     var W, H, S, OX, OY;
@@ -124,6 +148,15 @@
       S = Math.min(W / MW, (H - reserve) / MH);
       OX = (W - MW * S) / 2;
       OY = reserve + (H - reserve - MH * S) / 2;
+      layoutGoals();
+    }
+    // Park the goals panel just BELOW the real HUD. .ghud height already bakes in
+    // env(safe-area-inset-top) (its padding-top is calc(env(safe-area-inset-top)+10px))
+    // AND any button-row wrapping, so measuring it clears both the Dynamic Island and
+    // the HUD on any device — no hardcoded top:118px collision.
+    function layoutGoals() {
+      var gh = wrap.querySelector(".ghud"), gp = document.getElementById("pkgoals");
+      if (gh && gp) gp.style.top = (Math.round(gh.getBoundingClientRect().height) + 6) + "px";
     }
     resize(); window.addEventListener("resize", resize);
     function X(x) { return OX + x * S; }
@@ -254,6 +287,7 @@
       // 🌟 rebuild button appears once a rainbow has ever been built
       document.getElementById("pkrebuild").style.display = built0 ? "" : "none";
       updateGoals();
+      layoutGoals();
     }
 
     // ---------- goals ----------

@@ -80,15 +80,26 @@
     wrap.innerHTML =
       '<canvas id="btcv"></canvas>' +
       '<div class="ghud"><div class="clue" id="btmsg">🎵 Beat Bounce</div>' +
-      '<div class="grow"><span id="btscore">0</span><span id="btcombo">×0</span>' +
+      '<div class="grow" style="flex-wrap:wrap"><span id="btscore">0</span><span id="btcombo">×0</span>' +
       '<button class="bossquit" id="quit">Leave</button></div></div>' +
       '<div class="gmsg" id="btbig"></div>' +
       '<div class="gover" id="btq" style="display:none"></div>' +
       '<div class="gover" id="btcard" style="display:none"></div>';
     document.body.appendChild(wrap);
+    // compact, wrap-safe HUD chips so the row FITS 393px (Leave never clips) — digger pattern
+    (function () {
+      var gr = wrap.querySelector(".ghud .grow"); if (!gr) return;
+      gr.style.flexWrap = "wrap"; gr.style.gap = "6px";
+      Array.prototype.forEach.call(gr.children, function (el) {
+        el.style.flexShrink = "0"; el.style.whiteSpace = "nowrap";
+        if (el.tagName === "SPAN") { el.style.fontSize = "14px"; el.style.padding = "4px 8px"; }
+      });
+    })();
     var cv = wrap.querySelector("#btcv"), ctx = cv.getContext("2d");
-    var W = 0, H = 0;
-    function resize() { W = cv.width = wrap.clientWidth || 360; H = cv.height = wrap.clientHeight || 640; }
+    var ghudEl = wrap.querySelector(".ghud");
+    var W = 0, H = 0, hudH = 60;
+    function measureHud() { hudH = ghudEl ? Math.round(ghudEl.getBoundingClientRect().height) : 60; }
+    function resize() { W = cv.width = wrap.clientWidth || 360; H = cv.height = wrap.clientHeight || 640; measureHud(); }
     resize(); window.addEventListener("resize", resize);
 
     var juice = global.VobloxJuice ? global.VobloxJuice() : null;
@@ -398,10 +409,11 @@
           if (n.star) { ctx.font = Math.round(r * 2.4) + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("⭐", nx, ny); }
           else drawGem(nx, ny, r, LANE_COLS[n.lane]);
         }
-        // health bar
-        ctx.fillStyle = "rgba(0,0,0,.5)"; ctx.fillRect(W * 0.12, H * 0.02 + 42, W * 0.76, 12);
+        // health bar — sit BELOW the HUD (which clears the Dynamic Island via env safe-top)
+        var hbY = Math.max(H * 0.02 + 42, hudH + 6);
+        ctx.fillStyle = "rgba(0,0,0,.5)"; ctx.fillRect(W * 0.12, hbY, W * 0.76, 12);
         ctx.fillStyle = health > 35 ? "#69f0ae" : "#ff6b6b";
-        ctx.fillRect(W * 0.12 + 2, H * 0.02 + 44, (W * 0.76 - 4) * Math.max(0, health / MAXHP), 8);
+        ctx.fillRect(W * 0.12 + 2, hbY + 2, (W * 0.76 - 4) * Math.max(0, health / MAXHP), 8);
       }
       if (juice) { juice.update(0.016); juice.draw(ctx); }
     }

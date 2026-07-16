@@ -152,11 +152,11 @@
       '<div class="grow"><span id="imstat"></span><span id="imstars"></span>' +
       '<button class="bossquit" id="quit">Leave</button></div></div>' +
       '<div class="gmsg" id="imbig"></div>' +
-      '<button id="imhint" type="button" style="display:none;position:absolute;left:12px;' +
+      '<button id="imhint" type="button" style="display:none;position:absolute;left:calc(env(safe-area-inset-left, 0px) + 12px);' +
       'bottom:calc(env(safe-area-inset-bottom) + 14px);z-index:8;background:linear-gradient(#ffe14d,#ffb01f);' +
       'color:#5a3d00;border:none;border-radius:14px;padding:11px 16px;font-family:inherit;font-weight:900;' +
       'font-size:15px;box-shadow:0 5px 0 #b9791a,0 8px 20px #0006;cursor:pointer">💡 Hint (a word)</button>' +
-      '<button id="imretry" type="button" style="display:none;position:absolute;right:12px;' +
+      '<button id="imretry" type="button" style="display:none;position:absolute;right:calc(env(safe-area-inset-right, 0px) + 12px);' +
       'bottom:calc(env(safe-area-inset-bottom) + 14px);z-index:8;background:#eaf6ff;color:#2f5f86;' +
       'border:none;border-radius:14px;padding:11px 16px;font-family:inherit;font-weight:900;' +
       'font-size:15px;box-shadow:0 5px 0 #a9cbe4,0 8px 20px #0005;cursor:pointer">↺ Retry</button>' +
@@ -171,8 +171,15 @@
     var juice = global.VobloxJuice ? global.VobloxJuice() : null;
     var sfx = global.VobloxSfx || null;
 
+    // Retina-sharp backing store (min(dpr,2)); all game code stays in CSS px.
     var W, H, cell, OX, OY;
-    function resize() { W = cv.width = wrap.clientWidth || global.innerWidth || 360; H = cv.height = wrap.clientHeight || global.innerHeight || 640; }
+    function resize() {
+      var dpr = Math.min(global.devicePixelRatio || 1, 2);
+      W = wrap.clientWidth || global.innerWidth || 360;
+      H = wrap.clientHeight || global.innerHeight || 640;
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
     resize(); window.addEventListener("resize", resize);
     function metrics() {
       var gw = g[0].length, gh = g.length;

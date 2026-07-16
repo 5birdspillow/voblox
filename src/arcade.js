@@ -33,7 +33,9 @@
     var html =
       '<div class="gatehead">🎒 Backpack <span class="x" id="ax">✕</span></div>' +
       '<div class="card arcadecard">' +
-      '<div class="atabs">' +
+      // iPhone: keep all six tabs on ONE compact row (no wrapped 2nd row eating vertical
+      // space); if they can't fit they scroll horizontally rather than wrap.
+      '<div class="atabs" style="flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;">' +
       tabBtn("quests", "📋 Quests") + tabBtn("locker", "🧍 Locker") + tabBtn("shop", "🛍️ Shop") +
       tabBtn("collection", "📖 Book") + tabBtn("pets", "🐾 Pets") + tabBtn("slots", "💾 Slots") +
       '</div><div class="abody" id="abody"></div></div>';
@@ -44,7 +46,9 @@
     });
     render();
   }
-  function tabBtn(t, label) { return '<button class="atab' + (tab === t ? " on" : "") + '" data-t="' + t + '">' + label + "</button>"; }
+  // min-width:0 lets six tabs share one row (the class sets 90px, which forces a wrap);
+  // white-space:nowrap keeps each label on a single line so tabs stay short, not tall.
+  function tabBtn(t, label) { return '<button class="atab' + (tab === t ? " on" : "") + '" data-t="' + t + '" style="min-width:0;white-space:nowrap;font-size:13px;padding:8px 4px;">' + label + "</button>"; }
   function markTabs() {
     Array.prototype.forEach.call(document.querySelectorAll(".atab"), function (b) {
       b.classList.toggle("on", b.dataset.t === tab);

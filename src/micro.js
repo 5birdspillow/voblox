@@ -386,12 +386,21 @@
     wrap.innerHTML =
       '<canvas id="mmcv" style="position:absolute;inset:0;display:block;width:100%;height:100%"></canvas>' +
       '<div class="ghud"><div class="clue" id="mmmsg">🎪 Micro Mania</div>' +
-      '<div class="grow"><span id="mmscore">🏆 0</span><span id="mmlives">❤️❤️❤️</span>' +
+      '<div class="grow" style="flex-wrap:wrap"><span id="mmscore">🏆 0</span><span id="mmlives">❤️❤️❤️</span>' +
       '<span id="mmsuper"></span><button class="bossquit" id="quit">Leave</button></div></div>' +
       '<div class="gmsg" id="mmbig"></div>' +
       '<div class="gover" id="mmq" style="display:none"></div>' +
       '<div class="gover" id="mmcard" style="display:none"></div>';
     document.body.appendChild(wrap);
+    // compact, wrap-safe HUD chips so the row FITS 393px (Leave never clips) — digger pattern
+    (function () {
+      var gr = wrap.querySelector(".ghud .grow"); if (!gr) return;
+      gr.style.flexWrap = "wrap"; gr.style.gap = "6px";
+      Array.prototype.forEach.call(gr.children, function (el) {
+        el.style.flexShrink = "0"; el.style.whiteSpace = "nowrap";
+        if (el.tagName === "SPAN") { el.style.fontSize = "14px"; el.style.padding = "4px 8px"; }
+      });
+    })();
 
     var cv = wrap.querySelector("#mmcv"), ctx = cv.getContext("2d");
     var mmq = document.getElementById("mmq"), mmcard = document.getElementById("mmcard");
@@ -401,10 +410,15 @@
 
     // shared context handed to every microgame
     var g = { W: 0, H: 0, t: 0, speed: 1, m: {}, superRound: false, sfx: sfx, juice: juice };
+    var ghudEl = wrap.querySelector(".ghud");
+    var DPR = Math.min(global.devicePixelRatio || 1, 2); // retina sharpen; game code stays in CSS px
+    var safeT = 0; // Dynamic-Island top inset, probed off the .ghud env() padding
 
     function resize() {
-      g.W = cv.width = wrap.clientWidth || global.innerWidth || 360;
-      g.H = cv.height = wrap.clientHeight || global.innerHeight || 640;
+      g.W = wrap.clientWidth || global.innerWidth || 360;
+      g.H = wrap.clientHeight || global.innerHeight || 640;
+      cv.width = Math.round(g.W * DPR); cv.height = Math.round(g.H * DPR);
+      try { safeT = Math.max(0, (parseFloat(getComputedStyle(ghudEl).paddingTop) || 10) - 10); } catch (_) { safeT = 0; }
     }
     resize();
     window.addEventListener("resize", resize);
@@ -588,6 +602,7 @@
 
     // ---------- drawing ----------
     function draw() {
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0); // buffer is retina; all drawing stays in CSS px
       var u = Math.min(g.W, g.H);
       var hue = (cleared * 40) % 360;
       var bg = ctx.createLinearGradient(0, 0, 0, g.H);
@@ -597,8 +612,8 @@
         cur.draw(g, ctx);
         // 5-second clock as a thin top bar
         var frac = Math.max(0, 1 - g.t / (cur.limit || MICRO_LIMIT));
-        ctx.fillStyle = "rgba(0,0,0,.35)"; ctx.fillRect(0, 0, g.W, u * 0.02);
-        ctx.fillStyle = frac < 0.3 ? "#ff6b6b" : "#ffd23f"; ctx.fillRect(0, 0, g.W * frac, u * 0.02);
+        ctx.fillStyle = "rgba(0,0,0,.35)"; ctx.fillRect(0, safeT, g.W, u * 0.02);
+        ctx.fillStyle = frac < 0.3 ? "#ff6b6b" : "#ffd23f"; ctx.fillRect(0, safeT, g.W * frac, u * 0.02);
         if (g.superRound) { label(ctx, "⭐ SUPER ROUND ×2", g.W / 2, g.H * 0.94, u * 0.055, "#ffd23f"); }
       } else if (phase === "ready") {
         label(ctx, readyT < 0.5 ? "GET READY" : verb, g.W / 2, g.H * 0.46, u * (readyT < 0.5 ? 0.11 : 0.2), "#fff");

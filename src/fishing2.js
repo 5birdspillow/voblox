@@ -120,6 +120,18 @@
       'box-shadow:0 5px 0 #0d3a66,0 8px 20px #0007;cursor:pointer;padding:0;line-height:1.15">🎣<br>REEL</button>' +
       '<div class="runhint" id="f2hint" style="bottom:calc(env(safe-area-inset-bottom) + 104px)">Tap the water to cast!</div>';
     document.body.appendChild(wrap);
+    // compact the crowded HUD row so the Leave button never clips on a phone
+    // (a long zone name like "Sunlit Shallows" used to shove it off), and give
+    // the little 📖/🛒 buttons a real 44px thumb target
+    (function () {
+      var st = document.createElement("style");
+      st.textContent =
+        ".gamewrap.fishing2 .ghud .grow{flex-wrap:wrap;gap:6px;padding:0 4px}" +
+        ".gamewrap.fishing2 .ghud .grow span{font-size:14px;padding:3px 8px;white-space:nowrap;border-width:2px;border-bottom-width:3px}" +
+        ".gamewrap.fishing2 .ghud .grow .replay{min-width:44px;min-height:44px;font-size:20px;padding:0;display:inline-flex;align-items:center;justify-content:center}" +
+        ".gamewrap.fishing2 .ghud .grow .bossquit{white-space:nowrap}";
+      wrap.appendChild(st);
+    })();
     var cv = wrap.querySelector("#f2cv"), ctx = cv.getContext("2d");
 
     var W, H;

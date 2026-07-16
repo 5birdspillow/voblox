@@ -52,8 +52,8 @@
       '<span id="aswave">Wave 1</span>' +
       '<button class="bossquit" id="quit">Leave</button></div></div>' +
       '<div class="gmsg" id="asbig"></div>' +
-      '<button id="ashyp" type="button" style="position:absolute;right:14px;bottom:calc(env(safe-area-inset-bottom) + 24px);' +
-      'z-index:8;background:linear-gradient(#b06aff,#7a3fd0);color:#fff;border:none;border-radius:16px;padding:12px 18px;' +
+      '<button id="ashyp" type="button" style="position:absolute;right:calc(env(safe-area-inset-right, 0px) + 14px);bottom:calc(env(safe-area-inset-bottom) + 24px);' +
+      'z-index:8;background:linear-gradient(#b06aff,#7a3fd0);color:#fff;border:none;border-radius:16px;padding:14px 18px;min-height:52px;box-sizing:border-box;' +
       'font-family:inherit;font-weight:900;font-size:16px;box-shadow:0 5px 0 #4f2a8a,0 10px 22px #0007;cursor:pointer">🌀 Jump</button>' +
       '<div class="gover" id="asq" style="display:none"></div>' +
       '<div class="gover" id="ascard" style="display:none"></div>';
@@ -66,10 +66,13 @@
     var juice = global.VobloxJuice ? global.VobloxJuice() : null;
     var sfx = global.VobloxSfx || null;
 
-    var W, H;
+    var W, H, DPR = 1;
     function resize() {
-      W = cv.width = wrap.clientWidth || global.innerWidth || 360;
-      H = cv.height = wrap.clientHeight || global.innerHeight || 640;
+      W = wrap.clientWidth || global.innerWidth || 360;
+      H = wrap.clientHeight || global.innerHeight || 640;
+      DPR = Math.min(global.devicePixelRatio || 1, 2); // retina-crisp buffer; game stays in CSS px
+      cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     }
     resize();
     window.addEventListener("resize", resize);
@@ -487,6 +490,7 @@
 
     // ---------- drawing ----------
     function draw() {
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
       ctx.clearRect(0, 0, W, H);
       var g = ctx.createLinearGradient(0, 0, 0, H);
       g.addColorStop(0, "#0b1226"); g.addColorStop(1, "#05070f");

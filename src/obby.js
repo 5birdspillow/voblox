@@ -36,9 +36,18 @@
       '<button class="sbtn shoot" id="obJ" type="button" style="border-radius:50%;padding:20px 24px">⤒</button>' +
       '<div class="runhint">Hold ◀ ▶ to run • ⤒ to jump (twice = double-jump!)</div>';
     document.body.appendChild(wrap);
+    // landscape: keep the edge-anchored steer/jump buttons clear of the Dynamic Island's side inset
+    if (!document.getElementById("obby-ios-fit")) {
+      var ost = document.createElement("style"); ost.id = "obby-ios-fit";
+      ost.textContent =
+        ".gamewrap.obby .kbtn.left{left:calc(env(safe-area-inset-left, 0px) + 14px)}" +
+        ".gamewrap.obby .kbtn.right{left:calc(env(safe-area-inset-left, 0px) + 92px)}" +
+        ".gamewrap.obby .sbtn.shoot{right:calc(env(safe-area-inset-right, 0px) + 14px)}";
+      document.head.appendChild(ost);
+    }
     var cv = wrap.querySelector("#obcv"), ctx = cv.getContext("2d");
     var W, H;
-    function resize() { W = cv.width = wrap.clientWidth; H = cv.height = wrap.clientHeight; }
+    function resize() { var dpr = Math.min(global.devicePixelRatio || 1, 2); W = wrap.clientWidth; H = wrap.clientHeight; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
     resize(); window.addEventListener("resize", resize);
 
     var juice = global.VobloxJuice ? global.VobloxJuice() : null;
@@ -97,7 +106,7 @@
       if (me.ground || me.coyote > 0) { me.vy = -JUMP; me.ground = false; me.coyote = 0; me.jumps = 1; if (sfx) sfx.pop(); }
       else if (me.jumps === 1) { me.vy = -JUMP * 0.92; me.jumps = 2; if (sfx) sfx.whoosh(); if (juice) juice.burst(me.x - camX, me.y, "#ffffff", 5); }
     }
-    document.getElementById("obJ").addEventListener("touchstart", function () { jump(); }, { passive: true });
+    document.getElementById("obJ").addEventListener("touchstart", function (e) { e.preventDefault(); jump(); }, { passive: false }); // preventDefault suppresses the iOS phantom mouse tap (jump is discrete — would double-jump)
     document.getElementById("obJ").addEventListener("mousedown", jump);
     function onKey(e) {
       var k = (e.key || "").toLowerCase();

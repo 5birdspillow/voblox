@@ -73,13 +73,22 @@
     wrap.innerHTML =
       '<canvas id="rycv" style="position:absolute;inset:0;display:block;width:100%;height:100%"></canvas>' +
       '<div class="ghud"><div class="clue" id="rymsg">🌀 Word Royale — grab loot, dodge the storm!</div>' +
-      '<div class="grow"><span id="ryshield">🛡 0</span><span id="ryweap">🟢 Pea</span>' +
+      '<div class="grow" style="flex-wrap:wrap"><span id="ryshield">🛡 0</span><span id="ryweap">🟢 Pea</span>' +
       '<span id="ryalive">👥 12/12</span>' +
       '<button class="bossquit" id="quit">Leave</button></div></div>' +
       '<div class="gmsg" id="rybig"></div>' +
       '<div class="gover" id="ryq" style="display:none"></div>' +
       '<div class="gover" id="rycard" style="display:none"></div>';
     document.body.appendChild(wrap);
+    // compact, wrap-safe HUD chips so the row FITS 393px (Leave never clips) — digger pattern
+    (function () {
+      var gr = wrap.querySelector(".ghud .grow"); if (!gr) return;
+      gr.style.flexWrap = "wrap"; gr.style.gap = "6px";
+      Array.prototype.forEach.call(gr.children, function (el) {
+        el.style.flexShrink = "0"; el.style.whiteSpace = "nowrap";
+        if (el.tagName === "SPAN") { el.style.fontSize = "14px"; el.style.padding = "4px 8px"; }
+      });
+    })();
 
     var cv = wrap.querySelector("#rycv"), ctx = cv.getContext("2d");
     var msgEl = wrap.querySelector("#rymsg"), bigEl = wrap.querySelector("#rybig");

@@ -55,7 +55,7 @@
     wrap.innerHTML =
       '<canvas id="fccv" style="position:absolute;inset:0;display:block;width:100%;height:100%"></canvas>' +
       '<div class="ghud"><div class="clue" id="fcmsg">🏭 Word Factory</div>' +
-      '<div class="grow"><span id="fcgold">🪙 0</span><span id="fcinfo"></span>' +
+      '<div class="grow" style="flex-wrap:wrap"><span id="fcgold">🪙 0</span><span id="fcinfo"></span>' +
       '<button class="replay" id="fcover" type="button">⚡ Overdrive</button>' +
       '<button class="replay" id="fccash" type="button">💰 Cash out</button>' +
       '<button class="bossquit" id="quit">Leave</button></div></div>' +
@@ -66,6 +66,15 @@
       'gap:6px;justify-content:center;flex-wrap:wrap;padding:6px 6px calc(env(safe-area-inset-bottom) + 6px);' +
       'pointer-events:auto"></div>';
     document.body.appendChild(wrap);
+    // compact, wrap-safe HUD chips so the row FITS 393px (Leave never clips) — digger pattern
+    (function () {
+      var gr = wrap.querySelector(".ghud .grow"); if (!gr) return;
+      gr.style.flexWrap = "wrap"; gr.style.gap = "6px";
+      Array.prototype.forEach.call(gr.children, function (el) {
+        el.style.flexShrink = "0"; el.style.whiteSpace = "nowrap";
+        if (el.tagName === "SPAN") { el.style.fontSize = "14px"; el.style.padding = "4px 8px"; }
+      });
+    })();
 
     var cv = wrap.querySelector("#fccv"), ctx = cv.getContext("2d");
     var msgEl = document.getElementById("fcmsg"), bigEl = document.getElementById("fcbig");
@@ -73,11 +82,19 @@
     var sfx = global.VobloxSfx || null;
 
     // ---------- responsive letterbox (dungeon.js-style X/Y helpers) ----------
+    var ghudEl = wrap.querySelector(".ghud"), barEl = wrap.querySelector("#fcbar");
     var W, H, S, OX, OY;
+    var DPR = Math.min(global.devicePixelRatio || 1, 2); // retina sharpen; game code stays in CSS px
     function resize() {
-      W = cv.width = wrap.clientWidth || global.innerWidth || 360;
-      H = cv.height = wrap.clientHeight || global.innerHeight || 640;
-      var top = 64, bot = 78;                       // HUD up top, build bar below
+      W = wrap.clientWidth || global.innerWidth || 360;
+      H = wrap.clientHeight || global.innerHeight || 640;
+      cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+      // keep the floor below the HUD (Dynamic Island via env safe-top) and above the
+      // build bar (which clears the home indicator via env safe-bottom)
+      var safeT = 0, safeB = 0;
+      try { safeT = Math.max(0, (parseFloat(getComputedStyle(ghudEl).paddingTop) || 10) - 10); } catch (_) { safeT = 0; }
+      try { safeB = Math.max(0, (parseFloat(getComputedStyle(barEl).paddingBottom) || 6) - 6); } catch (_) { safeB = 0; }
+      var top = 64 + safeT, bot = 78 + safeB;       // HUD up top, build bar below
       S = Math.min((W - 16) / MW, (H - top - bot) / MH);
       if (!(S > 0)) S = 0.1;
       OX = (W - MW * S) / 2;
@@ -245,6 +262,7 @@
     // ---------- drawing ----------
     function rrect(x, y, w, h, rr) { ctx.beginPath(); ctx.moveTo(x + rr, y); ctx.arcTo(x + w, y, x + w, y + h, rr); ctx.arcTo(x + w, y + h, x, y + h, rr); ctx.arcTo(x, y + h, x, y, rr); ctx.arcTo(x, y, x + w, y, rr); ctx.closePath(); }
     function draw() {
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0); // buffer is retina; all drawing stays in CSS px
       ctx.clearRect(0, 0, W, H);
       var bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, "#3a4453"); bg.addColorStop(1, "#232a35");
       ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);

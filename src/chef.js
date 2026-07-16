@@ -48,7 +48,7 @@
     document.body.appendChild(wrap);
     var cv = wrap.querySelector("#chcv"), ctx = cv.getContext("2d");
     var W, H, KY;
-    function resize() { W = cv.width = wrap.clientWidth; H = cv.height = wrap.clientHeight; KY = H * 0.72; }
+    function resize() { var dpr = Math.min(global.devicePixelRatio || 1, 2); W = wrap.clientWidth; H = wrap.clientHeight; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); KY = H * 0.72; }
     resize(); window.addEventListener("resize", resize);
 
     var juice = global.VobloxJuice ? global.VobloxJuice() : null;

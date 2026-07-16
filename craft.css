@@ -7,7 +7,8 @@ html, body.craftbody { margin: 0; height: 100%; overflow: hidden; background: #7
   font-size: 22px; text-shadow: 0 0 4px #000; pointer-events: none; z-index: 3; opacity: .85; }
 
 #chud { position: fixed; top: 0; left: 0; right: 0; display: flex; gap: 8px; align-items: center;
-  padding: calc(env(safe-area-inset-top) + 8px) 10px 0; font-family: "Trebuchet MS", sans-serif; z-index: 5; }
+  padding: calc(env(safe-area-inset-top) + 8px) calc(env(safe-area-inset-right) + 10px) 0 calc(env(safe-area-inset-left) + 10px);
+  font-family: "Trebuchet MS", sans-serif; z-index: 5; }
 #chud .iconbtn { text-decoration: none; }
 
 /* hotbar */
