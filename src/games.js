@@ -57,5 +57,15 @@
   add("VobloxBoom", { id: "boom", name: "Boom Blocks", emoji: "💣", color: 0xd05a2e, hub: true });
   add("VobloxSki", { id: "ski", name: "Ski Rush", emoji: "⛷️", color: 0x6ab8e0, hub: true });
   add("VobloxIceMaze", { id: "icemaze", name: "Ice Maze", emoji: "🐧", color: 0x3a8ac8, hub: true });
+  add("VobloxGemSwap", { id: "gemswap", name: "Gem Swap", emoji: "💎", color: 0x9c2ec0, hub: true });
+  add("VobloxFleet", { id: "fleet", name: "Word Fleet", emoji: "🚢", color: 0x2e5a9c, hub: true });
+  add("VobloxBowling", { id: "bowling", name: "Strike Zone", emoji: "🎳", color: 0xc02e5a, hub: true });
+  add("VobloxHomeRun", { id: "homerun", name: "Home Run Derby", emoji: "⚾", color: 0x2e9c6a, hub: true });
+  add("VobloxSumo", { id: "sumo", name: "Sumo Smash", emoji: "🥋", color: 0xc06a2e, hub: true });
+  add("VobloxSneak", { id: "sneak", name: "Shadow Sneak", emoji: "🥷", color: 0x3a3a5c, hub: true });
+  add("VobloxWildCards", { id: "wildcards", name: "Wild Cards", emoji: "🃏", color: 0xc0392e, hub: true });
+  add("VobloxArchery", { id: "archery", name: "Bullseye", emoji: "🎯", color: 0xd02e2e, hub: true });
+  add("VobloxSpike", { id: "spike", name: "Spike Ball", emoji: "🏐", color: 0xe0a22e, hub: true });
+  add("VobloxAsteroid", { id: "asteroid", name: "Asteroid Ace", emoji: "🛸", color: 0x5a2ec0, hub: true });
   global.VobloxGames = games;
 })(typeof window !== "undefined" ? window : globalThis);

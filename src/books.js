@@ -24,7 +24,10 @@
     bomb: { name: "Grammar Bomb", emoji: "💥", cost: 150, hp: 60, boom: true, lvl: 4, tip: "BOOM! one use" },
     magnet: { name: "Magnet Bookmark", emoji: "🧲", cost: 125, hp: 80, strip: true, stripCd: 7, lvl: 4, tip: "steals helmets" },
     spell: { name: "Spell Book", emoji: "📜", cost: 200, hp: 90, dmg: 11, cd: 1.1, pierce: true, word: true, lvl: 5, tip: "word-powered beam" },
-    lamp: { name: "Lamp Novel", emoji: "💡", cost: 75, hp: 80, light: true, lvl: 11, tip: "lights the dark" }
+    lamp: { name: "Lamp Novel", emoji: "💡", cost: 75, hp: 80, light: true, lvl: 11, tip: "lights the dark" },
+    frost: { name: "Freeze Tome", emoji: "❄️", cost: 125, hp: 90, aura: true, slowPct: 0.4, lvl: 3, tip: "chills its whole lane" },
+    mine: { name: "Boom Binder", emoji: "💣", cost: 75, hp: 40, mine: true, lvl: 4, tip: "BOOM on first touch — rebuild it" },
+    fan: { name: "Fan Folio", emoji: "🌪", cost: 150, hp: 90, fan: true, lvl: 4, tip: "shoves back + pops 🎈 balloons" }
   };
   var ZOMBIES = {
     basic: { name: "Scroller", emoji: "🧟", hp: 60, speed: 10, dps: 13 },
@@ -44,8 +47,15 @@
     king: { name: "THE NOTIFICATION KING", emoji: "📵", hp: 1400, speed: 5, dps: 50, big: true, wordShield: true },
     copy: { name: "Paper Copy", emoji: "📄", hp: 30, speed: 16, dps: 8, small: true },
     monitor: { name: "Hall Monitor", emoji: "🛎", hp: 460, speed: 6, dps: 24, big: true, whistle: true },
-    copier: { name: "THE HOMEWORK COPIER", emoji: "🖨", hp: 1600, speed: 4.8, dps: 55, big: true, prints: true }
+    copier: { name: "THE HOMEWORK COPIER", emoji: "🖨", hp: 1600, speed: 4.8, dps: 55, big: true, prints: true },
+    knight: { name: "Bucket Knight", emoji: "🛡", hp: 180, speed: 8, dps: 14, armored: true, knight: true },
+    sprinter: { name: "Sprinter", emoji: "🏃", hp: 30, speed: 22, dps: 9, sprint: true },
+    floaty: { name: "Floaty", emoji: "🎈", hp: 46, speed: 11, dps: 11, fly: true, float: true },
+    crate: { name: "Chicken Rush", emoji: "🐔", hp: 72, speed: 7, dps: 8, crate: true },
+    chick: { name: "Zombie Chick", emoji: "🐤", hp: 1, speed: 16, dps: 5, small: true }
   };
+  // the mid-campaign newcomers get a friendly "NEW!" callout on first sighting
+  var NEWZ = { knight: 1, sprinter: 1, floaty: 1, crate: 1 };
   // level design: which rows are open, the spawn timeline, and what unlocks
   function levelPlan(n) {
     function wave(t, type, row) { return { t: t, type: type, row: row }; }
@@ -59,11 +69,13 @@
       L.rows = [0, 1, 2, 3, 4]; L.intro = "All five reading rooms are open — and the zombies got FASTER.";
       L.unlock = ["wall"];
       [12, 22, 32, 42, 50, 58, 66, 74, 82, 90, 98, 104].forEach(function (t, i) { L.spawns.push(wave(t, i % 3 === 2 ? "speedy" : "basic", R(L.rows))); });
+      [56, 84].forEach(function (t) { L.spawns.push(wave(t, "sprinter", R(L.rows))); }); // 🆕 gentle Sprinter intro
     } else if (n === 3) {
       L.rows = [0, 1, 2, 3, 4]; L.intro = "Helmet Heads and Scooters! Freeze them — and meet the 🖍️ Catapult.";
       L.unlock = ["freeze", "catapult"];
       [10, 20, 30, 40, 48, 56, 64, 72, 80, 88].forEach(function (t, i) { L.spawns.push(wave(t, i % 4 === 3 ? "bucket" : i % 3 === 2 ? "speedy" : "basic", R(L.rows))); });
       [58, 84].forEach(function (t) { L.spawns.push(wave(t, "scooter", R(L.rows))); });
+      [70, 92].forEach(function (t) { L.spawns.push(wave(t, "knight", R(L.rows))); }); // 🆕 gentle Bucket Knight intro
       [104, 104, 106, 108].forEach(function (t) { L.spawns.push(wave(t, "basic", R(L.rows))); });
       L.spawns.push(wave(112, "miniboss", 2));
       L.huge = [102];
@@ -72,6 +84,7 @@
       L.unlock = ["bomb", "magnet"];
       [10, 18, 26, 34, 42, 50, 58, 66, 74, 82, 90, 98].forEach(function (t, i) { L.spawns.push(wave(t, i % 5 === 4 ? "shield" : i % 4 === 3 ? "bucket" : i % 3 === 2 ? "speedy" : "basic", R(L.rows))); });
       [45, 70].forEach(function (t) { L.spawns.push(wave(t, "balloon", R(L.rows))); });
+      [56, 82].forEach(function (t) { L.spawns.push(wave(t, "floaty", R(L.rows))); }); // 🆕 gentle Floaty intro (Fan Folio counters him)
       L.spawns.push(wave(88, "couch", R(L.rows)));
       [112, 112, 114, 114, 116, 118].forEach(function (t, i) { L.spawns.push(wave(t, i % 2 ? "bucket" : "basic", R(L.rows))); });
       L.spawns.push(wave(122, "miniboss", 1));
@@ -82,6 +95,7 @@
       [10, 18, 26, 34, 40, 46, 52, 58, 64, 70, 76, 82, 88, 94].forEach(function (t, i) { L.spawns.push(wave(t, ["basic", "speedy", "bucket", "shield"][i % 4], R(L.rows))); });
       [50, 72].forEach(function (t) { L.spawns.push(wave(t, "splitter", R(L.rows))); });
       L.spawns.push(wave(85, "balloon", R(L.rows)));
+      [60, 90].forEach(function (t) { L.spawns.push(wave(t, "crate", R(L.rows))); }); // 🆕 gentle Chicken Rush intro
       L.spawns.push(wave(98, "couch", R(L.rows)));
       L.spawns.push(wave(108, "boss", 2));
       [116, 118, 120, 122].forEach(function (t, i) { L.spawns.push(wave(t, i % 2 ? "speedy" : "bucket", R(L.rows))); });
@@ -128,6 +142,10 @@
   function endlessPlan() {
     return { rows: [0, 1, 2, 3, 4], spawns: [], endless: true, unlock: [], intro: "Survive as long as you can. The horde never ends…" };
   }
+  // ♾️ ENDLESS NIGHT: escalating survival mixing EVERY zombie (new ones too). Score = time.
+  function endlessNightPlan() {
+    return { rows: [0, 1, 2, 3, 4], spawns: [], endless: true, survival: true, unlock: [], intro: "♾️ ENDLESS NIGHT — every kind of zombie, forever. Survive as long as you can!" };
+  }
   // 📖 Almanac bios — silly, collectible, and each hides a Secret Word quiz
   var BIOS = {
     "b:blaster": "Fires the alphabet at 300 letters per minute. Hates the letter Q (too fancy).",
@@ -156,7 +174,15 @@
     "z:king": "📵 THE NOTIFICATION KING. His shield of unread alerts breaks only for a WORD.",
     "z:copy": "Hot off the printer. Smells like toner and bad ideas.",
     "z:monitor": "Blows the whistle and everyone hurries. Even the zombies fear detention.",
-    "z:copier": "🖨 THE HOMEWORK COPIER. Prints more homework the angrier it gets. Unforgivable."
+    "z:copier": "🖨 THE HOMEWORK COPIER. Prints more homework the angrier it gets. Unforgivable.",
+    "b:frost": "So cold to read that a whole lane of zombies gets the shivers. Bring mittens.",
+    "b:mine": "A pop-up book with an ACTUAL pop. Steps on it once and BOOM — then you rebuild.",
+    "b:fan": "A pop-up fan that gusts zombies backward and pops floaty balloons. Very breezy.",
+    "z:knight": "🛡 Wears a whole mop bucket as armor. Loses it halfway and pretends he meant to.",
+    "z:sprinter": "Runs in little bursts, then wheezes, then bursts again. Cardio is hard.",
+    "z:floaty": "Drifts over your books on a balloon. A good gust brings him right back down.",
+    "z:crate": "A crate stuffed with zombie chicks. Break it and they scatter EVERYWHERE.",
+    "z:chick": "One tiny zombie chick. Barely any HP, all attitude. Cheep cheep."
   };
   // 🏭 Bindery upgrades — bought with 📜 Pages (earned from stars & the Almanac)
   var UPG = {
@@ -335,12 +361,13 @@
     var drops = [], dropT = 9, pw = 0, pwUsed = 0, zshots = [], endT = 6, endWave = 0;
     var tier = 1, adaptT = 20, banked = false, adaptWarned = false;
     var mods = null, milestones = 0, lockers = [], lockerT = 13;
+    var surge = 0, surgeMax = 100, surgesUsed = 0, mowers = [], announced = {}; // ⚡ Word Surge + 🚜 mowers + 🆕 callouts
     function freshMods() { return { dmgMul: 1, dropVal: 15, costMul: 1, dripMul: 1, spawnChill: 0, splashMul: 1, blessed: [] }; }
 
     var msgEl = document.getElementById("bkmsg"), bigEl = document.getElementById("bkbig");
     function big(m, col) { bigEl.textContent = m; bigEl.style.color = col || "#fff"; bigEl.style.opacity = "1"; setTimeout(function () { bigEl.style.opacity = "0"; }, 1300); }
     function hud() {
-      document.getElementById("bkink").textContent = "🖋 " + ink + (pw > 0 ? "  ⚡" + pw : "");
+      document.getElementById("bkink").textContent = "🖋 " + ink + (pw > 0 ? "  ⚡" + pw : "") + (surge >= surgeMax ? "  🌟" : "");
       var total = plan ? plan.spawns.length : 0;
       document.getElementById("bkwave").textContent = plan ? "🧟 " + Math.min(spawnIdx, total) + "/" + total : "";
     }
@@ -393,6 +420,8 @@
         }).join("") + "</div>";
       var endlessBtn = nightRows + schoolRows + rushBtn + '<button class="embtn study" style="min-width:150px' + (stats.beatBoss ? "" : ";opacity:.45") + '" id="bk_endless">' +
         '<span class="ebl">🌙 Midnight Library</span><span class="ebs">' + (stats.beatBoss ? ("endless! best: wave " + (stats.endlessBest || 0)) : "beat THE BOSS to unlock") + "</span></button>" +
+        '<button class="embtn study" style="min-width:150px' + (stats.beatBoss ? "" : ";opacity:.45") + '" id="bk_endless2">' +
+        '<span class="ebl">♾️ Endless Night</span><span class="ebs">' + (stats.beatBoss ? ("all zombies! best: " + (stats.bestEndlessS || 0) + "s") : "beat THE BOSS to unlock") + "</span></button>" +
         '<button class="embtn" style="min-width:110px" id="bk_almanac"><span class="ebl">' + (stats.crowned ? "👑 " : "📖 ") + 'Almanac</span><span class="ebs">' + Object.keys(stats.seen).length + "/" + (Object.keys(BOOKS).length + Object.keys(ZOMBIES).length) + ' found</span></button>' +
         '<button class="embtn" style="min-width:110px" id="bk_bindery"><span class="ebl">🏭 Bindery</span><span class="ebs">📜 ' + (stats.pages || 0) + " Pages</span></button>";
       end.innerHTML = '<div class="wqcard" style="text-align:center;max-width:580px"><div style="font-size:40px">📚🧟</div>' +
@@ -410,6 +439,8 @@
       });
       var eb = document.getElementById("bk_endless");
       if (eb) eb.onclick = function () { if (stats.beatBoss) beginLevel(6); else big("🔒 Beat THE BOSS first!", "#ffd740"); };
+      var eb2 = document.getElementById("bk_endless2");
+      if (eb2) eb2.onclick = function () { if (stats.beatBoss) beginLevel(8); else big("🔒 Beat THE BOSS first!", "#ffd740"); };
       var ab = document.getElementById("bk_almanac"); if (ab) ab.onclick = showAlmanac;
       var bb = document.getElementById("bk_bindery"); if (bb) bb.onclick = showBindery;
       Array.prototype.forEach.call(end.querySelectorAll("[data-nlv]"), function (b) {
@@ -561,17 +592,18 @@
     function beginLevel(n, tierN) {
       level = n; tier = tierN || 1;
       var T = TIERS[tier];
-      plan = n === 6 ? endlessPlan() : n === 7 ? bossRushPlan() : applyTier(n >= 21 ? schoolPlan(n) : n >= 11 ? nightPlan(n) : levelPlan(n), tier, n);
-      run = 0; ink = n === 6 ? 150 : n === 7 ? 250 : (n >= 11 ? T.inkStart + 25 : T.inkStart); spawnIdx = 0; hugeShown = {}; kills = 0; rushes = 0;
+      plan = n === 6 ? endlessPlan() : n === 7 ? bossRushPlan() : n === 8 ? endlessNightPlan() : applyTier(n >= 21 ? schoolPlan(n) : n >= 11 ? nightPlan(n) : levelPlan(n), tier, n);
+      run = 0; ink = n === 6 ? 150 : n === 8 ? 175 : n === 7 ? 250 : (n >= 11 ? T.inkStart + 25 : T.inkStart); spawnIdx = 0; hugeShown = {}; kills = 0; rushes = 0;
       plants = []; zombies = []; shots = []; zshots = []; drops = []; selected = null; rushCd = 0; over = false; endShown = false;
       pw = 0; pwUsed = 0; dropT = T.dropEvery; endT = 8; endWave = 0; adaptT = 20; banked = false;
       mods = freshMods(); milestones = 0; lockers = []; lockerT = 13;
+      surge = 0; surgesUsed = 0; mowers = []; announced = {};
       for (var r = 0; r < ROWS; r++) { plants.push([null, null, null, null, null, null, null, null, null]); }
       carts = plan.rows.map(function (r) { return { row: r, used: false, x: GXv - 52, rolling: false }; });
       resize(); // row metrics depend on how many lanes this level opens
       document.getElementById("bkend").style.display = "none";
       paused = false;
-      msgEl.innerHTML = plan.dark ? "🌃 <b>Night " + (n - 10) + "</b>" : plan.school ? "🏫 <b>Hall " + (n - 20) + "</b>" : "📚 <b>" + (n === 6 ? "Midnight Library" : n === 7 ? "👑 Boss Rush" : "Level " + n) + "</b>";
+      msgEl.innerHTML = plan.survival ? "♾️ <b>Endless Night</b>" : plan.dark ? "🌃 <b>Night " + (n - 10) + "</b>" : plan.school ? "🏫 <b>Hall " + (n - 20) + "</b>" : "📚 <b>" + (n === 6 ? "Midnight Library" : n === 7 ? "👑 Boss Rush" : "Level " + n) + "</b>";
       big("📖 " + plan.intro, "#ffe14d");
       renderBar(); hud();
     }
@@ -579,28 +611,30 @@
     // even closing the app. Rewards are computed once and SHOWN (Au: Leo saw no
     // Vobux — they were partly invisible, partly lost on tab-close).
     function runRewards(won) {
-      var endless = plan && plan.endless;
+      var endless = plan && plan.endless, survival = plan && plan.survival, secs = Math.floor(run);
       var T = TIERS[tier] || TIERS[1];
       var studyBonus = rushes * 3; // studying always pays extra at the end
-      var gems = studyBonus + (won ? (10 + level * 5) * T.gemMul : (endless ? Math.min(90, 3 + endWave + milestones * 5) : 5));
+      var endGems = survival ? Math.min(120, 5 + Math.floor(secs / 5) + milestones * 5) : Math.min(90, 3 + endWave + milestones * 5);
+      var gems = studyBonus + (won ? (10 + level * 5) * T.gemMul : (endless ? endGems : 5));
       return {
         win: !!won,
-        score: kills * 4 + rushes * 10 + (endless ? endWave * 8 : (level === 7 ? 300 : level * 20 * tier)),
-        rankPtsDelta: won ? Math.min(12, 3 + level * 2 + (tier - 1) * 2) : (endless ? Math.min(8, 1 + Math.floor(endWave / 4)) : 2),
-        xp: Math.min(80, 8 + kills * 2 + rushes * 5 + (won ? level * 6 * tier : 0)),
+        score: kills * 4 + rushes * 10 + surgesUsed * 15 + (endless ? (survival ? secs * 2 : endWave * 8) : (level === 7 ? 300 : level * 20 * tier)),
+        rankPtsDelta: won ? Math.min(12, 3 + level * 2 + (tier - 1) * 2) : (endless ? Math.min(8, 1 + Math.floor(survival ? secs / 12 : endWave / 4)) : 2),
+        xp: Math.min(80, 8 + kills * 2 + rushes * 5 + surgesUsed * 4 + (won ? level * 6 * tier : 0)),
         gems: gems, studyBonus: studyBonus
       };
     }
     function bankRun(won) {
       if (banked) return null;
       banked = true;
+      if (plan && plan.survival) { var secs = Math.floor(run); if (secs > (stats.bestEndlessS || 0)) { stats.bestEndlessS = secs; store.save(); } } // ♾️ additive save
       var rw = runRewards(won);
       var res = store.recordGame ? store.recordGame("books", rw) : null;
       return { rw: rw, res: res };
     }
     function endLevel(won) {
       if (over) return; over = true; paused = true;
-      var endless = plan && plan.endless;
+      var endless = plan && plan.endless, survival = plan && plan.survival, secs = Math.floor(run);
       var bank = bankRun(won) || { rw: runRewards(won), res: null };
       var rw = bank.rw, res = bank.res;
       if (won && level >= stats.lvl && level < 5) { stats.lvl = level + 1; store.save(); }
@@ -629,11 +663,12 @@
         if (newPages > 0) stats.pages = (stats.pages || 0) + newPages;
         store.save();
       }
-      if (endless && endWave > (stats.endlessBest || 0)) { stats.endlessBest = endWave; store.save(); }
+      if (endless && !survival && endWave > (stats.endlessBest || 0)) { stats.endlessBest = endWave; store.save(); }
       var T = TIERS[tier] || TIERS[1];
       var end = document.getElementById("bkend");
       var lvName = level >= 21 ? "Hall " + (level - 20) : level >= 11 ? "Night " + (level - 10) : level === 7 ? "Boss Rush" : "Level " + level;
-      var title = endless ? "🌙 The library fell on wave " + endWave + (endWave >= (stats.endlessBest || 0) ? " — NEW RECORD!" : "!") :
+      var title = survival ? ("♾️ You survived " + secs + "s" + (secs >= (stats.bestEndlessS || 0) ? " — NEW RECORD!" : "!")) :
+        endless ? "🌙 The library fell on wave " + endWave + (endWave >= (stats.endlessBest || 0) ? " — NEW RECORD!" : "!") :
         won ? (level === 5 ? "THE LIBRARY IS SAVED! You beat the Doomscroller!" :
           level === 15 ? "🌅 DAWN BREAKS! The Notification King is silenced!" :
             level === 25 ? "🎓 CLASS DISMISSED! The Homework Copier is recycled!" :
@@ -646,7 +681,7 @@
         (rw.studyBonus ? ' <span style="color:#7a4fd0;font-size:12px">(incl. 📖 study bonus +' + rw.studyBonus + ")</span>" : "") + "</div>";
       end.innerHTML = '<div class="wqcard" style="text-align:center"><div style="font-size:44px">' + (won ? "🏆" : endless ? "🌙" : "🧟") + '</div>' +
         '<div class="wqtitle" style="font-size:20px">' + title + "</div>" + starRow + payRow +
-        '<div style="margin:2px 0">🧟 ' + kills + " munched · 🖋 " + rushes + " ink rushes · ⚡ " + pwUsed + " power words" + (res && res.rankedUp ? "<br>🎖 RANK UP!" : "") + "</div>" +
+        '<div style="margin:2px 0">🧟 ' + kills + " munched · 🖋 " + rushes + " ink rushes · ⚡ " + pwUsed + " power words" + (surgesUsed ? " · ⚡ " + surgesUsed + " word surges" : "") + (res && res.rankedUp ? "<br>🎖 RANK UP!" : "") + "</div>" +
         '<button class="submit big-next" id="bknext">' + (won && (level < 5 || (level >= 11 && level < 15) || (level >= 21 && level < 25)) ? "Next level ➜" : "Level select") + "</button></div>";
       end.style.display = "flex";
       if (won && sfx && sfx.fanfare) sfx.fanfare();
@@ -668,7 +703,8 @@
           '<span class="ebl">' + b.emoji + " " + b.cost + '</span><span class="ebs">' + b.name + (b.word ? " 📖word" : "") + "</span></button>";
       }).join("") +
         '<button class="embtn' + (selected === "broom" ? " mode" : "") + '" id="bkbroom"><span class="ebl">🧹 Broom</span><span class="ebs">sweep a book, ½ back</span></button>' +
-        '<button class="embtn study" id="bkrush"' + (rushCd > 0 ? ' style="opacity:.55"' : "") + '><span class="ebl">🖋 INK RUSH</span><span class="ebs">' + (rushCd > 0 ? Math.ceil(rushCd) + "s" : "answer = +150") + "</span></button>";
+        '<button class="embtn study" id="bkrush"' + (rushCd > 0 ? ' style="opacity:.55"' : "") + '><span class="ebl">🖋 INK RUSH</span><span class="ebs">' + (rushCd > 0 ? Math.ceil(rushCd) + "s" : "answer = +150") + "</span></button>" +
+        '<button class="embtn' + (surge >= surgeMax ? " mode" : "") + '" id="bksurge"' + (surge < surgeMax ? ' style="opacity:.6"' : "") + '><span class="ebl">⚡ WORD SURGE</span><span class="ebs">' + (surge >= surgeMax ? "READY — tap!" : Math.floor(surge * 100 / surgeMax) + "% charged") + "</span></button>";
       Array.prototype.forEach.call(bar.querySelectorAll("[data-bk]"), function (b) {
         b.onclick = function () {
           var k = b.dataset.bk;
@@ -681,6 +717,8 @@
       if (brm) brm.onclick = function () { selected = selected === "broom" ? null : "broom"; big(selected === "broom" ? "🧹 Tap a book to sweep it away (half ink back)" : "Broom away!", "#8ecdf7"); renderBar(); };
       var rush = document.getElementById("bkrush");
       if (rush) rush.onclick = inkRush;
+      var sg = document.getElementById("bksurge");
+      if (sg) sg.onclick = function () { if (surge >= surgeMax) beginSurge(); else big("⚡ Keep reading zombies to death to charge the Surge!", "#ffd740"); };
     }
     function inkRush() {
       if (paused || over || rushCd > 0) return;
@@ -755,6 +793,68 @@
       if (juice) { juice.shake(10); juice.burst(X(tileX(c), tileY(r)), Y(tileX(c), tileY(r)), "#ff9f43", 24); }
       if (sfx) { sfx.tone && sfx.tone(80, 0.35, 0.09); }
     }
+    // 💣 Boom Binder mine: detonates on contact for big damage down its lane, then it's gone (rebuild it)
+    function mineBoom(r, c) {
+      plants[r][c] = null;
+      big("💣 BOOM BINDER!", "#ff9f43");
+      for (var i = zombies.length - 1; i >= 0; i--) {
+        var z = zombies[i];
+        if (z.row === r && Math.abs(z.x - tileX(c)) < CWv * 2.4) hurtZ(z, 120);
+      }
+      if (juice) { juice.shake(9); juice.burst(X(tileX(c), tileY(r)), Y(tileX(c), tileY(r)), "#ff9f43", 26); }
+      if (sfx) { sfx.tone && sfx.tone(90, 0.3, 0.09); }
+    }
+    // ⚡ WORD SURGE: full meter → answer a word → pick a SUPER
+    function beginSurge() {
+      if (paused || over) return;
+      paused = true;
+      cv._lastQ = VQ.miniQuiz(document.getElementById("bkq"), words, store, {
+        title: "⚡ WORD SURGE! Answer to unleash a SUPER!",
+        lastFormat: lastFmt,
+        cb: function (ok, res, fmt) {
+          lastFmt = fmt;
+          if (ok) { surgePick(); } // stays paused until a SUPER is chosen
+          else { paused = false; surge = Math.round(surgeMax * 0.8); big("So close! Your Surge stays charged — try again!", "#ffd54f"); if (sfx && sfx.buzz) sfx.buzz(); renderBar(); }
+        }
+      });
+    }
+    function surgePick() {
+      var end = document.getElementById("bkend");
+      if (!end) return; // game left before the pick — nothing to draw
+      paused = true;
+      var supers = [
+        { id: "barrage", name: "📚 Book Barrage", t: "every book fires a HUGE volley" },
+        { id: "freeze", name: "🧊 Deep Freeze", t: "all zombies frozen 5s" },
+        { id: "mower", name: "🚜 Word Mower", t: "a dictionary mows the worst lane" }
+      ];
+      end.innerHTML = '<div class="wqcard" style="text-align:center"><div style="font-size:36px">⚡</div>' +
+        '<div class="wqtitle" style="font-size:19px">WORD SURGE! Pick your SUPER:</div>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:8px 0">' +
+        supers.map(function (s) { return '<button class="embtn mode" style="min-width:150px" data-su="' + s.id + '"><span class="ebl">' + s.name + '</span><span class="ebs">' + s.t + "</span></button>"; }).join("") + "</div></div>";
+      end.style.display = "flex";
+      Array.prototype.forEach.call(end.querySelectorAll("[data-su]"), function (b) { b.onclick = function () { pickSuper(b.dataset.su); }; });
+      if (sfx && sfx.chime) sfx.chime();
+    }
+    function pickSuper(id) {
+      document.getElementById("bkend").style.display = "none";
+      paused = false; surge = 0; surgesUsed++;
+      if (id === "freeze") { zombies.forEach(function (z) { z.chill = 5; }); big("🧊 DEEP FREEZE! Everyone's a popsicle!", "#8ecdf7"); }
+      else if (id === "barrage") {
+        for (var r = 0; r < ROWS; r++) for (var c = 0; c < COLS; c++) {
+          var p = plants[r][c]; if (!p) continue; var d = bdef(p.k); if (!d.dmg) continue;
+          for (var v = 0; v < 10; v++) shots.push({ x: tileX(c) + 20 + v * 15, y: tileY(r) - 14, row: r, dmg: (d.dmg || 7) + 4, slow: !!d.slow, pierce: true, hit: {}, ch: String.fromCharCode(65 + Math.floor(Math.random() * 26)) });
+        }
+        big("📚 BOOK BARRAGE! A storm of letters!", "#ffe14d");
+      } else if (id === "mower") { // worst lane = most zombies, closest to the shelves breaks ties
+        var best = -1, bestRow = plan.rows[0];
+        plan.rows.forEach(function (rr) { var cnt = 0, near = 0; zombies.forEach(function (z) { if (z.row === rr) { cnt++; near = Math.max(near, MWv - z.x); } }); var sc = cnt * 1000 + near; if (sc > best) { best = sc; bestRow = rr; } });
+        mowers.push({ row: bestRow, x: MWv + 40 });
+        big("🚜 WORD MOWER rolls down a lane!", "#9be15d");
+      }
+      if (juice) juice.shake(6);
+      if (sfx && sfx.fanfare) sfx.fanfare();
+      hud(); renderBar();
+    }
 
     // ---------- combat ----------
     function spawnZombie(type, row) {
@@ -762,6 +862,7 @@
       stats.seen["z:" + type] = 1;
       var T = TIERS[tier] || TIERS[1];
       zombies.push({ type: type, row: row, x: MWv + 30, hp: Math.round(def.hp * T.hpMul), maxHp: Math.round(def.hp * T.hpMul), speed: def.speed * T.spdMul, dps: def.dps, chill: (mods || {}).spawnChill || 0, groan: Math.random() * 6 });
+      if (NEWZ[type] && !announced[type]) { announced[type] = 1; big("🆕 NEW: " + def.name + "!", "#ffd23f"); if (sfx && sfx.chime) sfx.chime(); }
       if (def.big) { big("📺 " + def.name + " HAS ENTERED THE LIBRARY!", "#c9b6ff"); if (sfx && sfx.buzz) sfx.buzz(); }
       else if (sfx && sfx.buzz && Math.random() < 0.25) sfx.buzz();
     }
@@ -787,9 +888,27 @@
       dmg = Math.round(dmg * ((mods || {}).dmgMul || 1)); // 🌙 Sharpened Letters
       z.hp -= dmg;
       if (juice && Math.random() < 0.4) juice.text(X(z.x, tileY(z.row) - 40), Y(z.x, tileY(z.row) - 40), "-" + dmg, "#ffd740");
+      // 🛡 Bucket Knight: at half hp the bucket pops off and he's just a walker now
+      if (zd.knight && !z.dearmored && z.hp > 0 && z.hp <= z.maxHp / 2) {
+        z.dearmored = true; z.speed = ZOMBIES.basic.speed; z.dps = ZOMBIES.basic.dps;
+        big("🛡 CLANG! His bucket popped off!", "#cfd6dd");
+        if (juice) juice.burst(X(z.x, tileY(z.row)), Y(z.x, tileY(z.row)), "#cfd6dd", 12);
+        if (sfx && sfx.pop) sfx.pop();
+      }
       if (z.hp <= 0) {
         kills++;
         var zi = zombies.indexOf(z); if (zi >= 0) zombies.splice(zi, 1);
+        // ⚡ every zombie that falls charges the Word Surge meter
+        var wasFull = surge >= surgeMax;
+        surge = Math.min(surgeMax, surge + 8);
+        if (!wasFull && surge >= surgeMax) { big("⚡ WORD SURGE READY — tap the ⚡ button!", "#ffe14d"); if (sfx && sfx.chime) sfx.chime(); renderBar(); }
+        if (zd.crate) { // 🐔 the crate bursts — 1-hp chicks scatter across three lanes
+          [z.row - 1, z.row, z.row + 1].forEach(function (rr) {
+            if (rr >= 0 && rr < ROWS && plan.rows.indexOf(rr) >= 0) { spawnZombie("chick", rr); zombies[zombies.length - 1].x = z.x; }
+          });
+          big("🐔 CHICKENS EVERYWHERE!", "#ffd23f");
+          if (juice) juice.shake(4);
+        }
         if (ZOMBIES[z.type].split) { // 🤖 breaks into two angry minis
           spawnZombie("mini", z.row); zombies[zombies.length - 1].x = z.x - 14;
           spawnZombie("mini", z.row); zombies[zombies.length - 1].x = z.x + 14;
@@ -810,14 +929,23 @@
         if (endT <= 0) {
           endWave++;
           endT = Math.max(3.5, 15 - run / 25);
-          var pool = ["basic", "basic", "speedy"];
-          if (run > 45) pool.push("bucket", "scooter");
-          if (run > 90) pool.push("shield", "balloon", "splitter", "pajama");
-          if (run > 150) pool.push("couch", "miniboss", "gloweyes", "copy", "monitor");
-          var n2 = 1 + Math.floor(run / 60);
+          var pool;
+          if (plan.survival) { // ♾️ Endless Night: EVERY kind, ramping steadily
+            pool = ["basic", "basic", "speedy", "sprinter"];
+            if (run > 25) pool.push("bucket", "knight", "scooter");
+            if (run > 55) pool.push("shield", "floaty", "splitter", "pajama", "crate");
+            if (run > 95) pool.push("couch", "gloweyes", "monitor", "crate", "knight");
+            if (run > 150) pool.push("miniboss", "copier");
+          } else {
+            pool = ["basic", "basic", "speedy"];
+            if (run > 45) pool.push("bucket", "scooter");
+            if (run > 90) pool.push("shield", "balloon", "splitter", "pajama");
+            if (run > 150) pool.push("couch", "miniboss", "gloweyes", "copy", "monitor");
+          }
+          var n2 = 1 + Math.floor(run / (plan.survival ? 40 : 60));
           for (var ei = 0; ei < Math.min(4, n2); ei++) spawnZombie(pool[Math.floor(Math.random() * pool.length)], plan.rows[Math.floor(Math.random() * plan.rows.length)]);
           if (endWave % 10 === 0) offerBlessing(); // 🌙 milestone: pick a perk + bank Vobux
-          else if (endWave % 5 === 0) big("🌙 Wave " + endWave + " — still standing!", "#c9b6ff");
+          else if (endWave % 5 === 0) big(plan.survival ? ("♾️ " + Math.floor(run) + "s survived — keep going!") : ("🌙 Wave " + endWave + " — still standing!"), "#c9b6ff");
         }
       }
       // adaptive director: cruise with a fat ink bank and the horde smells it
@@ -895,6 +1023,23 @@
             } else p.stripT = 0.5;
           }
         }
+        if (def.fan) { // 🌪 Fan Folio: every few seconds, gust the lane back a step + POP floaty balloons
+          p.fanT = (p.fanT === undefined ? 2.5 : p.fanT) - dt;
+          if (p.fanT <= 0) {
+            p.fanT = 3.5; var gusted = false;
+            for (var fzi = 0; fzi < zombies.length; fzi++) {
+              var fzz = zombies[fzi];
+              if (fzz.row === r && fzz.x > tileX(c) - 10) {
+                fzz.x = Math.min(MWv - 10, fzz.x + CWv * 0.85); gusted = true;
+                if (ZOMBIES[fzz.type].float && !fzz.popped) { // 🎈 the anti-air answer: pop him down
+                  fzz.popped = true;
+                  if (juice) juice.text(X(fzz.x, tileY(r) - 30), Y(fzz.x, tileY(r) - 30), "🎈 POP!", "#8ecdf7");
+                }
+              }
+            }
+            if (gusted) { if (juice) juice.burst(X(tileX(c) + 30, tileY(r)), Y(tileX(c) + 30, tileY(r)), "#bfe3ff", 12); if (sfx && sfx.whoosh) sfx.whoosh(); }
+          }
+        }
       }
       // 🛋 couch potatoes throw pillows at your front line
       for (var qs = zshots.length - 1; qs >= 0; qs--) {
@@ -915,6 +1060,7 @@
         var gone = sh.x > MWv + 20;
         for (var z2i = 0; z2i < zombies.length && !gone; z2i++) {
           var z2 = zombies[z2i];
+          if (ZOMBIES[z2.type].float && !z2.popped) continue; // 🎈 Floaty drifts above normal shots until popped
           if (z2.row === sh.row && Math.abs(z2.x - sh.x) < 22 && !sh.hit[z2i]) {
             hurtZ(z2, sh.dmg);
             if (sh.slow) z2.chill = 3;
@@ -936,6 +1082,8 @@
         var sp = zz.speed * SPD * (zz.chill > 0 ? 0.5 : 1);
         if (plan.dark && !litAt(zz.x, zz.row)) sp *= 1.35; // darkness emboldens them
         if (plan.conveyor && plan.conveyor.indexOf(zz.row) >= 0) sp *= 1.6; // 🏫 moving walkway
+        for (var fa = 0; fa < COLS; fa++) { var fp = plants[zz.row][fa]; if (fp && bdef(fp.k).aura) { sp *= (1 - (bdef(fp.k).slowPct || 0.4)); break; } } // ❄️ Freeze Tome lane aura
+        if (zdef.sprint) { zz.burstT = (zz.burstT || 0) + dt; sp *= ((zz.burstT % 1.1) < 0.6 ? 1.9 : 0.2); } // 🏃 jitters forward in bursts
         if (zdef.naps) { // 😴 sleepwalkers stop-and-go
           zz.napT = (zz.napT || 0) + dt;
           if ((zz.napT % 4.5) > 3) sp = 0;
@@ -970,7 +1118,7 @@
         var col = Math.floor((zz.x - 24 - GXv) / CWv);
         var plant = (col >= 0 && col < COLS) ? plants[zz.row][col] : null;
         var atPlant = plant && zz.x - 24 <= tileX(col) + CWv * 0.3;
-        if (zdef.fly) { // 🎈 floats right over your books
+        if (zdef.fly && !zz.popped) { // 🎈 floats right over your books (a Fan Folio pops him down to walk)
           zz.x -= sp * dt;
         } else if (zdef.ranged) { // 🛋 stops and throws pillows from range
           var frontPlant = null;
@@ -980,6 +1128,7 @@
             if (zz.throwT <= 0) { zz.throwT = 3; zshots.push({ x: zz.x - 26, row: zz.row, dmg: 6 }); if (sfx && sfx.whoosh) sfx.whoosh(); }
           } else zz.x -= sp * dt;
         } else if (atPlant) {
+          if (bdef(plant.k).mine) { mineBoom(zz.row, col); break; } // 💣 Boom Binder detonates on first contact
           if (zdef.crash) { // 🛴 kamikaze into the first thing it touches
             plant.hp -= zdef.crash; plant.flash = 0.2;
             if (plant.hp <= 0) plants[zz.row][col] = null;
@@ -1005,6 +1154,13 @@
         for (var ci = zombies.length - 1; ci >= 0; ci--) { if (zombies[ci].row === ct.row && zombies[ci].x < ct.x + 40) { kills++; zombies.splice(ci, 1); } }
         if (ct.x > MWv + 60) { ct.rolling = false; ct.used = true; }
       });
+      // 🚜 Word Mower supers steamroll their lane right-to-left
+      for (var mi = mowers.length - 1; mi >= 0; mi--) {
+        var mw = mowers[mi];
+        mw.x -= 560 * SPD * dt;
+        for (var mz = zombies.length - 1; mz >= 0; mz--) { if (zombies[mz].row === mw.row && zombies[mz].x > mw.x - 30) { kills++; zombies.splice(mz, 1); } }
+        if (mw.x < GXv - 40) mowers.splice(mi, 1);
+      }
       // victory: everything spawned and cleared (endless never ends by winning)
       if (!plan.endless && spawnIdx >= plan.spawns.length && zombies.length === 0 && !over) endLevel(true);
     }
@@ -1100,6 +1256,10 @@
           ctx.strokeStyle = "rgba(255,225,77," + (0.5 + Math.sin(run * 5) * 0.3) + ")"; ctx.lineWidth = 3;
           ctx.beginPath(); ctx.arc(cxs, cys, spriteS * 0.62, 0, Math.PI * 2); ctx.stroke();
         }
+        if (bdef(p.k).aura) { // ❄️ Freeze Tome: a cold ring telegraphs the lane chill
+          ctx.strokeStyle = "rgba(142,205,247," + (0.35 + Math.sin(run * 3 + pc) * 0.15) + ")"; ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.arc(cxs, cys, spriteS * 0.7, 0, Math.PI * 2); ctx.stroke();
+        }
         bar(cxs, cys + spriteS * 0.55, spriteS * 0.9, p.hp / p.maxHp, "#69f0ae");
       }
       // shots: flying letters (and lobbed crayons with a little arc)
@@ -1111,6 +1271,9 @@
       // pillows incoming!
       ctx.font = Math.round(spriteS * 0.4) + "px serif";
       zshots.forEach(function (q3) { ctx.fillText("☁️", X(q3.x, tileY(q3.row)), Y(q3.x, tileY(q3.row))); });
+      // 🚜 Word Mowers steamrolling their lane
+      ctx.font = Math.round(spriteS * 1.15) + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      mowers.forEach(function (mw) { ctx.fillText("🚜", X(mw.x, tileY(mw.row)), Y(mw.x, tileY(mw.row))); });
       // zombies
       zombies.forEach(function (z) {
         var zy = tileY(z.row), zsc = spriteS * (ZOMBIES[z.type].big ? 1.5 : 1.05);
@@ -1118,7 +1281,9 @@
         var zxs = X(z.x, zy), zys = Y(z.x, zy) + pz(lurch) - zsc * 0.12;
         ctx.font = Math.round(zsc) + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
         if (z.chill > 0) { ctx.save(); ctx.filter = "hue-rotate(160deg)"; }
-        ctx.fillText(ZOMBIES[z.type].emoji, zxs, zys);
+        var zem = ZOMBIES[z.type].emoji;
+        if ((z.type === "knight" && z.dearmored) || (z.type === "floaty" && z.popped)) zem = "🧟"; // bucket popped / balloon popped = just a walker
+        ctx.fillText(zem, zxs, zys);
         if (z.chill > 0) ctx.restore();
         ctx.font = Math.round(zsc * 0.36) + "px serif";
         ctx.fillText("📱", zxs + zsc * 0.34, zys + zsc * 0.28); // doomscrolling, always
@@ -1343,8 +1508,13 @@
 
     // test hook
     cv._books = {
-      state: function () { return { level: level, ink: ink, plants: plants, zombies: zombies, carts: carts, over: over, best: stats.lvl, spawnIdx: spawnIdx, planLen: plan ? plan.spawns.length : 0, pw: pw, pwUsed: pwUsed, drops: drops, stars: stats.stars || {}, starsT: stats.starsT || {}, tierDone: stats.tierDone || {}, tier: tier, banked: banked, rushCd: rushCd, paused: paused, endlessBest: stats.endlessBest || 0, endWave: endWave, vertical: vertical }; },
+      state: function () { return { level: level, ink: ink, plants: plants, zombies: zombies, carts: carts, over: over, best: stats.lvl, spawnIdx: spawnIdx, planLen: plan ? plan.spawns.length : 0, pw: pw, pwUsed: pwUsed, drops: drops, stars: stats.stars || {}, starsT: stats.starsT || {}, tierDone: stats.tierDone || {}, tier: tier, banked: banked, rushCd: rushCd, paused: paused, endlessBest: stats.endlessBest || 0, endWave: endWave, vertical: vertical, surge: surge, surgeMax: surgeMax, surgesUsed: surgesUsed, bestEndlessS: stats.bestEndlessS || 0 }; },
       begin: beginLevel,
+      beginEndless: function () { beginLevel(8); },
+      spawnZombie: function (type, lane) { spawnZombie(type, lane); return zombies[zombies.length - 1]; },
+      zombies: function () { return zombies; },
+      surgeQuiz: beginSurge,
+      pickSuper: pickSuper,
       give: function (n) { ink += n; hud(); renderBar(); },
       pick: function (k) { selected = k; },
       put: function (k, r, c) { place(k, r, c); },

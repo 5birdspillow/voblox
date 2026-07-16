@@ -37,12 +37,12 @@
 
   var scene = new THREE.Scene();
   scene.background = new THREE.Color(0x9fd6ff);
-  scene.fog = new THREE.Fog(0x9fd6ff, 54, 150);
+  scene.fog = new THREE.Fog(0x9fd6ff, 60, 170);
   var camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
   scene.add(new THREE.HemisphereLight(0xffffff, 0x6f9e57, 1.0));
   var sun = new THREE.DirectionalLight(0xfff3d0, 0.85);
   sun.position.set(30, 48, 22); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
-  var scam = sun.shadow.camera; scam.left = -46; scam.right = 46; scam.top = 46; scam.bottom = -46; scam.near = 1; scam.far = 150;
+  var scam = sun.shadow.camera; scam.left = -52; scam.right = 52; scam.top = 52; scam.bottom = -52; scam.near = 1; scam.far = 170;
   scene.add(sun);
 
   // ---------- helpers ----------
@@ -74,7 +74,7 @@
   function box(w, h, d, color) { var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ color: color })); m.castShadow = true; return m; }
 
   // ---------- ground ----------
-  var HALF = 32; // island sized for the six themed game districts (two rows each)
+  var HALF = 38; // island sized for six districts of up to THREE building rows each
   (function buildGround() {
     var n = (HALF * 2 + 1) * (HALF * 2 + 1);
     var mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshLambertMaterial({ color: 0xffffff }), n);
@@ -110,7 +110,7 @@
    [14, 4], [-14, -3], [5.5, 14], [-5.5, -14], [9, 9], [-9, -9],
    [20, 8], [-20, 6], [8, -20], [-6, 20], [16, 16], [16, -16], [-19, 14], [20, -6],
    // outer trees mark the district boundaries on the bigger island
-   [31, 0], [15.5, 26.8], [-15.5, 26.8], [-31, 0], [-15.5, -26.8], [15.5, -26.8]].forEach(function (p) { makeTree(p[0], p[1]); });
+   [36.5, 0], [18.2, 31.6], [-18.2, 31.6], [-36.5, 0], [-18.2, -31.6], [18.2, -31.6]].forEach(function (p) { makeTree(p[0], p[1]); });
 
   // ---------- boss totem (center) ----------
   var totem = (function () {
@@ -251,7 +251,10 @@
         { gameId: "dungeon", flavor: "tower", wall: 0xd8c4e8, roof: 0x5a3a7c },
         { gameId: "survivors", flavor: "fence", wall: 0xc8d8a8, roof: 0x4a6c2a },
         { gameId: "royale", flavor: "goal", wall: 0xbcd8f0, roof: 0x3a5a9c },
-        { gameId: "bossrush", flavor: "tower", wall: 0xe0c4c4, roof: 0x8a2a3a }
+        { gameId: "bossrush", flavor: "tower", wall: 0xe0c4c4, roof: 0x8a2a3a },
+        { gameId: "fleet", flavor: "dock", wall: 0xb8c8e0, roof: 0x2e5a9c },
+        { gameId: "sumo", flavor: null, wall: 0xf0d8b8, roof: 0xc06a2e },
+        { gameId: "sneak", flavor: null, wall: 0x4a4a6c, roof: 0x28283c }
       ] },
       { name: "🏟 Sports Zone", color: "#2f7d4f", defs: [
         { gameId: "soccer", flavor: "goal", wall: 0x7ec86a, roof: 0x2f6b1f },
@@ -261,7 +264,11 @@
         { gameId: "slice", flavor: null, wall: 0x3a4a5c, roof: 0x22303c },
         { gameId: "jethop", flavor: "cloud", wall: 0xfae8b0, roof: 0xe0a92e },
         { gameId: "golf", flavor: "goal", wall: 0xc8ecc0, roof: 0x2e8a4a },
-        { gameId: "hopper", flavor: "fence", wall: 0xd8e8c0, roof: 0x4aa03a }
+        { gameId: "hopper", flavor: "fence", wall: 0xd8e8c0, roof: 0x4aa03a },
+        { gameId: "bowling", flavor: null, wall: 0xf0c0d0, roof: 0xc02e5a },
+        { gameId: "homerun", flavor: "goal", wall: 0xc0ecd8, roof: 0x2e9c6a },
+        { gameId: "archery", flavor: null, wall: 0xf0c8c8, roof: 0xd02e2e },
+        { gameId: "spike", flavor: "goal", wall: 0xfae4b8, roof: 0xe0a22e }
       ] },
       { name: "🎠 Arcade Ave", color: "#f0a92e", defs: [
         { gameId: "dash", flavor: "arch", wall: 0xc8f4ee, roof: 0x30c0b0 },
@@ -271,7 +278,9 @@
         { gameId: "blaster", flavor: "tower", wall: 0xc4baf0, roof: 0x3a2b7a },
         { gameId: "beat", flavor: "awning", wall: 0xf4c4e4, roof: 0xa8186e },
         { gameId: "micro", flavor: "awning", wall: 0xfae0b8, roof: 0xe07a2e },
-        { gameId: "piano", flavor: "board", wall: 0xe8e8f0, roof: 0x22222e }
+        { gameId: "piano", flavor: "board", wall: 0xe8e8f0, roof: 0x22222e },
+        { gameId: "gemswap", flavor: "awning", wall: 0xe4c8f0, roof: 0x9c2ec0 },
+        { gameId: "asteroid", flavor: "cloud", wall: 0xc8c0f0, roof: 0x5a2ec0 }
       ] },
       { name: "🌿 Critter Cove", color: "#3a9c50", defs: [
         { gameId: "pets", flavor: "fence", wall: 0xf0b8d8, roof: 0xb06a9a },
@@ -297,10 +306,11 @@
         { gameId: "claw", flavor: "awning", wall: 0xecc0e8, roof: 0x8a2a7c },
         { gameId: "brick", flavor: null, wall: 0xe0b8a0, roof: 0xa04a2e },
         { gameId: "pinball", flavor: "board", wall: 0xd8c0f0, roof: 0x8a3ad0 },
-        { gameId: "airhockey", flavor: null, wall: 0xc0d8f0, roof: 0x2e6ac0 }
+        { gameId: "airhockey", flavor: null, wall: 0xc0d8f0, roof: 0x2e6ac0 },
+        { gameId: "wildcards", flavor: "awning", wall: 0xf0c4c0, roof: 0xc0392e }
       ] }
     ];
-    var FRONT_R = 23, BACK_R = 28.5, SPACING = 8.2; // arc distance between building centers
+    var ROW_R = [23, 28.5, 34], SPACING = 8.2; // three rows per wedge; arc distance between centers
     DISTRICTS.forEach(function (D, di) {
       var theta = (di / DISTRICTS.length) * Math.PI * 2 + Math.PI / DISTRICTS.length;
       makeSignpost(D.name, D.color, Math.cos(theta) * 17, Math.sin(theta) * 17);
@@ -311,9 +321,10 @@
         d.name = gm.name; d.emoji = gm.emoji; d.color = gm.color; d.game = gm;
         return true;
       });
-      var frontN = defs.length > 6 ? 4 : Math.min(3, defs.length);
-      var rows = [{ list: defs.slice(0, frontN), radius: FRONT_R, stagger: 0 },
-                  { list: defs.slice(frontN), radius: BACK_R, stagger: 0.5 }];
+      // up to 4 buildings per row, up to 3 rows — 12 per district
+      var rows = [{ list: defs.slice(0, 4), radius: ROW_R[0], stagger: 0 },
+                  { list: defs.slice(4, 8), radius: ROW_R[1], stagger: 0.5 },
+                  { list: defs.slice(8, 12), radius: ROW_R[2], stagger: 0 }];
       rows.forEach(function (row) {
         var n = row.list.length; if (!n) return;
         var dA = SPACING / row.radius;
@@ -369,7 +380,7 @@
         w.wait -= dt;
         w.ll.rotation.x *= 0.8; w.rl.rotation.x *= 0.8; w.la.rotation.x *= 0.8; w.ra.rotation.x *= 0.8;
         if (w.wait <= 0) {
-          var a = Math.random() * Math.PI * 2, r = 5 + Math.random() * 20;
+          var a = Math.random() * Math.PI * 2, r = 5 + Math.random() * 26;
           w.tx = Math.cos(a) * r; w.tz = Math.sin(a) * r; w.wait = 1.5 + Math.random() * 4;
         }
       } else {
@@ -897,7 +908,7 @@
     store.state.profile.avatar.hair = hs2; store.state.profile.avatar.hairColor = "#e884c8"; store.save();
     if (window.VobloxAvatar) avatar.applyConfig(window.VobloxAvatar.resolve(store.state));
   }
-  else if (location.hash === "#overview") { camPitch = 1.2; camDist = 34; } // test hook: bird's-eye of the island
+  else if (location.hash === "#overview") { camPitch = 1.2; camDist = 42; } // test hook: bird's-eye of the island
   else if (location.hash === "#games") openGamesList(); // test hook: the all-games list
   else if (location.hash === "#players") openPlayers(); // test hook: the players overlay
   else if (location.hash === "#locker") openBackpack("locker"); // test hook: the locker
@@ -911,7 +922,7 @@
     var bkgm = (window.VobloxGames || []).filter(function (x) { return x.id === "books"; })[0];
     if (bkgm) launchGame(bkgm);
   }
-  else if (/^#(merge|dash|dungeon|clash|park|slice|blaster|beat|survivors|digger|gobble|royale|bossrush|micro|factory|wally|claw|fishing2|piano|stack|jethop|brick|hopper|golf|pinball|airhockey|boom|ski|icemaze)demo$/.test(location.hash)) { // test hooks: seeded new-game boards
+  else if (/^#(merge|dash|dungeon|clash|park|slice|blaster|beat|survivors|digger|gobble|royale|bossrush|micro|factory|wally|claw|fishing2|piano|stack|jethop|brick|hopper|golf|pinball|airhockey|boom|ski|icemaze|gemswap|fleet|bowling|homerun|sumo|sneak|wildcards|archery|spike|asteroid)demo$/.test(location.hash)) { // test hooks: seeded new-game boards
     var ngid = location.hash.slice(1).replace("demo", "");
     window["_" + ngid + "demo"] = 1;
     var ngm = (window.VobloxGames || []).filter(function (x) { return x.id === ngid; })[0];
